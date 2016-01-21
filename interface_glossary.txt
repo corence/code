@@ -1,0 +1,21 @@
+Glossary:
+java	haskell
+class	type
+interface	class
+instance	(a class that implements an interface)
+
+Paragraph 1: the interface/type class
+This is pretty much the same semantics between Java and Haskell. The main difference here is that the Java functions have an implicit parameter called "this"; whereas in Haskell, that parameter is explicit.
+
+Paragraph 2: the implementation of these functions
+The functions are implemented with the same semantics. Java adds a bit of extra code because we need to define a new class to implement the interface; whereas Haskell can apply the type class to an existing type.
+
+Paragraph 3: 
+We're adding the getMin function at the global scope (or in the Java case, as close as we can get). Again, the semantics should be pretty similar.
+
+Paragraph 4:
+We need the ":: Int" qualifiers in Haskell because if we didn't have them, it wouldn't know which numeric type we want (Int, Integer, Float). Java makes some assumptions with numeric types (and then auto-boxes the int into an Integer) so it saves us a little keyboard activity (at the cost of explicitness).
+
+-- definitions for Generics/Type Params page
+generic class	class with type parameters
+

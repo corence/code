@@ -66,3 +66,12 @@ instance Equalizer Node where
     isEqual _ _ = True
 
 node1 = Node { nodeID = (NodeID 3), inColor = White }
+
+data State = State [Node]
+
+
+solve state = solve state2
+    where selectedChannel = chooseChannel state,
+          state1 = linkChannel selectedChannel state,
+          state2 = flowLinks state1
+          

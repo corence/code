@@ -1,0 +1,49 @@
+
+Node
+ - id
+ - type
+ - mana
+ - capacity
+
+    Sender
+    (used for Transceivers, Emitters, Receivers)
+     - id
+     - mana
+     - capacity
+     - stars
+     - in-color
+     - out-color
+     
+    Converter
+    (is replaced with a Sender when it gets mana)
+     - id
+     - capacity
+     - colors
+
+    Broadcaster
+     - id
+     - color
+
+    Doubler
+    (is replaced with a Sender when it gets mana)
+     - id
+     - color
+
+    Teleporter
+    (all teleporters are just senders that share a mana pool)
+     - id
+     - color
+
+
+
+Channel
+ - id
+ - nodes (always a list of 2)
+
+Conflict
+ - channels [a list of channels that cross]
+
+
+
+
+

@@ -1,0 +1,9 @@
+
+solve:
+ - is the existing solution Good? if so, succeed
+ - is there no more channels open? if so, fail
+ - pick a channel, and link it
+   - update the nodes and flow the mana
+   - solve this
+     - if that succeeds, succeed
+     - if that fails, fail

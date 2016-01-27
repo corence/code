@@ -16,15 +16,17 @@ bind items function = join (map function items)
 unit :: a -> Choice a
 unit a = choose [a]
 
-solution1 = map pair456 (choose [1,2,3])
-solution2 = join (map pair456 (choose [1,2,3]))
-solution3 = bind (choose [1,2,3]) pair456
-solution4 = map (choose [1,2,3]) (\x -> map (choose [4,5,6] (\y -> (x,y))))
+solution1 = map pair456 ([1,2,3])
+solution2 = join (map pair456 ([1,2,3]))
+solution3 = bind ([1,2,3]) pair456
+solution4a x = map (\y -> unit (x,y)) ([4,5,6])
+solution4b = map (\x -> map (\y -> unit (x,y)) [4,5,6]) [1,2,3]
+solution4  = map (\x -> map (\y -> unit (x,y)) [4,5,6]) [1,2,3]
 solution5 = bind
-              (choose [1,2,3])
+              ([1,2,3])
               (\x ->
                 bind
-                  (choose [4,5,6])
+                  ([4,5,6])
                   (\y ->
                     unit (x,y)
                   )
@@ -43,6 +45,9 @@ main = do
     --let q = solution1
     --let q = solution2
     --let q = solution3
+    --mapM_ (\f -> do
+                     --let q = f
+                     --putStrLn $ (show q)) [solution1,solution2,solution3,solution4a,solution4b,solution4,solution5]
     let q = solution4
     putStrLn $ (show q)
 

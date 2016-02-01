@@ -45,11 +45,11 @@ instance Equalizer Bool where
     isEqual False False = True
     isEqual _ _ = False
 
-data NodeID = NodeID Int
-data NodeType = Sender | Receiver
+data NodeID = NodeID Int deriving Show
+data NodeType = Sender | Receiver deriving Show
 
-data Channel = Channel Int Int
-data Link = Link Channel
+data Channel = Channel Int Int deriving Show
+data Link = Link Channel deriving Show
 
 data Node = Node {
     nodeID :: NodeID,
@@ -60,18 +60,44 @@ data Node = Node {
     capacity :: Int,
     channels :: [Channel],
     links :: [Link]
-}
+} deriving Show
 
 instance Equalizer Node where
     isEqual _ _ = True
 
-node1 = Node { nodeID = (NodeID 3), inColor = White }
+sender nodeID color mana capacity channels = Node {
+    nodeID = NodeID nodeID,
+    nodeType = Sender,
+    inColor = color,
+    outColor = color,
+    mana = mana,
+    capacity = capacity,
+    channels = channels,
+    links = []
+}
 
-data State = State [Node]
+converter nodeID inColor outColor mana capacity channels = (sender nodeID inColor mana capacity channels) {outColor = outColor}
 
+node2 = sender 3 White 4 2 []
+node3 = converter 3 White Orange 4 2 []
+    
+data State = State [Node] [Channel] [Link] deriving Show
 
-solve state = solve state2
-    where selectedChannel = chooseChannel state,
-          state1 = linkChannel selectedChannel state,
-          state2 = flowLinks state1
-          
+solve state = result
+  where State nodes channels links = state
+        channel = chooseChannel channels
+        state1 = linkChannel state channel
+        result = flowLinks state1
+
+flowLinks state = state
+linkChannel state channel = state
+chooseChannel (c:channels) = c
+
+newState = State [] [] []
+addNode (State nodes channels links) node = State (node:nodes) channels links
+addChannel (State nodes channels links) channel = State nodes (channel:channels) links
+addLink (State nodes channels links) link = State nodes channels (link:links)
+
+main = do
+    let state = newState
+    print $ show $ solve state

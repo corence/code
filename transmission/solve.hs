@@ -34,6 +34,11 @@ data State = State {
 
                    -}
 
+arrayRemove :: Eq a => [a] -> a -> Maybe [a]
+arrayRemove [] _ = Nothing
+arrayRemove (x:xs) q | q == x = Just xs
+                     | otherwise = (arrayRemove xs q) >>= (\result -> Just (x:result))
+                     
 
 data Color = White | Orange | Blue deriving Show
 
@@ -86,7 +91,12 @@ solve state = do
     flowLinks preFlow
 
 flowLinks state = Just state
+
+linkChannel :: State -> Channel -> Maybe State
 linkChannel state channel = Just state
+-- 1) find the channel in State
+-- 2) if it's not found, return Nothing
+-- 3) if it's found, remove it from Channels and put it in Links
 
 chooseChannel :: State -> Maybe Channel
 chooseChannel (State _ [] _) = Nothing
@@ -110,3 +120,6 @@ main = do
                    ]
     let state = State nodes channels []
     print $ show $ solve state
+    putStrLn "---"
+    putStrLn "---"
+    putStrLn $ show $ arrayRemove [1, 2, 3, 4] 3

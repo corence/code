@@ -53,8 +53,8 @@ instance Equalizer Bool where
 data NodeID = NodeID Int deriving Show
 data NodeType = Sender | Receiver deriving Show
 
-data Channel = Channel Int Int deriving Show
-data Link = Link Channel deriving Show
+data Channel = Channel Int Int deriving (Show, Eq)
+data Link = Link Channel deriving (Show, Eq)
 
 data Node = Node {
     nodeID :: NodeID,
@@ -93,7 +93,11 @@ solve state = do
 flowLinks state = Just state
 
 linkChannel :: State -> Channel -> Maybe State
-linkChannel state channel = Just state
+linkChannel state channel = do
+    let link = Link channel
+    newChannels <- arrayRemove channels channel
+    return (State nodes newChannels (link:links))
+        where State nodes channels links = state
 -- 1) find the channel in State
 -- 2) if it's not found, return Nothing
 -- 3) if it's found, remove it from Channels and put it in Links

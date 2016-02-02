@@ -94,10 +94,10 @@ linkChannel state channel = state
 chooseChannel (c:channels) = c
 
 newState = State [] [] []
-addNode (State nodes channels links) node = State (node:nodes) channels links
+addNode node (State nodes channels links) = State (node:nodes) channels links
 addChannel (State nodes channels links) channel = State nodes (channel:channels) links
 addLink (State nodes channels links) link = State nodes channels (link:links)
 
 main = do
-    let state = newState
+    let state = addNode (sender 2 White 3 4 []) newState
     print $ show $ solve state

@@ -83,15 +83,28 @@ node3 = converter 3 White Orange 4 2 []
     
 data State = State [Node] [Channel] [Link] deriving Show
 
+solve :: State -> Maybe State
+solve state = do
+    channel <- chooseChannel state
+    preFlow <- linkChannel state channel
+    flowLinks preFlow
+
+{-
 solve state = result
   where State nodes channels links = state
         channel = chooseChannel channels
         state1 = linkChannel state channel
         result = flowLinks state1
+-}
 
-flowLinks state = state
-linkChannel state channel = state
-chooseChannel (c:channels) = c
+flowLinks state = Just state
+linkChannel state channel = Just state
+
+chooseChannel :: State -> Maybe Channel
+chooseChannel (State _ [] _) = Nothing
+chooseChannel state = Just c
+    where Channel lhs rhs = c
+          State nodes (c:channels) links = state
 
 newState = State [] [] []
 addNode node (State nodes channels links) = State (node:nodes) channels links
@@ -99,5 +112,13 @@ addChannel (State nodes channels links) channel = State nodes (channel:channels)
 addLink (State nodes channels links) link = State nodes channels (link:links)
 
 main = do
-    let state = addNode (sender 2 White 3 4 []) newState
+    let nodes = [
+                    sender 2 White 3 4 [],
+                    sender 4 Orange 8 8 []
+                ]
+    let channels = [
+                    Channel 2 4,
+                    Channel 4 2
+                   ]
+    let state = State nodes channels []
     print $ show $ solve state

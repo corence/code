@@ -57,29 +57,25 @@ data Node = Node {
     inColor :: Color,
     outColor :: Color,
     mana :: Int,
-    capacity :: Int,
-    channels :: [Channel],
-    links :: [Link]
+    capacity :: Int
 } deriving Show
 
 instance Equalizer Node where
     isEqual _ _ = True
 
-sender nodeID color mana capacity channels = Node {
+sender nodeID color mana capacity = Node {
     nodeID = NodeID nodeID,
     nodeType = Sender,
     inColor = color,
     outColor = color,
     mana = mana,
-    capacity = capacity,
-    channels = channels,
-    links = []
+    capacity = capacity
 }
 
-converter nodeID inColor outColor mana capacity channels = (sender nodeID inColor mana capacity channels) {outColor = outColor}
+converter nodeID inColor outColor mana capacity = (sender nodeID inColor mana capacity ) {outColor = outColor}
 
-node2 = sender 3 White 4 2 []
-node3 = converter 3 White Orange 4 2 []
+node2 = sender 3 White 4 2
+node3 = converter 3 White Orange 4 2
     
 data State = State [Node] [Channel] [Link] deriving Show
 
@@ -88,14 +84,6 @@ solve state = do
     channel <- chooseChannel state
     preFlow <- linkChannel state channel
     flowLinks preFlow
-
-{-
-solve state = result
-  where State nodes channels links = state
-        channel = chooseChannel channels
-        state1 = linkChannel state channel
-        result = flowLinks state1
--}
 
 flowLinks state = Just state
 linkChannel state channel = Just state
@@ -113,8 +101,8 @@ addLink (State nodes channels links) link = State nodes channels (link:links)
 
 main = do
     let nodes = [
-                    sender 2 White 3 4 [],
-                    sender 4 Orange 8 8 []
+                    sender 2 White 3 4,
+                    sender 4 Orange 8 8
                 ]
     let channels = [
                     Channel 2 4,

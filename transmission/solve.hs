@@ -90,23 +90,37 @@ solve state = do
     preFlow <- linkChannel state channel
     flowLinks preFlow
 
-flowLinks state = Just state
-
+chooseChannel :: State -> Maybe Channel
+chooseChannel (State _ [] _) = Nothing
+chooseChannel state = Just c
+    where Channel lhs rhs = c
+          State nodes (c:channels) links = state
+          
 linkChannel :: State -> Channel -> Maybe State
 linkChannel state channel = do
     let link = Link channel
     newChannels <- arrayRemove channels channel
     return (State nodes newChannels (link:links))
         where State nodes channels links = state
--- 1) find the channel in State
--- 2) if it's not found, return Nothing
--- 3) if it's found, remove it from Channels and put it in Links
 
-chooseChannel :: State -> Maybe Channel
-chooseChannel (State _ [] _) = Nothing
-chooseChannel state = Just c
-    where Channel lhs rhs = c
-          State nodes (c:channels) links = state
+flowLinksRepeated state | changed = flowLinksRepeated newState
+                        | otherwise = newState
+                        where (newState, changed) = flowLinks state
+
+flowLinks (State nodes channels (link:links)) =
+    (arrayRemove nodes source) >>=
+    (\nodes1 -> arrayRemove nodes1 dest) >>=
+    (\nodes2 -> if transferQuantity > 0 then newState else flowLinks (State nodes channels links)
+                        where newState = State (newSource : newDest : nodes2) channels (link:links)
+                          newSource = source { mana = (mana source) - transferQuantity }
+                          newDest = dest {
+                                            mana = (mana dest) + transferQuantity,
+                                            capacity = (capacity dest) - transferQuantity
+                                         }
+                    )
+    
+    where transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
+    
 
 newState = State [] [] []
 addNode node (State nodes channels links) = State (node:nodes) channels links

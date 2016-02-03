@@ -110,17 +110,29 @@ flowLinksRepeated state | changed = flowLinksRepeated newState
 flowLinks (State nodes channels (link:links)) =
     (arrayRemove nodes source) >>=
     (\nodes1 -> arrayRemove nodes1 dest) >>=
-    (\nodes2 -> if transferQuantity > 0 then newState else flowLinks (State nodes channels links)
-                        where newState = State (newSource : newDest : nodes2) channels (link:links)
-                          newSource = source { mana = (mana source) - transferQuantity }
-                          newDest = dest {
-                                            mana = (mana dest) + transferQuantity,
-                                            capacity = (capacity dest) - transferQuantity
-                                         }
+    (\nodes2 -> if transferQuantity > 0
+                    then State (newSource : newDest : nodes2) channels (link:links)
+                    else flowLinks (State nodes channels links)
                     )
     
-    where transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
+        where transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
+              source = getNode nodes sourceID
+              dest = getNode nodes destID
+              Link (Channel sourceID destID) = link
+              newSource = source { mana = (mana source) - transferQuantity }
+              newDest = dest {
+                                mana = (mana dest) + transferQuantity,
+                                capacity = (capacity dest) - transferQuantity
+                             }
     
+
+getNode [] _ = Nothing
+getNode (node:nodes) nid | nodeID node == nid = node
+                         | otherwise = getNode nodes nid
+
+capacityAvailable destNode color
+  | inColor destNode /= color = 0
+  | otherwise = capacity destNode
 
 newState = State [] [] []
 addNode node (State nodes channels links) = State (node:nodes) channels links

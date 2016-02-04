@@ -1,4 +1,5 @@
 
+import Data.Maybe
 --solve state results =
 -- | isSuccessful state = state:results
 -- | isFailing state = results
@@ -88,7 +89,12 @@ solve :: State -> Maybe State
 solve state = do
     channel <- chooseChannel state
     preFlow <- linkChannel state channel
-    flowLinks preFlow
+    flowLinksRepeated preFlow
+    
+solve state =
+    (chooseChannel state) >>=
+    (linkChannel state) >>=
+    flowLinksRepeated
 
 chooseChannel :: State -> Maybe Channel
 chooseChannel (State _ [] _) = Nothing
@@ -107,6 +113,8 @@ flowLinksRepeated state | changed = flowLinksRepeated newState
                         | otherwise = newState
                         where (newState, changed) = flowLinks state
 
+flowLinks :: State -> (State, Bool)
+{-
 flowLinks (State nodes channels (link:links)) =
     (arrayRemove nodes source) >>=
     (\nodes1 -> arrayRemove nodes1 dest) >>=
@@ -124,12 +132,53 @@ flowLinks (State nodes channels (link:links)) =
                                 mana = (mana dest) + transferQuantity,
                                 capacity = (capacity dest) - transferQuantity
                              }
-    
+-}
 
+{-
+flowLinks :: State -> (State, Bool)
+flowLinks (State nodes channels (link:links)) =
+    (getNode nodes sourceID) >>=
+    (\source -> (getNode nodes destID >>=
+        (\dest -> (arrayRemove nodes source >>=
+            (\nodes1 -> arrayRemove nodes1 dest) >>=
+            (\nodes2 -> (
+    
+    (arrayRemove nodes source) >>=
+    (\nodes1 -> arrayRemove nodes1 dest) >>=
+    (\nodes2 -> if transferQuantity > 0
+-}
+
+ -- get the source and dest nodes
+ -- update their mana levels
+ -- if this happened, replace them in the nodes pile
+flowLinks state =
+    if ((isJust maybeSource) && (isJust maybeDest) && transferQuantity > 0 && (isJust updatedState))
+        then (fromJust updatedState, True)
+        else (state, False)
+        where (State nodes channels (link:links)) = state
+              Link (Channel sourceID destID) = link
+              maybeSource = getNode nodes sourceID
+              maybeDest = getNode nodes destID
+              source = fromJust maybeSource
+              dest = fromJust maybeDest
+              transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
+              newSource = source { mana = (mana source) - transferQuantity }
+              newDest = dest { mana = (mana dest) + transferQuantity }
+              updatedState = (replaceNode source newSource state) >>= (replaceNode dest newDest)
+              
+        
+getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
 getNode (node:nodes) nid | nodeID node == nid = node
                          | otherwise = getNode nodes nid
 
+replaceNode :: NodeID -> Node -> [Node] -> Maybe [Node]
+replaceNode _ _ [] = Nothing
+replaceNode targetNid replacementNode (node:nodes)
+  | (nodeID node) == targetNid = Just (replacementNode:nodes)
+  | otherwise = (replaceNode targetNid replacementNode nodes) >>= (\newNodes -> node:newNodes)
+
+capacityAvailable :: Node -> Color -> Int
 capacityAvailable destNode color
   | inColor destNode /= color = 0
   | otherwise = capacity destNode

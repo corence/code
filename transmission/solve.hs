@@ -110,7 +110,7 @@ linkChannel state channel = do
         where State nodes channels links = state
 
 flowLinksRepeated state | changed = flowLinksRepeated newState
-                        | otherwise = newState
+                        | otherwise = Just newState
                         where (newState, changed) = flowLinks state
 
 flowLinks :: State -> (State, Bool)
@@ -164,7 +164,8 @@ flowLinks state =
               transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
               newSource = source { mana = (mana source) - transferQuantity }
               newDest = dest { mana = (mana dest) + transferQuantity }
-              updatedState = (replaceNode source newSource state) >>= (replaceNode dest newDest)
+              updatedNodes = (replaceNode source newSource nodes) >>= (replaceNode dest newDest)
+              updatedState = State (fromJust updatedNodes) channels (link:links)
               
         
 getNode :: [Node] -> NodeID -> Maybe Node
@@ -198,7 +199,7 @@ main = do
                     Channel 4 2
                    ]
     let state = State nodes channels []
-    print $ show $ solve state
+    print $ show $ fromJust $ solve state
     putStrLn "---"
     putStrLn "---"
     putStrLn $ show $ arrayRemove [1, 2, 3, 4] 3

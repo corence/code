@@ -41,7 +41,7 @@ arrayRemove (x:xs) q | q == x = Just xs
                      | otherwise = (arrayRemove xs q) >>= (\result -> Just (x:result))
                      
 
-data Color = White | Orange | Blue deriving Show
+data Color = White | Orange | Blue deriving (Show, Eq)
 
 class Equalizer a where
     isEqual :: a -> a -> Bool
@@ -88,10 +88,10 @@ node3 = converter 3 White Orange 4 2
 data State = State [Node] [Channel] [Link] deriving Show
 
 solve :: State -> Maybe State
-solve state = do
-    channel <- chooseChannel state
-    preFlow <- linkChannel state channel
-    flowLinksRepeated preFlow
+--solve state = do
+    --channel <- chooseChannel state
+    --preFlow <- linkChannel state channel
+    --flowLinksRepeated preFlow
     
 solve state =
     (chooseChannel state) >>=
@@ -183,7 +183,7 @@ replaceNode :: NodeID -> Node -> [Node] -> Maybe [Node]
 replaceNode _ _ [] = Nothing
 replaceNode targetNid replacementNode (node:nodes)
   | (nodeID node) == targetNid = Just (replacementNode:nodes)
-  | otherwise = (replaceNode targetNid replacementNode nodes) >>= (\newNodes -> node:newNodes)
+  | otherwise = (replaceNode targetNid replacementNode nodes) >>= (\newNodes -> return (node:newNodes))
 
 capacityAvailable :: Node -> Color -> Int
 capacityAvailable destNode color

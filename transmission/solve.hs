@@ -51,10 +51,10 @@ instance Equalizer Bool where
     isEqual False False = True
     isEqual _ _ = False
 
-data NodeID = NodeID Int deriving Show
-data NodeType = Sender | Receiver deriving Show
+data NodeID = NodeID Int deriving (Show, Eq)
+data NodeType = Sender | Receiver deriving (Show, Eq)
 
-data Channel = Channel Int Int deriving (Show, Eq)
+data Channel = Channel NodeID NodeID deriving (Show, Eq)
 data Link = Link Channel deriving (Show, Eq)
 
 data Node = Node {
@@ -68,6 +68,8 @@ data Node = Node {
 
 instance Equalizer Node where
     isEqual _ _ = True
+
+channel sourceID destID = Channel (NodeID sourceID) (NodeID destID)
 
 sender nodeID color mana capacity = Node {
     nodeID = NodeID nodeID,
@@ -152,9 +154,13 @@ flowLinks (State nodes channels (link:links)) =
  -- update their mana levels
  -- if this happened, replace them in the nodes pile
 flowLinks state =
-    if ((isJust maybeSource) && (isJust maybeDest) && transferQuantity > 0 && (isJust updatedState))
-        then (fromJust updatedState, True)
-        else (state, False)
+    if ((isJust maybeSource) && (isJust maybeDest))
+        then if ((transferQuantity > 0))
+            then if ((isJust updatedNodes))
+                then (updatedState, True)
+                else error "updatedNodes didn't exist"
+            else (state, False)
+        else error "source or dest not found"
         where (State nodes channels (link:links)) = state
               Link (Channel sourceID destID) = link
               maybeSource = getNode nodes sourceID
@@ -164,13 +170,13 @@ flowLinks state =
               transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
               newSource = source { mana = (mana source) - transferQuantity }
               newDest = dest { mana = (mana dest) + transferQuantity }
-              updatedNodes = (replaceNode source newSource nodes) >>= (replaceNode dest newDest)
+              updatedNodes = (replaceNode sourceID newSource nodes) >>= (replaceNode destID newDest)
               updatedState = State (fromJust updatedNodes) channels (link:links)
               
         
 getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
-getNode (node:nodes) nid | nodeID node == nid = node
+getNode (node:nodes) nid | nodeID node == nid = Just node
                          | otherwise = getNode nodes nid
 
 replaceNode :: NodeID -> Node -> [Node] -> Maybe [Node]
@@ -195,8 +201,8 @@ main = do
                     sender 4 Orange 8 8
                 ]
     let channels = [
-                    Channel 2 4,
-                    Channel 4 2
+                    channel 2 4,
+                    channel 4 2
                    ]
     let state = State nodes channels []
     print $ show $ fromJust $ solve state

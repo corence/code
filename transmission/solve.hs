@@ -85,7 +85,13 @@ converter nodeID inColor outColor mana capacity = (sender nodeID inColor mana ca
 node2 = sender 3 White 4 2
 node3 = converter 3 White Orange 4 2
     
-data State = State [Node] [Channel] [Link] deriving Show
+data State = State [Node] [Channel] [Link]
+
+instance Show State where
+    show (State nodes channels links) = showNodes ++ "\n" ++ showChannels ++ "\n" ++ showLinks
+        where showNodes = "Nodes: " ++ (map (\n -> "\n    " ++ (show n)) nodes)
+              showChannels = "Channels: " ++ (map (\c -> "\n    " ++ (show c)) channels)
+              showLinks = "Links: " ++ (map (\l -> "\n    " ++ (show l)) links)
 
 solve :: State -> Maybe State
 --solve state = do

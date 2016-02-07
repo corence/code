@@ -205,7 +205,9 @@ main = do
                     channel 4 2
                    ]
     let state = State nodes channels []
-    print $ show $ fromJust $ solve state
+    putStrLn $ show state
+    putStrLn "---------" 
+    putStrLn $ show $ fromJust $ solve state
     putStrLn "---"
     putStrLn "---"
     putStrLn $ show $ arrayRemove [1, 2, 3, 4] 3

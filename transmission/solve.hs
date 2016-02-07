@@ -89,9 +89,13 @@ data State = State [Node] [Channel] [Link]
 
 instance Show State where
     show (State nodes channels links) = showNodes ++ "\n" ++ showChannels ++ "\n" ++ showLinks
-        where showNodes = "Nodes: " ++ (map (\n -> "\n    " ++ (show n)) nodes)
-              showChannels = "Channels: " ++ (map (\c -> "\n    " ++ (show c)) channels)
-              showLinks = "Links: " ++ (map (\l -> "\n    " ++ (show l)) links)
+        where showNodes = "Nodes: " ++ showListExploded nodes
+              showChannels = "Channels: " ++ showListExploded channels
+              showLinks = "Links: " ++ showListExploded links
+
+
+showListExploded :: Show a => [a] -> String
+showListExploded things = foldl (++) "" (map (\thing -> ("\n    " ++ (show thing))) things)
 
 solve :: State -> Maybe State
 --solve state = do

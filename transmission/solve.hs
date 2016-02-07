@@ -110,9 +110,15 @@ solve state =
 
 chooseChannel :: State -> Maybe Channel
 chooseChannel (State _ [] _) = Nothing
-chooseChannel state = Just c
-    where Channel lhs rhs = c
+chooseChannel state
+  | colorsMatch && willTransferNonZeroAmount = Just c
+  | otherwise = chooseChannel (State nodes channels links)
+    where Channel sourceID destID = c
+          source = fromJust $ getNode nodes sourceID
+          dest = fromJust $ getNode nodes destID
+          colorsMatch = (outColor source) == (inColor dest)
           State nodes (c:channels) links = state
+          willTransferNonZeroAmount = maxTransferQuantity source dest > 0
           
 linkChannel :: State -> Channel -> Maybe State
 linkChannel state channel = do
@@ -126,40 +132,6 @@ flowLinksRepeated state | changed = flowLinksRepeated newState
                         where (newState, changed) = flowLinks state
 
 flowLinks :: State -> (State, Bool)
-{-
-flowLinks (State nodes channels (link:links)) =
-    (arrayRemove nodes source) >>=
-    (\nodes1 -> arrayRemove nodes1 dest) >>=
-    (\nodes2 -> if transferQuantity > 0
-                    then State (newSource : newDest : nodes2) channels (link:links)
-                    else flowLinks (State nodes channels links)
-                    )
-    
-        where transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
-              source = getNode nodes sourceID
-              dest = getNode nodes destID
-              Link (Channel sourceID destID) = link
-              newSource = source { mana = (mana source) - transferQuantity }
-              newDest = dest {
-                                mana = (mana dest) + transferQuantity,
-                                capacity = (capacity dest) - transferQuantity
-                             }
--}
-
-{-
-flowLinks :: State -> (State, Bool)
-flowLinks (State nodes channels (link:links)) =
-    (getNode nodes sourceID) >>=
-    (\source -> (getNode nodes destID >>=
-        (\dest -> (arrayRemove nodes source >>=
-            (\nodes1 -> arrayRemove nodes1 dest) >>=
-            (\nodes2 -> (
-    
-    (arrayRemove nodes source) >>=
-    (\nodes1 -> arrayRemove nodes1 dest) >>=
-    (\nodes2 -> if transferQuantity > 0
--}
-
  -- get the source and dest nodes
  -- update their mana levels
  -- if this happened, replace them in the nodes pile
@@ -177,13 +149,16 @@ flowLinks state =
               maybeDest = getNode nodes destID
               source = fromJust maybeSource
               dest = fromJust maybeDest
-              transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
+              transferQuantity = maxTransferQuantity source dest
               newSource = source { mana = (mana source) - transferQuantity }
               newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
               updatedNodes = (replaceNode sourceID newSource nodes) >>= (replaceNode destID newDest)
               updatedState = State (fromJust updatedNodes) channels (link:links)
               
         
+maxTransferQuantity :: Node -> Node -> Int
+maxTransferQuantity source dest = max (mana source) (capacityAvailable dest (outColor source))
+              
 getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
 getNode (node:nodes) nid | nodeID node == nid = Just node

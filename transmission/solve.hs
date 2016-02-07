@@ -179,7 +179,7 @@ flowLinks state =
               dest = fromJust maybeDest
               transferQuantity = max (mana source) (capacityAvailable dest (outColor source))
               newSource = source { mana = (mana source) - transferQuantity }
-              newDest = dest { mana = (mana dest) + transferQuantity }
+              newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
               updatedNodes = (replaceNode sourceID newSource nodes) >>= (replaceNode destID newDest)
               updatedState = State (fromJust updatedNodes) channels (link:links)
               

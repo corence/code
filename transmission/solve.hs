@@ -122,7 +122,7 @@ flowLinks state =
               
         
 maxTransferQuantity :: Node -> Node -> Int
-maxTransferQuantity source dest = max (mana source) (capacityAvailable dest (outColor source))
+maxTransferQuantity source dest = min (mana source) (capacityAvailable dest (outColor source))
               
 getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing

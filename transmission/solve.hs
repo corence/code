@@ -1,39 +1,5 @@
 
 import Data.Maybe
---solve state results =
--- | isSuccessful state = state:results
--- | isFailing state = results
--- | otherwise = (solve newState []) : results
-
-{-
-class Node t where
-    inColor :: Color
-    outColor :: Color
-
-instance Node Sender where
-    inColor = 
-
-data Node1 = Node1 {
-                    id :: Int,
-                    nodeType :: NodeType,
-                    inColor :: Color,
-                    outColor :: Color,
-                    mana :: Int,
-                    capacity :: Int,
-                    channels :: [Channel],
-                    links :: [Link]
-                 }
-
-
-                 
-
-data State = State {
-                       
-                   }
-
-
-
-                   -}
 
 arrayRemove :: Eq a => [a] -> a -> Maybe [a]
 arrayRemove [] _ = Nothing
@@ -82,9 +48,6 @@ sender nodeID color mana capacity = Node {
 
 converter nodeID inColor outColor mana capacity = (sender nodeID inColor mana capacity ) {outColor = outColor}
 
-node2 = sender 3 White 4 2
-node3 = converter 3 White Orange 4 2
-    
 data State = State [Node] [Channel] [Link]
 
 instance Show State where
@@ -97,12 +60,11 @@ instance Show State where
 showListExploded :: Show a => [a] -> String
 showListExploded things = foldl (++) "" (map (\thing -> ("\n    " ++ (show thing))) things)
 
+smashJust :: Maybe a -> String -> a
+smashJust Nothing message = error message
+smashJust (Just q) _ = q
+
 solve :: State -> Maybe State
---solve state = do
-    --channel <- chooseChannel state
-    --preFlow <- linkChannel state channel
-    --flowLinksRepeated preFlow
-    
 solve state =
     (chooseChannel state) >>=
     (linkChannel state) >>=
@@ -114,8 +76,8 @@ chooseChannel state
   | colorsMatch && willTransferNonZeroAmount = Just c
   | otherwise = chooseChannel (State nodes channels links)
     where Channel sourceID destID = c
-          source = fromJust $ getNode nodes sourceID
-          dest = fromJust $ getNode nodes destID
+          source = smashJust (getNode nodes sourceID) "source missing in chooseChannel"
+          dest = smashJust (getNode nodes destID) "dest missing in chooseChannel"
           colorsMatch = (outColor source) == (inColor dest)
           State nodes (c:channels) links = state
           willTransferNonZeroAmount = maxTransferQuantity source dest > 0
@@ -147,13 +109,13 @@ flowLinks state =
               Link (Channel sourceID destID) = link
               maybeSource = getNode nodes sourceID
               maybeDest = getNode nodes destID
-              source = fromJust maybeSource
-              dest = fromJust maybeDest
+              source = smashJust maybeSource "source missing in flowLinks"
+              dest = smashJust maybeDest "dest missing in flowLinks"
               transferQuantity = maxTransferQuantity source dest
               newSource = source { mana = (mana source) - transferQuantity }
               newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
               updatedNodes = (replaceNode sourceID newSource nodes) >>= (replaceNode destID newDest)
-              updatedState = State (fromJust updatedNodes) channels (link:links)
+              updatedState = State (smashJust updatedNodes "Nodes didn't update in flowLinks") channels (link:links)
               
         
 maxTransferQuantity :: Node -> Node -> Int
@@ -182,7 +144,7 @@ addLink (State nodes channels links) link = State nodes channels (link:links)
 
 main = do
     let nodes = [
-                    sender 2 White 3 4,
+                    sender 2 Orange 3 4,
                     sender 4 Orange 8 8
                 ]
     let channels = [
@@ -192,7 +154,4 @@ main = do
     let state = State nodes channels []
     putStrLn $ show state
     putStrLn "---------" 
-    putStrLn $ show $ fromJust $ solve state
-    putStrLn "---"
-    putStrLn "---"
-    putStrLn $ show $ arrayRemove [1, 2, 3, 4] 3
+    putStrLn $ show $ smashJust (solve state) "State didn't get solved in main"

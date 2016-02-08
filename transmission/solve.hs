@@ -20,7 +20,10 @@ instance Equalizer Bool where
 data NodeID = NodeID Int deriving (Show, Eq)
 data NodeType = Sender | Receiver deriving (Show, Eq)
 
-data Channel = Channel NodeID NodeID deriving (Show, Eq)
+data Channel = Channel NodeID NodeID deriving (Eq)
+instance Show Channel where
+    show (Channel (NodeID sourceID) (NodeID destID)) = "{" ++ show sourceID ++ "->" ++ show destID ++ "}"
+    
 data Link = Link Channel deriving (Show, Eq)
 
 data Node = Node {

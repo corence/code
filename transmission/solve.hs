@@ -85,37 +85,38 @@ smashJust :: Maybe a -> String -> a
 smashJust Nothing message = error message
 smashJust (Just q) _ = q
 
-solve :: State -> State
-solve state | isJust newState = fromJust newState
-            | otherwise = state
-            where newState = solveStep state
+solveStep :: State -> [State]
+solveStep state = map flowLinksRepeated linkedStates
+    where linkedStates = map (linkChannel state) chosenChannels
+          chosenChannels = chooseChannel state
+    
+listContains :: Eq a => [a] -> a -> Bool
+listContains [] _ = False
+listContains (x:xs) element = (x == element) || (listContains xs element)
 
-solveStep :: State -> Maybe State
-solveStep state =
-    (chooseChannel state) >>=
-    (linkChannel state) >>=
-    flowLinksRepeated
 
-chooseChannel :: State -> Maybe Channel
-chooseChannel (State _ [] _) = Nothing
-chooseChannel state
-  | colorsMatch && willTransferNonZeroAmount = Just c
-  | otherwise = chooseChannel (State nodes channels links)
-    where Channel sourceID destID = c
+chooseChannel :: State -> [Channel]
+chooseChannel (State _ [] _) = []
+chooseChannel (State nodes (c:channels) links)
+  | outColor source /= inColor dest = otherChannels
+  | maxTransferQuantity source dest <= 0 = otherChannels
+  | listContains links (Channel destID sourceID) = otherChannels
+  | otherwise = c : otherChannels
+    where otherChannels = chooseChannel (State nodes channels links)
+          Channel sourceID destID = c
           source = smashJust (getNode nodes sourceID) "source missing in chooseChannel"
           dest = smashJust (getNode nodes destID) "dest missing in chooseChannel"
-          colorsMatch = (outColor source) == (inColor dest)
-          State nodes (c:channels) links = state
-          willTransferNonZeroAmount = maxTransferQuantity source dest > 0
-          
-linkChannel :: State -> Channel -> Maybe State
-linkChannel state channel = do
-    newChannels <- arrayRemove channels channel
-    return (State nodes newChannels (channel:links))
+
+linkChannel :: State -> Channel -> State
+linkChannel state channel =
+    case (arrayRemove channels channel) of
+        Nothing -> error "tried to link non-existent channel"
+        Just newChannels -> State nodes newChannels (channel:links)
         where State nodes channels links = state
 
+flowLinksRepeated :: State -> State
 flowLinksRepeated state | changed = flowLinksRepeated newState
-                        | otherwise = Just newState
+                        | otherwise = newState
                         where (newState, changed) = flowLinks state
 
 flowLinks :: State -> (State, Bool)
@@ -219,11 +220,11 @@ solveSamplePuzzle = do
     let state = State nodes channels []
     putStrLn $ show state
     putStrLn "---------" 
-    putStrLn $ show $ smashJust (solveStep state) "State didn't get solved in main"
+    putStrLn $ show $ (solveStep state)
     putStrLn "---------" 
 
 solvePuzzle initialState = showListExploded "\n" states
-                           where states = solveGood initialState
+                           where states = solveStep initialState
 
 solveRealPuzzle = solvePuzzle initialState
                   where initialState = State nodes channels []
@@ -237,7 +238,19 @@ solveRealPuzzle = solvePuzzle initialState
                                    ]
 
 
-solveGood :: State -> [State]
-solveGood state = case (solveStep state) of
-    Nothing -> [state]
-    Just s -> state : solveGood s
+-- given a state, return a list of all Winning states that it generates
+solve :: State -> [State]
+solve state = foldl (++) []
+                  (map (\s ->
+                      let (State nodes _ _) = s in
+                          if (winner nodes)
+                               then [s]
+                               else solveStep s)
+                      (solveStep state))
+    
+
+winner :: [Node] -> Bool
+winner [] = True
+winner (n:nodes) = if (capacity n == 0)
+    then winner nodes
+    else False

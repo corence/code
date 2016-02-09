@@ -33,7 +33,8 @@ data Node = Node {
     inColor :: Color,
     outColor :: Color,
     mana :: Int,
-    capacity :: Int
+    capacity :: Int,
+    starCount :: Int
 }
 instance Show Node where
     show node =
@@ -42,12 +43,28 @@ instance Show Node where
                 (show $ nodeID node) ++ " " ++
                 (show $ mana node) ++ "/" ++ (show $ capacity node) ++ " " ++
                 (show $ outColor node) ++
+                (if (starCount node > 0) then (" *" ++ (show $ starCount node) ++ "*") else "") ++
                 "}"
 
 instance Equalizer Node where
     isEqual _ _ = True
 
-channel sourceID destID = Channel (NodeID sourceID) (NodeID destID)
+makeChannels :: [Node] -> [(Int, [Int])] -> [Channel]
+makeChannels _ [] = []
+makeChannels nodes ((sourceID, destIDs):recipes) = (makeChannelPairs sourceID destIDs) ++ (makeChannels nodes recipes)
+    where makeChannelPairs sourceID destIDs =
+              concat $ map (\destID -> catMaybes [(tryMakeChannel sourceID destID), (tryMakeChannel destID sourceID)]) destIDs
+                  where tryMakeChannel sourceID destID
+                          | sourceID == destID = Nothing
+                          | (nodeType source) == Receiver = Nothing
+                          | otherwise = Just (channel sourceID destID)
+                          where source = smashJust (getNode nodes (NodeID sourceID)) "source missing in makeChannels"
+                                dest = smashJust (getNode nodes (NodeID destID)) "dest missing in makeChannels"
+
+channel :: Int -> Int -> Channel
+channel sourceID destID = if sourceID == destID
+    then error $ "channel can't have sourceID = " ++ (show sourceID) ++ " and destID = " ++ (show destID)
+    else Channel (NodeID sourceID) (NodeID destID)
 
 receiver nodeID color capacity = Node {
     nodeID = NodeID nodeID,
@@ -55,16 +72,20 @@ receiver nodeID color capacity = Node {
     inColor = color,
     outColor = Void,
     mana = 0,
-    capacity = capacity
+    capacity = capacity,
+    starCount = 0
 }
 
-sender nodeID color mana capacity = Node {
+sender nodeID color mana capacity = starSender nodeID color mana capacity 0
+
+starSender nodeID color mana capacity starCount = Node {
     nodeID = NodeID nodeID,
     nodeType = Sender,
     inColor = color,
     outColor = color,
     mana = mana,
-    capacity = capacity
+    capacity = capacity,
+    starCount = starCount
 }
 
 converter nodeID inColor outColor mana capacity = (sender nodeID inColor mana capacity ) {outColor = outColor}
@@ -249,11 +270,32 @@ puzzle2_3 = State nodes channels []
                                  channel 3 4,
                                  channel 3 5
                              ]
+
+puzzle3_12 = State nodes channels []
+            where nodes = [
+                              sender 1 Blue 0 2,
+                              sender 2 Blue 1 0,
+                              sender 3 Blue 1 1,
+                              sender 4 Blue 0 5,
+                              sender 5 Blue 0 2,
+                              receiver 6 Blue 1,
+                              starSender 7 Blue 0 2 1
+                          ]
+                  channels = makeChannels nodes [
+                                 (1, [2, 3, 4, 5, 6]),
+                                 (2, [3, 4, 5, 7]),
+                                 (3, [4, 6, 7]),
+                                 (4, [5, 6, 7]),
+                                 (5, [6, 7]),
+                                 (6, [7])
+                             ]
     
 main = do
     --solveSamplePuzzle
     --putStrLn solveRealPuzzle
     --putStrLn $ solvePuzzle puzzle2_1
-    putStrLn $ solvePuzzle puzzle2_3
-    putStrLn $ show $ length $ solve puzzle2_3
+    --putStrLn $ solvePuzzle puzzle2_3
+    --putStrLn $ show $ length $ solve puzzle2_3
+    putStrLn $ solvePuzzle puzzle3_12
+    putStrLn $ show $ length $ solve puzzle3_12
 

@@ -7,7 +7,7 @@ arrayRemove (x:xs) q | q == x = Just xs
                      | otherwise = (arrayRemove xs q) >>= (\result -> Just (x:result))
                      
 
-data Color = White | Orange | Blue deriving (Show, Eq)
+data Color = White | Orange | Blue | Void deriving (Show, Eq)
 
 class Equalizer a where
     isEqual :: a -> a -> Bool
@@ -50,6 +50,15 @@ instance Equalizer Node where
     isEqual _ _ = True
 
 channel sourceID destID = Channel (NodeID sourceID) (NodeID destID)
+
+receiver nodeID color capacity = Node {
+    nodeID = NodeID nodeID,
+    nodeType = Receiver,
+    inColor = color,
+    outColor = Void,
+    mana = 0,
+    capacity = capacity
+}
 
 sender nodeID color mana capacity = Node {
     nodeID = NodeID nodeID,
@@ -162,8 +171,22 @@ addChannel (State nodes channels links) channel = State nodes (channel:channels)
 addLink (State nodes channels links) link = State nodes channels (link:links)
 
 main = do
-    solveSamplePuzzle
-    putStrLn solveRealPuzzle
+    --solveSamplePuzzle
+    --putStrLn solveRealPuzzle
+    putStrLn $ solvePuzzle puzzle2_1
+
+puzzle2_1 = State nodes channels []
+            where nodes = [
+                              sender 1 White 1 1,
+                              sender 2 White 0 1,
+                              receiver 3 White 1
+                          ]
+                  channels = [
+                                 channel 1 2,
+                                 channel 2 1,
+                                 channel 1 3,
+                                 channel 2 3
+                             ]
     
 solveSamplePuzzle = do
     let nodes = [
@@ -180,7 +203,10 @@ solveSamplePuzzle = do
     putStrLn $ show $ smashJust (solveStep state) "State didn't get solved in main"
     putStrLn "---------" 
 
-solveRealPuzzle = showListExploded "\n" states
+solvePuzzle initialState = showListExploded "\n" states
+                           where states = solveGood initialState
+
+solveRealPuzzle = solvePuzzle initialState
                   where initialState = State nodes channels []
                         nodes = [
                                     sender 2 Orange 3 4,
@@ -190,7 +216,6 @@ solveRealPuzzle = showListExploded "\n" states
                                         channel 2 4,
                                         channel 4 2
                                    ]
-                        states = solveGood initialState
 
 
 solveGood :: State -> [State]

@@ -67,8 +67,13 @@ smashJust :: Maybe a -> String -> a
 smashJust Nothing message = error message
 smashJust (Just q) _ = q
 
-solve :: State -> Maybe State
-solve state =
+solve :: State -> State
+solve state | isJust newState = fromJust newState
+            | otherwise = state
+            where newState = solveStep state
+
+solveStep :: State -> Maybe State
+solveStep state =
     (chooseChannel state) >>=
     (linkChannel state) >>=
     flowLinksRepeated
@@ -146,6 +151,10 @@ addChannel (State nodes channels links) channel = State nodes (channel:channels)
 addLink (State nodes channels links) link = State nodes channels (link:links)
 
 main = do
+    solveSamplePuzzle
+    putStrLn solveRealPuzzle
+    
+solveSamplePuzzle = do
     let nodes = [
                     sender 2 Orange 3 4,
                     sender 4 Orange 8 8
@@ -157,4 +166,22 @@ main = do
     let state = State nodes channels []
     putStrLn $ show state
     putStrLn "---------" 
-    putStrLn $ show $ smashJust (solve state) "State didn't get solved in main"
+    putStrLn $ show $ smashJust (solveStep state) "State didn't get solved in main"
+
+solveRealPuzzle = showListExploded states
+                  where initialState = State nodes channels []
+                        nodes = [
+                                    sender 2 Orange 3 4,
+                                    sender 4 Orange 8 8
+                                ]
+                        channels = [
+                                        channel 2 4,
+                                        channel 4 2
+                                   ]
+                        states = solveGood initialState
+
+
+solveGood :: State -> [State]
+solveGood state = case (solveStep state) of
+    Nothing -> [state]
+    Just s -> state : solveGood s

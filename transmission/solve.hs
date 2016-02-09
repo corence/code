@@ -21,7 +21,7 @@ data NodeID = NodeID Int deriving (Eq)
 instance Show NodeID where
     show (NodeID nid) = "#" ++ (show nid)
 
-data NodeType = Sender | Receiver deriving (Show, Eq)
+data NodeType = Sender | Receiver | Broadcaster deriving (Show, Eq)
 
 data Channel = Channel NodeID NodeID deriving (Eq)
 instance Show Channel where
@@ -51,7 +51,7 @@ instance Equalizer Node where
 
 makeChannels :: [Node] -> [(Int, [Int])] -> [Channel]
 makeChannels _ [] = []
-makeChannels nodes ((sourceID, destIDs):recipes) = (makeChannelPairs sourceID destIDs) ++ (makeChannels nodes recipes)
+makeChannels nodes ((sourceID, destIDs):recipes) = (createChannelPairs sourceID destIDs) ++ (makeChannels nodes recipes)
     where makeChannelPairs sourceID destIDs =
               concat $ map (\destID -> catMaybes [(tryMakeChannel sourceID destID), (tryMakeChannel destID sourceID)]) destIDs
                   where tryMakeChannel sourceID destID
@@ -60,6 +60,12 @@ makeChannels nodes ((sourceID, destIDs):recipes) = (makeChannelPairs sourceID de
                           | otherwise = Just (channel sourceID destID)
                           where source = smashJust (getNode nodes (NodeID sourceID)) "source missing in makeChannels"
                                 dest = smashJust (getNode nodes (NodeID destID)) "dest missing in makeChannels"
+          createChannelPairs sourceID destIDs = concat (map (\destID -> [(tryMakeChannel source dest True), (tryMakeChannel dest source False)]) destIDs)
+              where source = smashJust (getNode nodes sourceID) "source missing in makeChannels"
+                    dest = smashJust (getNode nodes destID) "dest missing in makeChannels"
+                    tryMakeChannel source dest isDirect
+                      | (isDirect || canReciprocate (nodeType dest)) = Just (Channel (nodeID sourceID) (nodeID destID))
+                      | otherwise = Nothing
 
 channel :: Int -> Int -> Channel
 channel sourceID destID = if sourceID == destID
@@ -77,6 +83,16 @@ receiver nodeID color capacity = Node {
 }
 
 sender nodeID color mana capacity = starSender nodeID color mana capacity 0
+
+broadcaster nodeID color = Node {
+    nodeID = NodeID nodeID,
+    nodeType = Broadcaster,
+    inColor = color,
+    outColor = color,
+    mana = 0,
+    capacity = 0,
+    starCount = 0
+}
 
 starSender nodeID color mana capacity starCount = Node {
     nodeID = NodeID nodeID,
@@ -208,9 +224,8 @@ solveSamplePuzzle = do
 solvePuzzle initialState = showListExploded "\n" states
                            where states = solve initialState
 
-solveRealPuzzle = solvePuzzle initialState
-                  where initialState = State nodes channels []
-                        nodes = [
+samplePuzzle2 = State nodes channels []
+                  where nodes = [
                                     sender 2 Orange 3 4,
                                     sender 4 Orange 8 8
                                 ]
@@ -289,13 +304,37 @@ puzzle3_12 = State nodes channels []
                                  (5, [6, 7]),
                                  (6, [7])
                              ]
+
+puzzle4_7 = State nodes channels []
+            where nodes = [
+                              sender 1 White 0 4,
+                              starSender 2 White 0 2 1,
+                              sender 3 White 1 2,
+                              broadcaster 4 White,
+                              sender 5 White 1 1,
+                              receiver 6 White 2,
+                              sender 7 White 1 1,
+                              sender 8 White 0 2
+                          ]
+                  channels = makeChannels nodes [
+                                 (1, [2, 3, 6, 7]),
+                                 (2, [3, 4, 5, 7, 8]),
+                                 (3, [4, 6, 7]),
+                                 (4, [3, 5, 7]),
+                                 (5, [4, 6, 7, 8]),
+                                 (7, [4, 8])
+                             ]
+
+
     
 main = do
     --solveSamplePuzzle
-    --putStrLn solveRealPuzzle
-    --putStrLn $ solvePuzzle puzzle2_1
-    --putStrLn $ solvePuzzle puzzle2_3
-    --putStrLn $ show $ length $ solve puzzle2_3
-    putStrLn $ solvePuzzle puzzle3_12
-    putStrLn $ show $ length $ solve puzzle3_12
-
+    
+    --let puzzle = samplePuzzle2
+    --let puzzle = puzzle2_1
+    --let puzzle = puzzle2_3
+    --let puzzle = puzzle3_12
+    let puzzle = puzzle4_7
+    
+    putStrLn $ solvePuzzle puzzle
+    putStrLn $ show $ length $ solve puzzle

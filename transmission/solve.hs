@@ -27,10 +27,6 @@ data Channel = Channel NodeID NodeID deriving (Eq)
 instance Show Channel where
     show (Channel (NodeID sourceID) (NodeID destID)) = "{" ++ show sourceID ++ "->" ++ show destID ++ "}"
     
-data Link = Link Channel deriving (Eq)
-instance Show Link where
-    show (Link channel) = show channel
-
 data Node = Node {
     nodeID :: NodeID,
     nodeType :: NodeType,
@@ -73,7 +69,7 @@ sender nodeID color mana capacity = Node {
 
 converter nodeID inColor outColor mana capacity = (sender nodeID inColor mana capacity ) {outColor = outColor}
 
-data State = State [Node] [Channel] [Link]
+data State = State [Node] [Channel] [Channel]
 
 instance Show State where
     show (State nodes channels links) = showNodes ++ showChannels ++ showLinks
@@ -114,9 +110,8 @@ chooseChannel state
           
 linkChannel :: State -> Channel -> Maybe State
 linkChannel state channel = do
-    let link = Link channel
     newChannels <- arrayRemove channels channel
-    return (State nodes newChannels (link:links))
+    return (State nodes newChannels (channel:links))
         where State nodes channels links = state
 
 flowLinksRepeated state | changed = flowLinksRepeated newState
@@ -136,7 +131,7 @@ flowLinks state =
             else (state, False)
         else error "source or dest not found"
         where (State nodes channels (link:links)) = state
-              Link (Channel sourceID destID) = link
+              Channel sourceID destID = link
               maybeSource = getNode nodes sourceID
               maybeDest = getNode nodes destID
               source = smashJust maybeSource "source missing in flowLinks"

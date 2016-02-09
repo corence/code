@@ -1,0 +1,5 @@
+
+ - 3_12 is solved! it's quite slow, but under a minute.
+ - bonuses: stars and crossed streams
+ - more puzzle types: broadcasters, teleporters, converters and doublers
+ - use the type system -- remove the Node type and add a Node type class -- so we don't need to worry about missing a node type in a switch somewhere

@@ -27,7 +27,9 @@ data Channel = Channel NodeID NodeID deriving (Eq)
 instance Show Channel where
     show (Channel (NodeID sourceID) (NodeID destID)) = "{" ++ show sourceID ++ "->" ++ show destID ++ "}"
     
-data Link = Link Channel deriving (Show, Eq)
+data Link = Link Channel deriving (Eq)
+instance Show Link where
+    show (Link channel) = show channel
 
 data Node = Node {
     nodeID :: NodeID,

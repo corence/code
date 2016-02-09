@@ -171,6 +171,7 @@ main = do
     --solveSamplePuzzle
     --putStrLn solveRealPuzzle
     putStrLn $ solvePuzzle puzzle2_1
+    --putStrLn $ solvePuzzle puzzle2_3
 
 puzzle2_1 = State nodes channels []
             where nodes = [
@@ -180,9 +181,30 @@ puzzle2_1 = State nodes channels []
                           ]
                   channels = [
                                  channel 1 2,
-                                 channel 2 1,
                                  channel 1 3,
+                                 channel 2 1,
                                  channel 2 3
+                             ]
+
+puzzle2_3 = State nodes channels []
+            where nodes = [
+                              sender 1 White 1 1,
+                              sender 2 White 1 1,
+                              sender 3 White 0 2,
+                              receiver 4 White 1,
+                              receiver 5 White 1
+                          ]
+                  channels = [
+                                 channel 1 2,
+                                 channel 1 3,
+                                 channel 1 4,
+                                 channel 2 1,
+                                 channel 2 3,
+                                 channel 2 5,
+                                 channel 3 1,
+                                 channel 3 2,
+                                 channel 3 4,
+                                 channel 3 5
                              ]
     
 solveSamplePuzzle = do

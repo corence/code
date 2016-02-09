@@ -17,7 +17,10 @@ instance Equalizer Bool where
     isEqual False False = True
     isEqual _ _ = False
 
-data NodeID = NodeID Int deriving (Show, Eq)
+data NodeID = NodeID Int deriving (Eq)
+instance Show NodeID where
+    show (NodeID nid) = "#" ++ (show nid)
+
 data NodeType = Sender | Receiver deriving (Show, Eq)
 
 data Channel = Channel NodeID NodeID deriving (Eq)
@@ -33,7 +36,15 @@ data Node = Node {
     outColor :: Color,
     mana :: Int,
     capacity :: Int
-} deriving Show
+}
+instance Show Node where
+    show node =
+                "{" ++
+                (show $ nodeType node) ++ " " ++
+                (show $ nodeID node) ++ " " ++
+                (show $ mana node) ++ "/" ++ (show $ capacity node) ++ " " ++
+                (show $ outColor node) ++
+                "}"
 
 instance Equalizer Node where
     isEqual _ _ = True
@@ -54,14 +65,14 @@ converter nodeID inColor outColor mana capacity = (sender nodeID inColor mana ca
 data State = State [Node] [Channel] [Link]
 
 instance Show State where
-    show (State nodes channels links) = showNodes ++ "\n" ++ showChannels ++ "\n" ++ showLinks
-        where showNodes = "Nodes: " ++ showListExploded nodes
-              showChannels = "Channels: " ++ showListExploded channels
-              showLinks = "Links: " ++ showListExploded links
+    show (State nodes channels links) = showNodes ++ showChannels ++ showLinks
+        where showNodes = "Nodes: " ++ showListExploded "\n    " nodes
+              showChannels = "Channels: " ++ showListExploded "\n    " channels
+              showLinks = "Links: " ++ showListExploded "\n    " links
 
 
-showListExploded :: Show a => [a] -> String
-showListExploded things = foldl (++) "" (map (\thing -> ("\n    " ++ (show thing))) things)
+showListExploded :: Show a => String -> [a] -> String
+showListExploded indent things = (foldl (++) "" (map (\thing -> (indent ++ (show thing))) things)) ++ "\n"
 
 smashJust :: Maybe a -> String -> a
 smashJust Nothing message = error message
@@ -167,8 +178,9 @@ solveSamplePuzzle = do
     putStrLn $ show state
     putStrLn "---------" 
     putStrLn $ show $ smashJust (solveStep state) "State didn't get solved in main"
+    putStrLn "---------" 
 
-solveRealPuzzle = showListExploded states
+solveRealPuzzle = showListExploded "\n" states
                   where initialState = State nodes channels []
                         nodes = [
                                     sender 2 Orange 3 4,

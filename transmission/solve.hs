@@ -99,6 +99,7 @@ chooseChannel :: State -> [Channel]
 chooseChannel (State _ [] _) = []
 chooseChannel (State nodes (c:channels) links)
   | outColor source /= inColor dest = otherChannels
+  | mana source <= 0 = otherChannels
   | maxTransferQuantity source dest <= 0 = otherChannels
   | listContains links (Channel destID sourceID) = otherChannels
   | otherwise = c : otherChannels
@@ -168,46 +169,6 @@ addNode node (State nodes channels links) = State (node:nodes) channels links
 addChannel (State nodes channels links) channel = State nodes (channel:channels) links
 addLink (State nodes channels links) link = State nodes channels (link:links)
 
-main = do
-    --solveSamplePuzzle
-    --putStrLn solveRealPuzzle
-    putStrLn $ solvePuzzle puzzle2_1
-    --putStrLn $ solvePuzzle puzzle2_3
-
-puzzle2_1 = State nodes channels []
-            where nodes = [
-                              sender 1 White 1 1,
-                              sender 2 White 0 1,
-                              receiver 3 White 1
-                          ]
-                  channels = [
-                                 channel 1 2,
-                                 channel 1 3,
-                                 channel 2 1,
-                                 channel 2 3
-                             ]
-
-puzzle2_3 = State nodes channels []
-            where nodes = [
-                              sender 1 White 1 1,
-                              sender 2 White 1 1,
-                              sender 3 White 0 2,
-                              receiver 4 White 1,
-                              receiver 5 White 1
-                          ]
-                  channels = [
-                                 channel 1 2,
-                                 channel 1 3,
-                                 channel 1 4,
-                                 channel 2 1,
-                                 channel 2 3,
-                                 channel 2 5,
-                                 channel 3 1,
-                                 channel 3 2,
-                                 channel 3 4,
-                                 channel 3 5
-                             ]
-    
 solveSamplePuzzle = do
     let nodes = [
                     sender 2 Orange 3 4,
@@ -220,11 +181,11 @@ solveSamplePuzzle = do
     let state = State nodes channels []
     putStrLn $ show state
     putStrLn "---------" 
-    putStrLn $ show $ (solveStep state)
+    putStrLn $ show $ (solve state)
     putStrLn "---------" 
 
 solvePuzzle initialState = showListExploded "\n" states
-                           where states = solveStep initialState
+                           where states = solve initialState
 
 solveRealPuzzle = solvePuzzle initialState
                   where initialState = State nodes channels []
@@ -245,7 +206,7 @@ solve state = foldl (++) []
                       let (State nodes _ _) = s in
                           if (winner nodes)
                                then [s]
-                               else solveStep s)
+                               else solve s)
                       (solveStep state))
     
 
@@ -254,3 +215,45 @@ winner [] = True
 winner (n:nodes) = if (capacity n == 0)
     then winner nodes
     else False
+        
+puzzle2_1 = State nodes channels []
+            where nodes = [
+                              sender 1 White 1 0,
+                              sender 2 White 0 1,
+                              receiver 3 White 1
+                          ]
+                  channels = [
+                                 channel 1 2,
+                                 channel 1 3,
+                                 channel 2 1,
+                                 channel 2 3
+                             ]
+
+puzzle2_3 = State nodes channels []
+            where nodes = [
+                              sender 1 White 1 0,
+                              sender 2 White 1 0,
+                              sender 3 White 0 2,
+                              receiver 4 White 1,
+                              receiver 5 White 1
+                          ]
+                  channels = [
+                                 channel 1 2,
+                                 channel 1 3,
+                                 channel 1 4,
+                                 channel 2 1,
+                                 channel 2 3,
+                                 channel 2 5,
+                                 channel 3 1,
+                                 channel 3 2,
+                                 channel 3 4,
+                                 channel 3 5
+                             ]
+    
+main = do
+    --solveSamplePuzzle
+    --putStrLn solveRealPuzzle
+    --putStrLn $ solvePuzzle puzzle2_1
+    putStrLn $ solvePuzzle puzzle2_3
+    putStrLn $ show $ length $ solve puzzle2_3
+

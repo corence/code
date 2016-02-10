@@ -61,7 +61,7 @@ makeChannels nodes (r:recipes) = (createChannelPairs sourceID destIDs) ++ (makeC
                             dest = smashJust (getNode nodes destID) "couldn't get dest in createChannelPair"
                             tryMakeChannel :: Node -> Node -> Bool -> Maybe Channel
                             tryMakeChannel source dest isDirect
-                              | (isDirect || canReciprocate (nodeType dest)) = Just (Channel sourceID destID)
+                              | (isDirect || (canReciprocate (nodeType dest) && canReciprocate (nodeType source))) = Just (Channel sourceID destID)
                               | otherwise = Nothing
                             canReciprocate Sender = True
                             canReciprocate Receiver = False

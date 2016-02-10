@@ -51,21 +51,22 @@ instance Equalizer Node where
 
 makeChannels :: [Node] -> [(Int, [Int])] -> [Channel]
 makeChannels _ [] = []
-makeChannels nodes ((sourceID, destIDs):recipes) = (createChannelPairs sourceID destIDs) ++ (makeChannels nodes recipes)
-    where makeChannelPairs sourceID destIDs =
-              concat $ map (\destID -> catMaybes [(tryMakeChannel sourceID destID), (tryMakeChannel destID sourceID)]) destIDs
-                  where tryMakeChannel sourceID destID
-                          | sourceID == destID = Nothing
-                          | (nodeType source) == Receiver = Nothing
-                          | otherwise = Just (channel sourceID destID)
-                          where source = smashJust (getNode nodes (NodeID sourceID)) "source missing in makeChannels"
-                                dest = smashJust (getNode nodes (NodeID destID)) "dest missing in makeChannels"
-          createChannelPairs sourceID destIDs = concat (map (\destID -> [(tryMakeChannel source dest True), (tryMakeChannel dest source False)]) destIDs)
-              where source = smashJust (getNode nodes sourceID) "source missing in makeChannels"
-                    dest = smashJust (getNode nodes destID) "dest missing in makeChannels"
-                    tryMakeChannel source dest isDirect
-                      | (isDirect || canReciprocate (nodeType dest)) = Just (Channel (nodeID sourceID) (nodeID destID))
-                      | otherwise = Nothing
+makeChannels nodes (r:recipes) = (createChannelPairs sourceID destIDs) ++ (makeChannels nodes recipes)
+    where (sourceID, destIDs) = r
+          createChannelPairs :: Int -> [Int] -> [Channel]
+          createChannelPairs sourceID destIDs = concat (map (\destID -> (createChannelPair (NodeID sourceID) (NodeID destID))) destIDs)
+              where createChannelPair :: NodeID -> NodeID -> [Channel]
+                    createChannelPair sourceID destID = catMaybes [(tryMakeChannel source dest True), (tryMakeChannel dest source False)]
+                      where source = smashJust (getNode nodes sourceID) "couldn't get source in createChannelPair"
+                            dest = smashJust (getNode nodes destID) "couldn't get dest in createChannelPair"
+                            tryMakeChannel :: Node -> Node -> Bool -> Maybe Channel
+                            tryMakeChannel source dest isDirect
+                              | (isDirect || canReciprocate (nodeType dest)) = Just (Channel sourceID destID)
+                              | otherwise = Nothing
+                            canReciprocate Sender = True
+                            canReciprocate Receiver = False
+                            canReciprocate Broadcaster = False
+
 
 channel :: Int -> Int -> Channel
 channel sourceID destID = if sourceID == destID

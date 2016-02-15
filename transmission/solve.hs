@@ -85,6 +85,8 @@ tryMakeChannel source dest isDirect
 
 canReciprocate :: NodeType -> Bool
 canReciprocate Sender = True
+canReciprocate Broadcaster = False
+canReciprocate Receiver = False
 
 channel :: Int -> Int -> Channel
 channel sourceID destID = if sourceID == destID

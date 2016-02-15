@@ -178,6 +178,45 @@ flowLinksRepeated state | changed = flowLinksRepeated newState
                         | otherwise = newState
                         where (newState, changed) = flowLinks state
 
+tryFlow state source = case (nodeType source) of
+  Sender -> tryFlowOneChannel state source links
+      where State _ _ links = state
+  Broadcaster -> tryFlowAllChannels state source
+  Receiver -> error "why is the receiver trying to send?"
+
+tryFlowAllChannels state source
+  | mana source <= 0 = Nothing
+  | links == [] = Nothing
+  -- | none_can_receive = Nothing
+  | otherwise = map tryFlowEinChannel links
+      where State _ _ links = state
+
+tryFlowEachChannel state source
+  | manaQuantity < 0 = Nothing
+  | 1==2 = (replaceNodes nodes (map (tryFlow source manaQuantity) dests)) >>= 
+                (\nodes1 -> replaceNodes nodes1 newSource) >>=
+                (\newNodes -> State newNodes channels links)
+      where manaQuantity = (mana source)
+            State nodes channels links = state
+            dests = map (\Channel _ destID -> smashJust (getNode nodes destID) "can't find a dest in tryFlowEachChannel") links
+
+tryFlowOneChannel _ _ [] = Nothing
+tryFlowOneChannel state source (channel:links)
+  | mana source <= 0 = Nothing
+  | transferQuantity <= 0 = tryFlowOneChannel state source links
+  | otherwise = flowOneChannel state source dest
+      where transferQuantity = maxTransferQuantity source dest
+            dest = smashJust (getNode nodes destID)
+            State nodes _ _ = state
+            Channel _ destID = channel
+
+flowOneChannel state source dest = (replaceNode (nodeID source) newSource nodes) >>= (replaceNode (nodeID dest) newDest)
+      where transferQuantity = maxTransferQuantity source dest
+            newSource = source { mana = (mana source) - transferQuantity }
+            newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
+            State nodes _ _ = state
+    
+ 
 flowLinks :: State -> (State, Bool)
  -- get the source and dest nodes
  -- update their mana levels
@@ -210,6 +249,15 @@ getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
 getNode (node:nodes) nid | nodeID node == nid = Just node
                          | otherwise = getNode nodes nid
+
+replaceNodes :: 
+
+replaceNode2 :: Node -> [Node] -> Maybe [Node]
+replaceNode2 _ [] = Nothing
+replaceNode2 replacementNode (node:nodes)
+  | (nodeID node) == targetNid = Just (replacementNode:nodes)
+  | otherwise = (replaceNode2 targetNid replacementNode nodes) >>= (\newNodes -> return (node:newNodes))
+      where targetNid = nodeID replacementNode
 
 replaceNode :: NodeID -> Node -> [Node] -> Maybe [Node]
 replaceNode _ _ [] = Nothing

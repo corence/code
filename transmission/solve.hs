@@ -49,24 +49,42 @@ instance Show Node where
 instance Equalizer Node where
     isEqual _ _ = True
 
-makeChannels :: [Node] -> [(Int, [Int])] -> [Channel]
-makeChannels _ [] = []
-makeChannels nodes (r:recipes) = (createChannelPairs sourceID destIDs) ++ (makeChannels nodes recipes)
-    where (sourceID, destIDs) = r
-          createChannelPairs :: Int -> [Int] -> [Channel]
-          createChannelPairs sourceID destIDs = concat (map (\destID -> (createChannelPair (NodeID sourceID) (NodeID destID))) destIDs)
-              where createChannelPair :: NodeID -> NodeID -> [Channel]
-                    createChannelPair sourceID destID = catMaybes [(tryMakeChannel source dest True), (tryMakeChannel dest source False)]
-                      where source = smashJust (getNode nodes sourceID) "couldn't get source in createChannelPair"
-                            dest = smashJust (getNode nodes destID) "couldn't get dest in createChannelPair"
-                            tryMakeChannel :: Node -> Node -> Bool -> Maybe Channel
-                            tryMakeChannel source dest isDirect
-                              | (isDirect || (canReciprocate (nodeType dest) && canReciprocate (nodeType source))) = Just (Channel sourceID destID)
-                              | otherwise = Nothing
-                            canReciprocate Sender = True
-                            canReciprocate Receiver = False
-                            canReciprocate Broadcaster = False
+data Recipe = Recipe NodeID [NodeID]
 
+makeChannels :: [Node] -> [(Int, [Int])] -> [Channel]
+makeChannels nodes rawRecipes = makeChannelsForRecipes nodes recipes
+                                    where recipes = map makeRecipe rawRecipes
+
+makeRecipe :: (Int, [Int]) -> Recipe
+makeRecipe (rawSource, rawDests) = Recipe source dests
+                                       where source = NodeID rawSource
+                                             dests = map NodeID rawDests
+
+makeChannelsForRecipes :: [Node] -> [Recipe] -> [Channel]
+makeChannelsForRecipes nodes recipes = concat (map (makeChannelsForRecipe nodes) recipes)
+
+-- make up to 2 channels for each pair of nodes
+makeChannelsForRecipe :: [Node] -> Recipe -> [Channel]
+makeChannelsForRecipe nodes recipe = concat (map (makeChannelPairFromIDs nodes sourceID) destIDs)
+                                     where Recipe sourceID destIDs = recipe
+
+makeChannelPairFromIDs :: [Node] -> NodeID -> NodeID -> [Channel]
+makeChannelPairFromIDs nodes sourceID destID = makeChannelPair source dest
+                                                   where source = smashJust (getNode nodes sourceID) "couldn't get source in makeChannelPairFromIDs"
+                                                         dest = smashJust (getNode nodes destID) "couldn't get dest in makeChannelPairFromIDs"
+
+makeChannelPair :: Node -> Node -> [Channel]
+makeChannelPair source dest = catMaybes [(tryMakeChannel source dest True), tryMakeChannel dest source False]
+
+tryMakeChannel :: Node -> Node -> Bool -> Maybe Channel
+tryMakeChannel source dest isDirect
+  | isDirect = channel
+  | canReciprocate (nodeType source) && canReciprocate (nodeType dest) = channel
+  | otherwise = Nothing
+      where channel = Just (Channel (nodeID source) (nodeID dest))
+
+canReciprocate :: NodeType -> Bool
+canReciprocate Sender = True
 
 channel :: Int -> Int -> Channel
 channel sourceID destID = if sourceID == destID

@@ -174,96 +174,79 @@ linkChannel state channel =
         where State nodes channels links = state
 
 flowLinksRepeated :: State -> State
-flowLinksRepeated state | changed = flowLinksRepeated newState
-                        | otherwise = newState
-                        where (newState, changed) = flowLinks state
+flowLinksRepeated state = case (tryFlow state nodes) of
+                        Just newState -> flowLinksRepeated newState
+                        Nothing -> state
+                        where State nodes _ _ = state
 
-tryFlow state source = case (nodeType source) of
-  Sender -> tryFlowOneChannel state source links
-      where State _ _ links = state
-  Broadcaster -> tryFlowAllChannels state source
+tryFlow :: State -> [Node] -> Maybe State
+tryFlow state nodes = map and catmaybes
+
+tryFlowNode :: State -> Node -> Maybe State
+tryFlowNode state source = case (nodeType source) of
+  Sender -> trySendToAnyLink state source
+  Broadcaster -> tryBroadcast state source
   Receiver -> error "why is the receiver trying to send?"
 
-tryFlowAllChannels state source
+tryBroadcast :: State -> Node -> Maybe State
+tryBroadcast state source
   | mana source <= 0 = Nothing
-  | links == [] = Nothing
-  -- | none_can_receive = Nothing
-  | otherwise = map tryFlowEinChannel links
-      where State _ _ links = state
+  | otherwise = Just (State newNodes channels links)
+      where State nodes channels links = state
+            sourceLinks = filter (\Channel sourceID _ -> sourceID == (nodeID source)) links
+            dests = map (\Channel _ destID -> (grabNode nodes destID)) sourceLinks
+            newDests = map (tryFlowToDest source) dests
+            newNodes = replaceNodes nodes newDests
 
-tryFlowEachChannel state source
-  | manaQuantity < 0 = Nothing
-  | 1==2 = (replaceNodes nodes (map (tryFlow source manaQuantity) dests)) >>= 
-                (\nodes1 -> replaceNodes nodes1 newSource) >>=
-                (\newNodes -> State newNodes channels links)
-      where manaQuantity = (mana source)
-            State nodes channels links = state
-            dests = map (\Channel _ destID -> smashJust (getNode nodes destID) "can't find a dest in tryFlowEachChannel") links
+tryFlowToDest :: Node -> Node -> (Int, Node)
+tryFlowToDest source dest = (transferQuantity, newDest)
+    where transferQuantity = maxTransferQuantity source dest
+          newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
 
-tryFlowOneChannel _ _ [] = Nothing
-tryFlowOneChannel state source (channel:links)
-  | mana source <= 0 = Nothing
-  | transferQuantity <= 0 = tryFlowOneChannel state source links
-  | otherwise = flowOneChannel state source dest
-      where transferQuantity = maxTransferQuantity source dest
-            dest = smashJust (getNode nodes destID)
-            State nodes _ _ = state
-            Channel _ destID = channel
 
-flowOneChannel state source dest = (replaceNode (nodeID source) newSource nodes) >>= (replaceNode (nodeID dest) newDest)
-      where transferQuantity = maxTransferQuantity source dest
-            newSource = source { mana = (mana source) - transferQuantity }
-            newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
-            State nodes _ _ = state
-    
- 
-flowLinks :: State -> (State, Bool)
- -- get the source and dest nodes
- -- update their mana levels
- -- if this happened, replace them in the nodes pile
-flowLinks state =
-    if ((isJust maybeSource) && (isJust maybeDest))
-        then if ((transferQuantity > 0))
-            then if ((isJust updatedNodes))
-                then (updatedState, True)
-                else error "updatedNodes didn't exist"
-            else (state, False)
-        else error "source or dest not found"
-        where (State nodes channels (link:links)) = state
-              Channel sourceID destID = link
-              maybeSource = getNode nodes sourceID
-              maybeDest = getNode nodes destID
-              source = smashJust maybeSource "source missing in flowLinks"
-              dest = smashJust maybeDest "dest missing in flowLinks"
-              transferQuantity = maxTransferQuantity source dest
-              newSource = source { mana = (mana source) - transferQuantity }
-              newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
-              updatedNodes = (replaceNode sourceID newSource nodes) >>= (replaceNode destID newDest)
-              updatedState = State (smashJust updatedNodes "Nodes didn't update in flowLinks") channels (link:links)
-              
+trySendToAnyLink :: State -> Node -> Maybe State
+trySendToAnyLink state source
+  | length goodDests > 0 = Just (send state source (head goodDests))
+  | otherwise = Nothing
+      where State nodes channels links = state
+            sourceLinks = filter (\Channel sourceID _ -> sourceID == (nodeID source)) links
+            destIDs = map (\Channel _ destID -> destID) sourceLinks
+            dests = map (grabNode nodes) destIDs
+            goodDests = filter (\dest -> maxTransferQuantity source dest > 0)
+
+send :: State -> Node -> Node -> State
+send (State nodes channels links) source dest = transferFrom transferQuantity source (transferTo transferQuantity dest nodes)
+    where transferQuantity = maxTransferQuantity source dest
+
+transferFrom :: Int -> Node -> [Node] -> [Node]
+transferFrom quantity source nodes = replaceNode newSource nodes
+    where newSource = source { mana = (mana source) - quantity }
+
+transferTo :: Int -> Node -> [Node] -> [Node]
+transferTo quantity dest nodes = replaceNode newDest nodes
+    where newDest = dest { mana = (mana dest) + quantity, capacity = (capacity dest) - quantity }
+
         
 maxTransferQuantity :: Node -> Node -> Int
 maxTransferQuantity source dest = min (mana source) (capacityAvailable dest (outColor source))
+
+grabNode :: [Node] -> NodeID -> Node
+grabNode nodes nid = smashJust (getNode nodes nid) ("assumption failed! can't grab node " ++ nid)
               
 getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
 getNode (node:nodes) nid | nodeID node == nid = Just node
                          | otherwise = getNode nodes nid
 
-replaceNodes :: 
+replaceNodes :: [Node] -> [Node] -> [Node]
+replaceNodes [] nodes = nodes
+replaceNodes (r:replacementNodes) nodes = replaceNodes replacementNodes (replaceNode r nodes)
 
-replaceNode2 :: Node -> [Node] -> Maybe [Node]
-replaceNode2 _ [] = Nothing
-replaceNode2 replacementNode (node:nodes)
-  | (nodeID node) == targetNid = Just (replacementNode:nodes)
-  | otherwise = (replaceNode2 targetNid replacementNode nodes) >>= (\newNodes -> return (node:newNodes))
-      where targetNid = nodeID replacementNode
-
-replaceNode :: NodeID -> Node -> [Node] -> Maybe [Node]
-replaceNode _ _ [] = Nothing
-replaceNode targetNid replacementNode (node:nodes)
-  | (nodeID node) == targetNid = Just (replacementNode:nodes)
-  | otherwise = (replaceNode targetNid replacementNode nodes) >>= (\newNodes -> return (node:newNodes))
+replaceNode :: Node -> [Node] -> [Node]
+replaceNode node [] = error "can't find node " ++ (show node) ++ " for replaceNode"
+replaceNode replacementNode (node:nodes)
+  | (nodeID node) == (nodeID replacementNode) = replacementNode:nodes
+  | otherwise = replaceNode replacementNode nodes
 
 capacityAvailable :: Node -> Color -> Int
 capacityAvailable destNode color

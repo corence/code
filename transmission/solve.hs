@@ -9,6 +9,12 @@ arrayRemove (x:xs) q | q == x = Just xs
 
 data Color = White | Orange | Blue | Void deriving (Show, Eq)
 
+data Transfer = Transfer {
+    tNid :: NodeID,
+    tQuantity :: Int,
+    tImpactsCapacity :: Bool
+}
+
 class Equalizer a where
     isEqual :: a -> a -> Bool
 
@@ -179,24 +185,22 @@ flowLinksRepeated state = case (tryFlow state nodes) of
                         Nothing -> state
                         where State nodes _ _ = state
 
-tryFlow :: State -> [Node] -> Maybe State
-tryFlow state nodes = map and catmaybes
+--tryFlow :: State -> [Node] -> Maybe State
+--tryFlow state nodes = map tryFlowNode -- map and catmaybes
 
-tryFlowNode :: State -> Node -> Maybe State
+tryFlowNode :: State -> Node -> [Transfer]
 tryFlowNode state source = case (nodeType source) of
   Sender -> trySendToAnyLink state source
   Broadcaster -> tryBroadcast state source
   Receiver -> error "why is the receiver trying to send?"
 
-tryBroadcast :: State -> Node -> Maybe State
+tryBroadcast :: State -> Node -> [Transfer]
 tryBroadcast state source
-  | mana source <= 0 = Nothing
-  | otherwise = Just (State newNodes channels links)
+  | mana source <= 0 = []
+  | otherwise = map (\dest -> Transfer { tNid = (nodeID dest), tQuantity = maxTransferQuantity source dest, tImpactsCapacity = True }) dests
       where State nodes channels links = state
             sourceLinks = filter (\Channel sourceID _ -> sourceID == (nodeID source)) links
             dests = map (\Channel _ destID -> (grabNode nodes destID)) sourceLinks
-            newDests = map (tryFlowToDest source) dests
-            newNodes = replaceNodes nodes newDests
 
 tryFlowToDest :: Node -> Node -> (Int, Node)
 tryFlowToDest source dest = (transferQuantity, newDest)

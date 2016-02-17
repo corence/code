@@ -9,11 +9,7 @@ arrayRemove (x:xs) q | q == x = Just xs
 
 data Color = White | Orange | Blue | Void deriving (Show, Eq)
 
-data Transfer = Transfer {
-    tNid :: NodeID,
-    tQuantity :: Int,
-    tImpactsCapacity :: Bool
-}
+data Transfer = Transfer Int Node [Node]
 
 class Equalizer a where
     isEqual :: a -> a -> Bool
@@ -143,7 +139,7 @@ instance Show State where
 
 
 showListExploded :: Show a => String -> [a] -> String
-showListExploded indent things = (foldl (++) "" (map (\thing -> (indent ++ (show thing))) things)) ++ "\n"
+showListExploded indent things = (foldr (++) "" (map (\thing -> (indent ++ (show thing))) things)) ++ "\n"
 
 smashJust :: Maybe a -> String -> a
 smashJust Nothing message = error message
@@ -180,27 +176,32 @@ linkChannel state channel =
         where State nodes channels links = state
 
 flowLinksRepeated :: State -> State
-flowLinksRepeated state = case (tryFlow state nodes) of
+flowLinksRepeated state = case (tryFlow state) of
                         Just newState -> flowLinksRepeated newState
                         Nothing -> state
-                        where State nodes _ _ = state
 
---tryFlow :: State -> [Node] -> Maybe State
---tryFlow state nodes = map tryFlowNode -- map and catmaybes
+tryFlow :: State -> Maybe State
+tryFlow state
+  | length transfers > 0 = Just (State newNodes channels links)
+  | otherwise = Nothing
+    where State nodes channels links = state
+          transfers = catMaybes (map (tryFlowNode state) nodes)
+          newNodes = applyTransfer nodes (head transfers)
 
-tryFlowNode :: State -> Node -> [Transfer]
+tryFlowNode :: State -> Node -> Maybe Transfer
 tryFlowNode state source = case (nodeType source) of
   Sender -> trySendToAnyLink state source
   Broadcaster -> tryBroadcast state source
   Receiver -> error "why is the receiver trying to send?"
 
-tryBroadcast :: State -> Node -> [Transfer]
+tryBroadcast :: State -> Node -> Maybe Transfer
 tryBroadcast state source
-  | mana source <= 0 = []
-  | otherwise = map (\dest -> Transfer { tNid = (nodeID dest), tQuantity = maxTransferQuantity source dest, tImpactsCapacity = True }) dests
+  | mana source <= 0 = Nothing
+  | otherwise = Just (Transfer (mana source) source dests)
       where State nodes channels links = state
-            sourceLinks = filter (\Channel sourceID _ -> sourceID == (nodeID source)) links
-            dests = map (\Channel _ destID -> (grabNode nodes destID)) sourceLinks
+            sourceLinks = filter (\(Channel sourceID _) -> sourceID == (nodeID source)) links
+            destIDs = map (\(Channel _ destID) -> destID) sourceLinks
+            dests = map (grabNode nodes) destIDs
 
 tryFlowToDest :: Node -> Node -> (Int, Node)
 tryFlowToDest source dest = (transferQuantity, newDest)
@@ -208,19 +209,27 @@ tryFlowToDest source dest = (transferQuantity, newDest)
           newDest = dest { mana = (mana dest) + transferQuantity, capacity = (capacity dest) - transferQuantity }
 
 
-trySendToAnyLink :: State -> Node -> Maybe State
+trySendToAnyLink :: State -> Node -> Maybe Transfer
 trySendToAnyLink state source
-  | length goodDests > 0 = Just (send state source (head goodDests))
+  | length goodDests > 0 = Just (Transfer quantity source [dest])
   | otherwise = Nothing
       where State nodes channels links = state
-            sourceLinks = filter (\Channel sourceID _ -> sourceID == (nodeID source)) links
-            destIDs = map (\Channel _ destID -> destID) sourceLinks
+            sourceLinks = filter (\(Channel sourceID _) -> sourceID == (nodeID source)) links
+            destIDs = map (\(Channel _ destID) -> destID) sourceLinks
             dests = map (grabNode nodes) destIDs
-            goodDests = filter (\dest -> maxTransferQuantity source dest > 0)
+            goodDests = filter (\dest -> maxTransferQuantity source dest > 0) dests
+            dest = (head goodDests) :: Node
+            quantity = maxTransferQuantity source dest
 
-send :: State -> Node -> Node -> State
-send (State nodes channels links) source dest = transferFrom transferQuantity source (transferTo transferQuantity dest nodes)
-    where transferQuantity = maxTransferQuantity source dest
+applyTransfer :: [Node] -> Transfer -> [Node]
+applyTransfer nodes (Transfer quantity source dests) = transferFrom quantity source destedNodes
+    where destedNodes = foldr (transferTo quantity) nodes dests
+
+-- values.reduce(function (kindler, value) {
+--     return kindler.call(value);
+-- }, initKindler);
+
+-- foldr (function) initKindler values
 
 transferFrom :: Int -> Node -> [Node] -> [Node]
 transferFrom quantity source nodes = replaceNode newSource nodes
@@ -235,7 +244,7 @@ maxTransferQuantity :: Node -> Node -> Int
 maxTransferQuantity source dest = min (mana source) (capacityAvailable dest (outColor source))
 
 grabNode :: [Node] -> NodeID -> Node
-grabNode nodes nid = smashJust (getNode nodes nid) ("assumption failed! can't grab node " ++ nid)
+grabNode nodes nid = smashJust (getNode nodes nid) ("assumption failed! can't grab node " ++ (show nid))
               
 getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
@@ -247,7 +256,7 @@ replaceNodes [] nodes = nodes
 replaceNodes (r:replacementNodes) nodes = replaceNodes replacementNodes (replaceNode r nodes)
 
 replaceNode :: Node -> [Node] -> [Node]
-replaceNode node [] = error "can't find node " ++ (show node) ++ " for replaceNode"
+replaceNode node [] = error ("can't find node " ++ (show node) ++ " for replaceNode")
 replaceNode replacementNode (node:nodes)
   | (nodeID node) == (nodeID replacementNode) = replacementNode:nodes
   | otherwise = replaceNode replacementNode nodes
@@ -293,7 +302,7 @@ samplePuzzle2 = State nodes channels []
 
 -- given a state, return a list of all Winning states that it generates
 solve :: State -> [State]
-solve state = foldl (++) []
+solve state = foldr (++) []
                   (map (\s ->
                       let (State nodes _ _) = s in
                           if (winner nodes)

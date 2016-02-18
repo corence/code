@@ -1,5 +1,6 @@
 
 import Data.Maybe
+import Debug.Trace
 
 arrayRemove :: Eq a => [a] -> a -> Maybe [a]
 arrayRemove [] _ = Nothing
@@ -147,7 +148,7 @@ smashJust (Just q) _ = q
 
 solveStep :: State -> [State]
 solveStep state = map flowLinksRepeated linkedStates
-    where linkedStates = map (linkChannel state) chosenChannels
+    where linkedStates = map (linkNodes state) chosenChannels
           chosenChannels = chooseChannel state
     
 listContains :: Eq a => [a] -> a -> Bool
@@ -158,18 +159,32 @@ listContains (x:xs) element = (x == element) || (listContains xs element)
 chooseChannel :: State -> [Channel]
 chooseChannel (State _ [] _) = []
 chooseChannel (State nodes (c:channels) links)
-  | outColor source /= inColor dest = otherChannels
-  | mana source <= 0 = otherChannels
-  | maxTransferQuantity source dest <= 0 = otherChannels
-  | listContains links (Channel destID sourceID) = otherChannels
+  | outColor source /= inColor dest = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: color") otherChannels
+  | (mana source <= 0) && (nodeType source == Sender) = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: no mana") otherChannels
+  | maxTransferQuantity source dest <= 0 = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: transfer quantity") otherChannels
+  | listContains links (Channel destID sourceID) = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: backlink") otherChannels
   | otherwise = c : otherChannels
     where otherChannels = chooseChannel (State nodes channels links)
           Channel sourceID destID = c
           source = smashJust (getNode nodes sourceID) "source missing in chooseChannel"
           dest = smashJust (getNode nodes destID) "dest missing in chooseChannel"
 
-linkChannel :: State -> Channel -> State
-linkChannel state channel =
+linkNodes :: State -> Channel -> State
+linkNodes state channel = case (traceShowId (nodeType dest)) of
+  Sender -> sourcedState
+  Broadcaster -> foldr linkChannel sourcedState (trace ("destChannels is " ++ (show destChannels)) destChannels)
+  where Channel sourceID destID = channel
+        dest = grabNode nodes destID
+        State nodes channels links = state
+        sourcedState = linkChannel channel state
+        destChannels = channelsFrom destID sourcedChannels
+        sourcedChannels = traceShowId (chooseChannel sourcedState)
+
+channelsFrom :: NodeID -> [Channel] -> [Channel]
+channelsFrom sourceID channels = filter (\(Channel nid _) -> sourceID == nid) channels
+
+linkChannel :: Channel -> State -> State
+linkChannel channel state =
     case (arrayRemove channels channel) of
         Nothing -> error "tried to link non-existent channel"
         Just newChannels -> State nodes newChannels (channel:links)
@@ -199,7 +214,7 @@ tryBroadcast state source
   | mana source <= 0 = Nothing
   | otherwise = Just (Transfer (mana source) source dests)
       where State nodes channels links = state
-            sourceLinks = filter (\(Channel sourceID _) -> sourceID == (nodeID source)) links
+            sourceLinks = channelsFrom (nodeID source) links
             destIDs = map (\(Channel _ destID) -> destID) sourceLinks
             dests = map (grabNode nodes) destIDs
 
@@ -214,7 +229,7 @@ trySendToAnyLink state source
   | length goodDests > 0 = Just (Transfer quantity source [dest])
   | otherwise = Nothing
       where State nodes channels links = state
-            sourceLinks = filter (\(Channel sourceID _) -> sourceID == (nodeID source)) links
+            sourceLinks = channelsFrom (nodeID source) links
             destIDs = map (\(Channel _ destID) -> destID) sourceLinks
             dests = map (grabNode nodes) destIDs
             goodDests = filter (\dest -> maxTransferQuantity source dest > 0) dests

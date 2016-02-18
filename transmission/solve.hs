@@ -9,7 +9,7 @@ arrayRemove (x:xs) q | q == x = Just xs
 
 data Color = White | Orange | Blue | Void deriving (Show, Eq)
 
-data Transfer = Transfer Int Node [Node]
+data Transfer = Transfer Int Node [Node] deriving Show
 
 class Equalizer a where
     isEqual :: a -> a -> Bool
@@ -192,7 +192,7 @@ tryFlowNode :: State -> Node -> Maybe Transfer
 tryFlowNode state source = case (nodeType source) of
   Sender -> trySendToAnyLink state source
   Broadcaster -> tryBroadcast state source
-  Receiver -> error "why is the receiver trying to send?"
+  Receiver -> Nothing
 
 tryBroadcast :: State -> Node -> Maybe Transfer
 tryBroadcast state source
@@ -244,7 +244,7 @@ maxTransferQuantity :: Node -> Node -> Int
 maxTransferQuantity source dest = min (mana source) (capacityAvailable dest (outColor source))
 
 grabNode :: [Node] -> NodeID -> Node
-grabNode nodes nid = smashJust (getNode nodes nid) ("assumption failed! can't grab node " ++ (show nid))
+grabNode nodes nid = smashJust (getNode nodes nid) ("assumption failed! can't grab node " ++ (show nid) ++ " from nodes " ++ (show nodes))
               
 getNode :: [Node] -> NodeID -> Maybe Node
 getNode [] _ = Nothing
@@ -259,7 +259,7 @@ replaceNode :: Node -> [Node] -> [Node]
 replaceNode node [] = error ("can't find node " ++ (show node) ++ " for replaceNode")
 replaceNode replacementNode (node:nodes)
   | (nodeID node) == (nodeID replacementNode) = replacementNode:nodes
-  | otherwise = replaceNode replacementNode nodes
+  | otherwise = node:(replaceNode replacementNode nodes)
 
 capacityAvailable :: Node -> Color -> Int
 capacityAvailable destNode color
@@ -390,6 +390,28 @@ puzzle4_7 = State nodes channels []
                                  (7, [4, 8])
                              ]
 
+puzzle4_9 = State nodes channels []
+            where nodes = [
+                              sender 1 White 0 1,
+                              sender 2 White 1 1,
+                              sender 3 White 0 4,
+                              sender 4 White 1 1,
+                              sender 5 White 0 2,
+                              broadcaster 6 White,
+                              broadcaster 7 White,
+                              receiver 8 White 2,
+                              receiver 9 White 2
+                          ]
+                  channels = makeChannels nodes [
+                                 (1, [2, 3, 4, 5, 6, 7, 8]),
+                                 (2, [3, 5, 6, 7, 8, 9]),
+                                 (3, [4, 5, 6, 7, 8, 9]),
+                                 (4, [5, 8, 9]),
+                                 (5, [6, 7, 9]),
+                                 (6, [1, 3]),
+                                 (7, [3, 5])
+                             ]
+
 
     
 main = do
@@ -399,7 +421,8 @@ main = do
     --let puzzle = puzzle2_1
     --let puzzle = puzzle2_3
     --let puzzle = puzzle3_12
-    let puzzle = puzzle4_7
+    --let puzzle = puzzle4_7
+    let puzzle = puzzle4_9
     
     putStrLn $ solvePuzzle puzzle
     putStrLn $ show $ length $ solve puzzle

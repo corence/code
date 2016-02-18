@@ -264,6 +264,7 @@ replaceNode replacementNode (node:nodes)
 capacityAvailable :: Node -> Color -> Int
 capacityAvailable destNode color
   | inColor destNode /= color = 0
+  | nodeType destNode == Broadcaster = 999999
   | otherwise = capacity destNode
 
 newState = State [] [] []

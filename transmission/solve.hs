@@ -3,9 +3,9 @@ import Data.Maybe
 import Debug.Trace
 
 --traceRejection x y = trace x y
---traceStep s = traceShowId s
+traceStep s = traceShowId s
 traceRejection x y = y
-traceStep s = s
+--traceStep s = s
 
 arrayRemove :: Eq a => [a] -> a -> Maybe [a]
 arrayRemove [] _ = Nothing
@@ -193,8 +193,13 @@ linkChannel :: Channel -> State -> State
 linkChannel channel state =
     case (arrayRemove channels channel) of
         Nothing -> error "tried to link non-existent channel"
-        Just newChannels -> State nodes newChannels (channel:links)
+        Just newChannels -> case (arrayRemove channels (invertChannel channel)) of
+                                Nothing -> State nodes newChannels (channel:links)
+                                Just leanChannels -> State nodes leanChannels (channel:links)
         where State nodes channels links = state
+
+invertChannel :: Channel -> Channel
+invertChannel (Channel x y) = Channel y x
 
 flowLinksRepeated :: State -> State
 flowLinksRepeated state = case (tryFlow state) of
@@ -461,7 +466,8 @@ main = do
     --let puzzle = puzzle2_3
     --let puzzle = puzzle3_12
     --let puzzle = puzzle4_7
-    let puzzle = puzzle4_1_rc
+    let puzzle = puzzle4_9
+    --let puzzle = puzzle4_1_rc
     
     let solution = solve puzzle
     putStrLn $ showSolution solution

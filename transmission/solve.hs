@@ -1,6 +1,9 @@
 
 import Data.Maybe
-import Debug.Trace
+--import Debug.Trace
+
+trace _ x = x
+traceShowId x = x
 
 arrayRemove :: Eq a => [a] -> a -> Maybe [a]
 arrayRemove [] _ = Nothing
@@ -172,6 +175,7 @@ chooseChannel (State nodes (c:channels) links)
 linkNodes :: State -> Channel -> State
 linkNodes state channel = case (traceShowId (nodeType dest)) of
   Sender -> sourcedState
+  Receiver -> sourcedState
   Broadcaster -> foldr linkChannel sourcedState (trace ("destChannels is " ++ (show destChannels)) destChannels)
   where Channel sourceID destID = channel
         dest = grabNode nodes destID

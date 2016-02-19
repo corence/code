@@ -3,9 +3,9 @@ import Data.Maybe
 import Debug.Trace
 
 --traceRejection x y = trace x y
-traceStep s = traceShowId s
+--traceStep s = traceShowId s
 traceRejection x y = y
---traceStep s = s
+traceStep s = s
 
 arrayRemove :: Eq a => [a] -> a -> Maybe [a]
 arrayRemove [] _ = Nothing
@@ -340,7 +340,7 @@ solve state = foldr (++) []
 
 winner :: [Node] -> Bool
 winner [] = True
-winner (n:nodes) = if (capacity n == 0)
+winner (n:nodes) = if (capacity n <= 0)
     then winner nodes
     else False
         

@@ -316,9 +316,6 @@ solveSamplePuzzle = do
     putStrLn $ show $ (solve state)
     putStrLn "---------" 
 
-solvePuzzle initialState = showListExploded "\n" states
-                           where states = solve initialState
-
 samplePuzzle2 = State nodes channels []
                   where nodes = [
                                     sender 2 Orange 3 4,
@@ -454,7 +451,7 @@ puzzle4_9 = State nodes channels []
                                  (7, [3, 5])
                              ]
 
-
+showSolution states = showListExploded "\n" states
     
 main = do
     --solveSamplePuzzle
@@ -466,5 +463,6 @@ main = do
     --let puzzle = puzzle4_7
     let puzzle = puzzle4_1_rc
     
-    putStrLn $ solvePuzzle puzzle
-    putStrLn $ show $ length $ solve puzzle
+    let solution = solve puzzle
+    putStrLn $ showSolution solution
+    putStrLn $ show $ length $ solution

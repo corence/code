@@ -1,9 +1,11 @@
 
 import Data.Maybe
---import Debug.Trace
+import Debug.Trace
 
-trace _ x = x
-traceShowId x = x
+--traceRejection x y = trace x y
+traceStep s = traceShowId s
+traceRejection x y = y
+--traceStep s = s
 
 arrayRemove :: Eq a => [a] -> a -> Maybe [a]
 arrayRemove [] _ = Nothing
@@ -138,8 +140,8 @@ data State = State [Node] [Channel] [Channel]
 instance Show State where
     show (State nodes channels links) = showNodes ++ showChannels ++ showLinks
         where showNodes = "Nodes: " ++ showListExploded "\n    " nodes
-              showChannels = "Channels: " ++ showListExploded "\n    " channels
-              showLinks = "Links: " ++ showListExploded "\n    " links
+              showChannels = "Channels: " ++ showListExploded " " channels
+              showLinks = "Links: " ++ showListExploded " " links
 
 
 showListExploded :: Show a => String -> [a] -> String
@@ -162,10 +164,10 @@ listContains (x:xs) element = (x == element) || (listContains xs element)
 chooseChannel :: State -> [Channel]
 chooseChannel (State _ [] _) = []
 chooseChannel (State nodes (c:channels) links)
-  | outColor source /= inColor dest = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: color") otherChannels
-  | (mana source <= 0) && (nodeType source == Sender) = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: no mana") otherChannels
-  | maxTransferQuantity source dest <= 0 = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: transfer quantity") otherChannels
-  | listContains links (Channel destID sourceID) = trace ("chooseChannel " ++ (show $ nodeID source) ++ " " ++ (show $ nodeID dest) ++ " no: backlink") otherChannels
+  | outColor source /= inColor dest = traceRejection "color" otherChannels
+  | (mana source <= 0) && (nodeType source == Sender) = traceRejection "mana" otherChannels
+  | maxTransferQuantity source dest <= 0 = traceRejection "quant" otherChannels
+  | listContains links (Channel destID sourceID) = traceRejection "backlink" otherChannels
   | otherwise = c : otherChannels
     where otherChannels = chooseChannel (State nodes channels links)
           Channel sourceID destID = c
@@ -173,16 +175,16 @@ chooseChannel (State nodes (c:channels) links)
           dest = smashJust (getNode nodes destID) "dest missing in chooseChannel"
 
 linkNodes :: State -> Channel -> State
-linkNodes state channel = case (traceShowId (nodeType dest)) of
+linkNodes state channel = case (nodeType dest) of
   Sender -> sourcedState
   Receiver -> sourcedState
-  Broadcaster -> foldr linkChannel sourcedState (trace ("destChannels is " ++ (show destChannels)) destChannels)
+  Broadcaster -> traceRejection ("ok mf, ss: " ++ (show sourcedState) ++ "\n\n destChannels: " ++ (show destChannels) ++ ", sourcedChannels=" ++ (show sourcedChannels) ++ ", destID=" ++ (show destID)) $ foldr linkChannel sourcedState destChannels
   where Channel sourceID destID = channel
         dest = grabNode nodes destID
         State nodes channels links = state
         sourcedState = linkChannel channel state
         destChannels = channelsFrom destID sourcedChannels
-        sourcedChannels = traceShowId (chooseChannel sourcedState)
+        sourcedChannels = chooseChannel sourcedState
 
 channelsFrom :: NodeID -> [Channel] -> [Channel]
 channelsFrom sourceID channels = filter (\(Channel nid _) -> sourceID == nid) channels
@@ -201,11 +203,19 @@ flowLinksRepeated state = case (tryFlow state) of
 
 tryFlow :: State -> Maybe State
 tryFlow state
-  | length transfers > 0 = Just (State newNodes channels links)
+  | length transfers > 0 = Just $ foldr splashLinks (State newNodes channels links) dests
   | otherwise = Nothing
     where State nodes channels links = state
           transfers = catMaybes (map (tryFlowNode state) nodes)
-          newNodes = applyTransfer nodes (head transfers)
+          transfer = head transfers
+          Transfer _ _ dests = transfer
+          newNodes = applyTransfer nodes transfer
+
+splashLinks :: Node -> State -> State
+splashLinks target state
+  | nodeType target == Broadcaster = foldr linkChannel state targetsChannels
+  | otherwise = state
+    where targetsChannels = channelsFrom (nodeID target) (chooseChannel state)
 
 tryFlowNode :: State -> Node -> Maybe Transfer
 tryFlowNode state source = case (nodeType source) of
@@ -328,7 +338,7 @@ solve state = foldr (++) []
                           if (winner nodes)
                                then [s]
                                else solve s)
-                      (solveStep state))
+                      (solveStep (traceStep state)))
     
 
 winner :: [Node] -> Bool
@@ -390,6 +400,18 @@ puzzle3_12 = State nodes channels []
                                  (6, [7])
                              ]
 
+puzzle4_1_rc = State nodes channels []
+            where nodes = [
+                              sender 1 White 1 0,
+                              broadcaster 2 White,
+                              receiver 3 White 1,
+                              receiver 4 White 1
+                          ]
+                  channels = makeChannels nodes [
+                                 (1, [2, 3]),
+                                 (2, [1, 3, 4])
+                             ]
+
 puzzle4_7 = State nodes channels []
             where nodes = [
                               sender 1 White 0 4,
@@ -442,7 +464,7 @@ main = do
     --let puzzle = puzzle2_3
     --let puzzle = puzzle3_12
     --let puzzle = puzzle4_7
-    let puzzle = puzzle4_9
+    let puzzle = puzzle4_1_rc
     
     putStrLn $ solvePuzzle puzzle
     putStrLn $ show $ length $ solve puzzle

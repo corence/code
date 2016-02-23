@@ -1,0 +1,358 @@
+	Tue Feb 23 17:01 2016 Time and Allocation Profiling Report  (Final)
+
+	   solve +RTS -p -RTS
+
+	total time  =      489.50 secs   (489501 ticks @ 1000 us, 1 processor)
+	total alloc = 457,797,798,592 bytes  (excludes profiling overheads)
+
+COST CENTRE                  MODULE  %time %alloc
+
+getNode                      Main     19.3   19.3
+chooseChannel                Main     17.6   22.8
+==                           Main     12.7    0.0
+nodeID                       Main      5.4    0.0
+trySendToAnyLink             Main      4.3    8.5
+channelsFrom                 Main      4.0    2.6
+channelsFrom.\               Main      3.3    0.0
+replaceNode                  Main      2.5    4.7
+capacityAvailable            Main      2.4    2.4
+maxTransferQuantity          Main      2.1    3.7
+smashJust                    Main      2.0    0.0
+/=                           Main      1.9    3.5
+tryFlow                      Main      1.7    2.4
+trySendToAnyLink.destIDs     Main      1.5    3.6
+tryFlow.transfers            Main      1.4    4.1
+trySendToAnyLink.dests       Main      1.2    3.6
+mana                         Main      1.2    0.0
+tryBroadcast                 Main      1.1    2.6
+trySendToAnyLink.goodDests.\ Main      0.8    1.2
+chooseChannel.source         Main      0.8    3.1
+chooseChannel.dest           Main      0.7    3.1
+grabNode                     Main      0.5    2.5
+chooseChannel.otherChannels  Main      0.3    2.1
+
+
+                                                                                   individual     inherited
+COST CENTRE                              MODULE                  no.     entries  %time %alloc   %time %alloc
+
+MAIN                                     MAIN                     45           0    0.0    0.0   100.0  100.0
+ CAF                                     Main                     89           0    0.0    0.0   100.0  100.0
+  puzzle4_9                              Main                    102           1    0.0    0.0     0.0    0.0
+   puzzle4_9.channels                    Main                    123           1    0.0    0.0     0.0    0.0
+    makeChannels                         Main                    124           1    0.0    0.0     0.0    0.0
+     makeChannels.recipes                Main                    126           1    0.0    0.0     0.0    0.0
+      makeRecipe                         Main                    130           7    0.0    0.0     0.0    0.0
+       makeRecipe.source                 Main                    145           7    0.0    0.0     0.0    0.0
+       makeRecipe.dests                  Main                    131           7    0.0    0.0     0.0    0.0
+     makeChannelsForRecipes              Main                    125           1    0.0    0.0     0.0    0.0
+      makeChannelsForRecipe              Main                    127           7    0.0    0.0     0.0    0.0
+       makeChannelsForRecipe.sourceID    Main                    144           7    0.0    0.0     0.0    0.0
+       makeChannelPairFromIDs            Main                    132          29    0.0    0.0     0.0    0.0
+        makeChannelPairFromIDs.dest      Main                    146          29    0.0    0.0     0.0    0.0
+         getNode                         Main                    148         168    0.0    0.0     0.0    0.0
+          nodeID                         Main                    150         168    0.0    0.0     0.0    0.0
+          ==                             Main                    149         168    0.0    0.0     0.0    0.0
+         smashJust                       Main                    147          29    0.0    0.0     0.0    0.0
+        makeChannelPairFromIDs.source    Main                    139          29    0.0    0.0     0.0    0.0
+         getNode                         Main                    141          90    0.0    0.0     0.0    0.0
+          nodeID                         Main                    143          90    0.0    0.0     0.0    0.0
+          ==                             Main                    142          90    0.0    0.0     0.0    0.0
+         smashJust                       Main                    140          29    0.0    0.0     0.0    0.0
+        makeChannelPair                  Main                    133          29    0.0    0.0     0.0    0.0
+         tryMakeChannel                  Main                    134          58    0.0    0.0     0.0    0.0
+          nodeType                       Main                    152          42    0.0    0.0     0.0    0.0
+          canReciprocate                 Main                    151          42    0.0    0.0     0.0    0.0
+          tryMakeChannel.channel         Main                    135          38    0.0    0.0     0.0    0.0
+           nodeID                        Main                    138          76    0.0    0.0     0.0    0.0
+       makeChannelsForRecipe.(...)       Main                    129           7    0.0    0.0     0.0    0.0
+       makeChannelsForRecipe.destIDs     Main                    128           7    0.0    0.0     0.0    0.0
+   puzzle4_9.nodes                       Main                    105           1    0.0    0.0     0.0    0.0
+    receiver                             Main                    120           2    0.0    0.0     0.0    0.0
+    broadcaster                          Main                    119           2    0.0    0.0     0.0    0.0
+    sender                               Main                    110           5    0.0    0.0     0.0    0.0
+     starSender                          Main                    111           5    0.0    0.0     0.0    0.0
+  main                                   Main                     90           1    0.0    0.0   100.0  100.0
+   main.puzzle                           Main                    101           1    0.0    0.0     0.0    0.0
+   main.solution                         Main                     93           1    0.0    0.0   100.0  100.0
+    solve                                Main                     94          93    0.0    0.0   100.0  100.0
+     solve.\                             Main                    188          93    0.0    0.0     0.0    0.0
+      solve.\.(...)                      Main                    191          93    0.0    0.0     0.0    0.0
+      solve.\.nodes                      Main                    190          93    0.0    0.0     0.0    0.0
+      winner                             Main                    189         508    0.0    0.0     0.0    0.0
+       capacity                          Main                    287         507    0.0    0.0     0.0    0.0
+     traceStep                           Main                     99          93    0.0    0.0     0.0    0.0
+      show                               Main                    100          93    0.0    0.0     0.0    0.0
+       show.showLinks                    Main                    153          93    0.0    0.0     0.0    0.0
+        showListExploded                 Main                    154          93    0.0    0.0     0.0    0.0
+         showListExploded.\              Main                    290         812    0.0    0.0     0.0    0.0
+          show                           Main                    291         812    0.0    0.0     0.0    0.0
+       show.showChannels                 Main                    121          93    0.0    0.0     0.0    0.0
+        showListExploded                 Main                    122          93    0.0    0.0     0.0    0.0
+         showListExploded.\              Main                    136        2722    0.0    0.0     0.0    0.0
+          show                           Main                    137        2722    0.0    0.0     0.0    0.0
+       show.showNodes                    Main                    103          93    0.0    0.0     0.0    0.0
+        showListExploded                 Main                    104          93    0.0    0.0     0.0    0.0
+         showListExploded.\              Main                    106         837    0.0    0.0     0.0    0.0
+          show                           Main                    107         837    0.0    0.0     0.0    0.0
+           starCount                     Main                    118         837    0.0    0.0     0.0    0.0
+           outColor                      Main                    117         837    0.0    0.0     0.0    0.0
+           showsPrec                     Main                    116         837    0.0    0.0     0.0    0.0
+           capacity                      Main                    115         837    0.0    0.0     0.0    0.0
+           mana                          Main                    114         837    0.0    0.0     0.0    0.0
+           nodeID                        Main                    113         837    0.0    0.0     0.0    0.0
+           show                          Main                    112         837    0.0    0.0     0.0    0.0
+           nodeType                      Main                    109         837    0.0    0.0     0.0    0.0
+           showsPrec                     Main                    108         837    0.0    0.0     0.0    0.0
+     solveStep                           Main                     95          93    0.0    0.0   100.0  100.0
+      flowLinksRepeated                  Main                    192    21050937    0.1    0.0   100.0  100.0
+       tryFlow                           Main                    193    21050937    1.7    2.4    99.9  100.0
+        tryFlow.channels                 Main                    289    21050844    0.1    0.0     0.1    0.0
+        tryFlow.links                    Main                    273    21050843    0.1    0.0     0.1    0.0
+        tryFlow.newNodes                 Main                    260    21050844    0.0    0.0     5.6    7.0
+         applyTransfer                   Main                    261    21050844    0.1    0.2     5.6    7.0
+          applyTransfer.destedNodes      Main                    264    21050844    0.3    0.3     3.0    3.7
+           transferTo                    Main                    265    21050817    0.1    0.1     2.7    3.4
+            transferTo.newDest           Main                    269    21050817    0.5    0.9     0.6    0.9
+             mana                        Main                    288    21050816    0.0    0.0     0.0    0.0
+             capacity                    Main                    286    10525471    0.0    0.0     0.0    0.0
+            replaceNode                  Main                    266   110516932    1.2    2.4     2.1    2.4
+             nodeID                      Main                    268   221033864    0.5    0.0     0.5    0.0
+             ==                          Main                    267   110516932    0.4    0.0     0.4    0.0
+          transferFrom                   Main                    262    21050844    0.1    0.1     2.4    3.1
+           transferFrom.newSource        Main                    272    21050844    0.3    0.6     0.3    0.6
+            mana                         Main                    274    21050843    0.0    0.0     0.0    0.0
+           replaceNode                   Main                    263   110516845    1.3    2.4     2.0    2.4
+            nodeID                       Main                    271   221033690    0.4    0.0     0.4    0.0
+            ==                           Main                    270   110516845    0.3    0.0     0.3    0.0
+        splashLinks                      Main                    256    21050817    0.4    0.2    53.2   49.6
+         linkChannel                     Main                    386          14    0.0    0.0     0.0    0.0
+          linkChannel.links              Main                    395          14    0.0    0.0     0.0    0.0
+          linkChannel.nodes              Main                    394          14    0.0    0.0     0.0    0.0
+          invertChannel                  Main                    393          14    0.0    0.0     0.0    0.0
+          linkChannel.(...)              Main                    389          14    0.0    0.0     0.0    0.0
+          linkChannel.channels           Main                    388          14    0.0    0.0     0.0    0.0
+          arrayRemove                    Main                    387         688    0.0    0.0     0.0    0.0
+           arrayRemove.\                 Main                    392         660    0.0    0.0     0.0    0.0
+           ==                            Main                    390         688    0.0    0.0     0.0    0.0
+            ==                           Main                    391         760    0.0    0.0     0.0    0.0
+         splashLinks.targetsChannels     Main                    336    10525390    0.1    0.1    52.7   49.4
+          nodeID                         Main                    376          22    0.0    0.0     0.0    0.0
+          chooseChannel                  Main                    338   305236346   17.6   22.8    52.6   49.2
+           listContains                  Main                    371         441    0.0    0.0     0.0    0.0
+            ==                           Main                    372         391    0.0    0.0     0.0    0.0
+             ==                          Main                    373         431    0.0    0.0     0.0    0.0
+           maxTransferQuantity           Main                    361    31576221    0.4    0.6     1.3    1.1
+            outColor                     Main                    367    31576221    0.0    0.0     0.0    0.0
+            capacityAvailable            Main                    363    31576221    0.4    0.3     0.8    0.6
+             capacity                    Main                    370    31576206    0.1    0.0     0.1    0.0
+             nodeType                    Main                    369    31576221    0.1    0.0     0.1    0.0
+             ==                          Main                    368    31576221    0.0    0.0     0.0    0.0
+             inColor                     Main                    366    31576221    0.0    0.0     0.0    0.0
+             /=                          Main                    364    31576221    0.1    0.2     0.2    0.2
+              ==                         Main                    365    31576221    0.1    0.0     0.1    0.0
+            mana                         Main                    362    31576221    0.1    0.0     0.1    0.0
+           chooseChannel.otherChannels   Main                    360   294710956    0.3    2.1     0.3    2.1
+           traceRejection                Main                    359   294710906    0.0    0.0     0.0    0.0
+           nodeType                      Main                    358   278922824    0.4    0.0     0.4    0.0
+           ==                            Main                    357   278922824    0.4    0.0     0.4    0.0
+           mana                          Main                    356   294710956    0.5    0.0     0.5    0.0
+           chooseChannel.destID          Main                    355   294710957    0.6    0.0     0.6    0.0
+           chooseChannel.dest            Main                    350   294710957    0.7    3.1    17.1   12.2
+            getNode                      Main                    352  1547232609    8.9    9.1    15.6    9.1
+             nodeID                      Main                    354  1547232608    2.2    0.0     2.2    0.0
+             ==                          Main                    353  1547232608    4.6    0.0     4.6    0.0
+            smashJust                    Main                    351   294710957    0.8    0.0     0.8    0.0
+           inColor                       Main                    349   294710957    0.5    0.0     0.5    0.0
+           chooseChannel.(...)           Main                    348   294710957    0.0    0.0     0.0    0.0
+           chooseChannel.sourceID        Main                    347   294710957    0.6    0.0     0.6    0.0
+           chooseChannel.source          Main                    342   294710957    0.8    3.1    11.2    9.0
+            getNode                      Main                    344   926234499    5.9    5.9     9.7    5.9
+             nodeID                      Main                    346   926234499    1.1    0.0     1.1    0.0
+             ==                          Main                    345   926234499    2.6    0.0     2.6    0.0
+            smashJust                    Main                    343   294710957    0.8    0.0     0.8    0.0
+           outColor                      Main                    341   294710957    0.5    0.0     0.5    0.0
+           /=                            Main                    339   294710957    1.0    2.1     1.5    2.1
+            ==                           Main                    340   294710957    0.5    0.0     0.5    0.0
+          channelsFrom                   Main                    337    10525390    0.0    0.0     0.0    0.0
+           channelsFrom.\                Main                    374          50    0.0    0.0     0.0    0.0
+            ==                           Main                    375          50    0.0    0.0     0.0    0.0
+         nodeType                        Main                    258    21050817    0.1    0.0     0.1    0.0
+         ==                              Main                    257    21050817    0.0    0.0     0.0    0.0
+        tryFlow.transfer                 Main                    255    21050844    0.1    0.0     0.1    0.0
+        tryFlow.(...)                    Main                    254    21050844    0.0    0.0     0.0    0.0
+        tryFlow.dests                    Main                    253    21050844    0.1    0.0     0.1    0.0
+        tryFlow.(...)                    Main                    196    21050937    0.0    0.0     0.0    0.0
+        tryFlow.nodes                    Main                    195    21050937    0.1    0.0     0.1    0.0
+        tryFlow.transfers                Main                    194    21050937    1.4    4.1    38.8   41.0
+         tryFlowNode                     Main                    219   189458424    0.9    0.0    37.4   36.9
+          tryBroadcast                   Main                    251    42101872    1.1    2.6     3.3    3.7
+           tryBroadcast.nodes            Main                    399    10525362    0.0    0.0     0.0    0.0
+           tryBroadcast.(...)            Main                    382    10525389    0.0    0.0     0.0    0.0
+           tryBroadcast.links            Main                    381    10525389    0.0    0.0     0.0    0.0
+           tryBroadcast.sourceLinks      Main                    379    10525389    0.1    0.1     1.1    0.2
+            nodeID                       Main                    385    10525389    0.0    0.0     0.0    0.0
+            channelsFrom                 Main                    380    10525389    0.4    0.2     1.0    0.2
+             channelsFrom.\              Main                    383   105253844    0.3    0.0     0.6    0.0
+              ==                         Main                    384   105253844    0.3    0.0     0.3    0.0
+           tryBroadcast.destIDs          Main                    378    10525389    0.2    0.2     0.2    0.2
+            tryBroadcast.destIDs.\       Main                    402    10525362    0.0    0.0     0.0    0.0
+           tryBroadcast.dests            Main                    377    10525389    0.2    0.2     0.8    0.6
+            grabNode                     Main                    396    10525362    0.1    0.1     0.6    0.4
+             getNode                     Main                    398    42101442    0.3    0.3     0.5    0.3
+              nodeID                     Main                    401    42101442    0.1    0.0     0.1    0.0
+              ==                         Main                    400    42101442    0.1    0.0     0.1    0.0
+             smashJust                   Main                    397    10525362    0.0    0.0     0.0    0.0
+           mana                          Main                    252    52627261    0.1    0.0     0.1    0.0
+          trySendToAnyLink               Main                    221   105254680    4.3    8.5    33.2   33.2
+           trySendToAnyLink.quantity     Main                    275    10525454    0.0    0.0     0.5    0.4
+            maxTransferQuantity          Main                    276    10525454    0.1    0.2     0.5    0.4
+             outColor                    Main                    282    10525454    0.0    0.0     0.0    0.0
+             capacityAvailable           Main                    278    10525454    0.2    0.1     0.3    0.2
+              capacity                   Main                    285          65    0.0    0.0     0.0    0.0
+              nodeType                   Main                    284    10525454    0.0    0.0     0.0    0.0
+              ==                         Main                    283    10525454    0.0    0.0     0.0    0.0
+              inColor                    Main                    281    10525454    0.0    0.0     0.0    0.0
+              /=                         Main                    279    10525454    0.0    0.1     0.1    0.1
+               ==                        Main                    280    10525454    0.0    0.0     0.0    0.0
+             mana                        Main                    277    10525454    0.0    0.0     0.0    0.0
+           trySendToAnyLink.dest         Main                    259    10525455    0.0    0.0     0.0    0.0
+           trySendToAnyLink.nodes        Main                    243   105254648    0.2    0.0     0.2    0.0
+           trySendToAnyLink.(...)        Main                    228   105254680    0.0    0.0     0.0    0.0
+           trySendToAnyLink.links        Main                    227   105254680    0.2    0.0     0.2    0.0
+           trySendToAnyLink.sourceLinks  Main                    225   105254680    0.3    0.6     9.2    3.0
+            nodeID                       Main                    231   105254680    0.1    0.0     0.1    0.0
+            channelsFrom                 Main                    226   105254680    3.5    2.4     8.8    2.4
+             channelsFrom.\              Main                    229  1052545295    3.0    0.0     5.3    0.0
+              ==                         Main                    230  1052545295    2.3    0.0     2.3    0.0
+           trySendToAnyLink.destIDs      Main                    224   105254680    1.5    3.6     1.5    3.6
+            trySendToAnyLink.destIDs.\   Main                    246   168407525    0.0    0.0     0.0    0.0
+           trySendToAnyLink.dests        Main                    223   105254680    1.2    3.6     9.5   10.0
+            grabNode                     Main                    240   168407525    0.5    2.4     8.3    6.4
+             getNode                     Main                    242   652579340    4.2    4.0     7.4    4.0
+              nodeID                     Main                    245   652579340    1.0    0.0     1.0    0.0
+              ==                         Main                    244   652579340    2.1    0.0     2.1    0.0
+             smashJust                   Main                    241   168407525    0.4    0.0     0.4    0.0
+           trySendToAnyLink.goodDests    Main                    222   105254680    0.7    0.5     7.9    7.7
+            trySendToAnyLink.goodDests.\ Main                    233   168407525    0.8    1.2     7.2    7.2
+             maxTransferQuantity         Main                    234   168407525    1.6    2.9     6.4    6.0
+              outColor                   Main                    247   168407525    0.2    0.0     0.2    0.0
+              capacityAvailable          Main                    236   168407525    1.9    1.9     4.1    3.1
+               capacity                  Main                    250   126305864    0.4    0.0     0.4    0.0
+               nodeType                  Main                    249   168407525    0.3    0.0     0.3    0.0
+               ==                        Main                    248   168407525    0.2    0.0     0.2    0.0
+               inColor                   Main                    239   168407525    0.3    0.0     0.3    0.0
+               /=                        Main                    237   168407525    0.8    1.2     1.1    1.2
+                ==                       Main                    238   168407525    0.3    0.0     0.3    0.0
+              mana                       Main                    235   168407525    0.4    0.0     0.4    0.0
+          nodeType                       Main                    220   189458424    0.0    0.0     0.0    0.0
+      solveStep.chosenChannels           Main                     97          93    0.0    0.0     0.0    0.0
+       chooseChannel                     Main                     98        2646    0.0    0.0     0.0    0.0
+        listContains                     Main                    187         808    0.0    0.0     0.0    0.0
+         ==                              Main                    292         715    0.0    0.0     0.0    0.0
+          ==                             Main                    293         729    0.0    0.0     0.0    0.0
+        maxTransferQuantity              Main                    177         436    0.0    0.0     0.0    0.0
+         outColor                        Main                    183         436    0.0    0.0     0.0    0.0
+         capacityAvailable               Main                    179         436    0.0    0.0     0.0    0.0
+          capacity                       Main                    186         400    0.0    0.0     0.0    0.0
+          nodeType                       Main                    185         436    0.0    0.0     0.0    0.0
+          ==                             Main                    184         436    0.0    0.0     0.0    0.0
+          inColor                        Main                    182         436    0.0    0.0     0.0    0.0
+          /=                             Main                    180         436    0.0    0.0     0.0    0.0
+           ==                            Main                    181         436    0.0    0.0     0.0    0.0
+         mana                            Main                    178         436    0.0    0.0     0.0    0.0
+        chooseChannel.otherChannels      Main                    176        2553    0.0    0.0     0.0    0.0
+        traceRejection                   Main                    175        2468    0.0    0.0     0.0    0.0
+        nodeType                         Main                    174        2396    0.0    0.0     0.0    0.0
+        ==                               Main                    173        2396    0.0    0.0     0.0    0.0
+        mana                             Main                    172        2561    0.0    0.0     0.0    0.0
+        chooseChannel.destID             Main                    171        2561    0.0    0.0     0.0    0.0
+        chooseChannel.dest               Main                    166        2561    0.0    0.0     0.0    0.0
+         getNode                         Main                    168       13362    0.0    0.0     0.0    0.0
+          nodeID                         Main                    170       13362    0.0    0.0     0.0    0.0
+          ==                             Main                    169       13362    0.0    0.0     0.0    0.0
+         smashJust                       Main                    167        2561    0.0    0.0     0.0    0.0
+        inColor                          Main                    165        2561    0.0    0.0     0.0    0.0
+        chooseChannel.(...)              Main                    164        2561    0.0    0.0     0.0    0.0
+        chooseChannel.sourceID           Main                    163        2561    0.0    0.0     0.0    0.0
+        chooseChannel.source             Main                    158        2561    0.0    0.0     0.0    0.0
+         getNode                         Main                    160        8127    0.0    0.0     0.0    0.0
+          nodeID                         Main                    162        8127    0.0    0.0     0.0    0.0
+          ==                             Main                    161        8127    0.0    0.0     0.0    0.0
+         smashJust                       Main                    159        2561    0.0    0.0     0.0    0.0
+        outColor                         Main                    157        2561    0.0    0.0     0.0    0.0
+        /=                               Main                    155        2561    0.0    0.0     0.0    0.0
+         ==                              Main                    156        2561    0.0    0.0     0.0    0.0
+      solveStep.linkedStates             Main                     96          93    0.0    0.0     0.0    0.0
+       linkNodes                         Main                    197          93    0.0    0.0     0.0    0.0
+        linkNodes.sourcedChannels        Main                    297          36    0.0    0.0     0.0    0.0
+         chooseChannel                   Main                    298        1089    0.0    0.0     0.0    0.0
+          listContains                   Main                    331        1166    0.0    0.0     0.0    0.0
+           ==                            Main                    332        1038    0.0    0.0     0.0    0.0
+            ==                           Main                    333        1056    0.0    0.0     0.0    0.0
+          maxTransferQuantity            Main                    321         320    0.0    0.0     0.0    0.0
+           outColor                      Main                    327         320    0.0    0.0     0.0    0.0
+           capacityAvailable             Main                    323         320    0.0    0.0     0.0    0.0
+            capacity                     Main                    330         267    0.0    0.0     0.0    0.0
+            nodeType                     Main                    329         320    0.0    0.0     0.0    0.0
+            ==                           Main                    328         320    0.0    0.0     0.0    0.0
+            inColor                      Main                    326         320    0.0    0.0     0.0    0.0
+            /=                           Main                    324         320    0.0    0.0     0.0    0.0
+             ==                          Main                    325         320    0.0    0.0     0.0    0.0
+           mana                          Main                    322         320    0.0    0.0     0.0    0.0
+          chooseChannel.otherChannels    Main                    320        1053    0.0    0.0     0.0    0.0
+          traceRejection                 Main                    319         925    0.0    0.0     0.0    0.0
+          nodeType                       Main                    318         840    0.0    0.0     0.0    0.0
+          ==                             Main                    317         840    0.0    0.0     0.0    0.0
+          mana                           Main                    316        1053    0.0    0.0     0.0    0.0
+          chooseChannel.destID           Main                    315        1053    0.0    0.0     0.0    0.0
+          chooseChannel.dest             Main                    310        1053    0.0    0.0     0.0    0.0
+           getNode                       Main                    312        5604    0.0    0.0     0.0    0.0
+            nodeID                       Main                    314        5604    0.0    0.0     0.0    0.0
+            ==                           Main                    313        5604    0.0    0.0     0.0    0.0
+           smashJust                     Main                    311        1053    0.0    0.0     0.0    0.0
+          inColor                        Main                    309        1053    0.0    0.0     0.0    0.0
+          chooseChannel.(...)            Main                    308        1053    0.0    0.0     0.0    0.0
+          chooseChannel.sourceID         Main                    307        1053    0.0    0.0     0.0    0.0
+          chooseChannel.source           Main                    302        1053    0.0    0.0     0.0    0.0
+           getNode                       Main                    304        3359    0.0    0.0     0.0    0.0
+            nodeID                       Main                    306        3359    0.0    0.0     0.0    0.0
+            ==                           Main                    305        3359    0.0    0.0     0.0    0.0
+           smashJust                     Main                    303        1053    0.0    0.0     0.0    0.0
+          outColor                       Main                    301        1053    0.0    0.0     0.0    0.0
+          /=                             Main                    299        1053    0.0    0.0     0.0    0.0
+           ==                            Main                    300        1053    0.0    0.0     0.0    0.0
+        linkNodes.destChannels           Main                    295          36    0.0    0.0     0.0    0.0
+         channelsFrom                    Main                    296          36    0.0    0.0     0.0    0.0
+          channelsFrom.\                 Main                    334         128    0.0    0.0     0.0    0.0
+           ==                            Main                    335         128    0.0    0.0     0.0    0.0
+        traceRejection                   Main                    294          36    0.0    0.0     0.0    0.0
+        linkNodes.sourcedState           Main                    209          93    0.0    0.0     0.0    0.0
+         linkChannel                     Main                    210          93    0.0    0.0     0.0    0.0
+          linkChannel.links              Main                    232          93    0.0    0.0     0.0    0.0
+          linkChannel.nodes              Main                    218          93    0.0    0.0     0.0    0.0
+          invertChannel                  Main                    217          93    0.0    0.0     0.0    0.0
+          linkChannel.(...)              Main                    213          93    0.0    0.0     0.0    0.0
+          linkChannel.channels           Main                    212          93    0.0    0.0     0.0    0.0
+          arrayRemove                    Main                    211        4670    0.0    0.0     0.0    0.0
+           arrayRemove.\                 Main                    216        2744    0.0    0.0     0.0    0.0
+           ==                            Main                    214        4611    0.0    0.0     0.0    0.0
+            ==                           Main                    215        5057    0.0    0.0     0.0    0.0
+        linkNodes.(...)                  Main                    208          93    0.0    0.0     0.0    0.0
+        linkNodes.destID                 Main                    207          93    0.0    0.0     0.0    0.0
+        linkNodes.(...)                  Main                    204          93    0.0    0.0     0.0    0.0
+        linkNodes.nodes                  Main                    203          93    0.0    0.0     0.0    0.0
+        linkNodes.dest                   Main                    199          93    0.0    0.0     0.0    0.0
+         grabNode                        Main                    200          93    0.0    0.0     0.0    0.0
+          getNode                        Main                    202         645    0.0    0.0     0.0    0.0
+           nodeID                        Main                    206         645    0.0    0.0     0.0    0.0
+           ==                            Main                    205         645    0.0    0.0     0.0    0.0
+          smashJust                      Main                    201          93    0.0    0.0     0.0    0.0
+        nodeType                         Main                    198          93    0.0    0.0     0.0    0.0
+   showSolution                          Main                     91           1    0.0    0.0     0.0    0.0
+    showListExploded                     Main                     92           1    0.0    0.0     0.0    0.0
+ CAF                                     Debug.Trace              87           0    0.0    0.0     0.0    0.0
+ CAF                                     GHC.Conc.Signal          84           0    0.0    0.0     0.0    0.0
+ CAF                                     GHC.IO.Encoding          78           0    0.0    0.0     0.0    0.0
+ CAF                                     GHC.IO.Encoding.Iconv    76           0    0.0    0.0     0.0    0.0
+ CAF                                     GHC.IO.Handle.FD         68           0    0.0    0.0     0.0    0.0
+ CAF                                     GHC.TopHandler           63           0    0.0    0.0     0.0    0.0

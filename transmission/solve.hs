@@ -33,7 +33,7 @@ data NodeType = Sender | Receiver | Broadcaster deriving (Show, Eq)
 
 data Channel = Channel NodeID NodeID deriving (Eq)
 instance Show Channel where
-    show (Channel (NodeID sourceID) (NodeID destID)) = "{" ++ show sourceID ++ "->" ++ show destID ++ "}"
+    show (Channel (NodeID sourceID) (NodeID destID)) = "{" ++ show sourceID ++ "-" ++ show destID ++ "}"
     
 data Node = Node {
     nodeID :: NodeID,
@@ -151,6 +151,11 @@ smashJust :: Maybe a -> String -> a
 smashJust Nothing message = error message
 smashJust (Just q) _ = q
 
+applySolution :: [Channel] -> State -> [State]
+applySolution [] state = [state]
+applySolution (link:links) state = state : (applySolution links newState)
+    where newState = flowLinksRepeated (linkChannel link state)
+
 solveStep :: State -> [State]
 solveStep state = map flowLinksRepeated linkedStates
     where linkedStates = map (linkNodes state) chosenChannels
@@ -204,11 +209,11 @@ invertChannel (Channel x y) = Channel y x
 flowLinksRepeated :: State -> State
 flowLinksRepeated state = case (tryFlow state) of
                         Just newState -> flowLinksRepeated newState
-                        Nothing -> state
+                        Nothing -> trace ("flowLinksRepeated just stopped") state
 
 tryFlow :: State -> Maybe State
 tryFlow state
-  | length transfers > 0 = Just $ foldr splashLinks (State newNodes channels links) dests
+  | length transfers > 0 = trace ("splashing dests " ++ (show dests)) (Just $ foldr splashLinks (State newNodes channels links) dests)
   | otherwise = Nothing
     where State nodes channels links = state
           transfers = catMaybes (map (tryFlowNode state) nodes)
@@ -220,7 +225,7 @@ splashLinks :: Node -> State -> State
 splashLinks target state
   | nodeType target == Broadcaster = foldr linkChannel state targetsChannels
   | otherwise = state
-    where targetsChannels = channelsFrom (nodeID target) (chooseChannel state)
+    where targetsChannels = trace ("channelsFrom (" ++ (show $ nodeID target) ++ ") (chooseChannel " ++ (show state)) (channelsFrom (nodeID target) (chooseChannel state))
 
 tryFlowNode :: State -> Node -> Maybe Transfer
 tryFlowNode state source = case (nodeType source) of
@@ -270,7 +275,7 @@ transferFrom quantity source nodes = replaceNode newSource nodes
     where newSource = source { mana = (mana source) - quantity }
 
 transferTo :: Int -> Node -> [Node] -> [Node]
-transferTo quantity dest nodes = replaceNode newDest nodes
+transferTo quantity dest nodes = if (capacity newDest < 0) then error ("not enough capacity in " ++ (show newDest) ++ " from " ++ (show dest)) else replaceNode newDest nodes
     where newDest = dest { mana = (mana dest) + quantity, capacity = (capacity dest) - quantity }
 
         
@@ -434,6 +439,7 @@ puzzle4_7 = State nodes channels []
                                  (7, [4, 8])
                              ]
 
+-- a solution: {2-7} {5-6} {1-2} {3-4} {3-8} {4-9}
 puzzle4_9 = State nodes channels []
             where nodes = [
                               sender 1 White 0 1,
@@ -470,5 +476,7 @@ main = do
     --let puzzle = puzzle4_1_rc
     
     let solution = solve puzzle
+    --let solution = applySolution [(channel 2 7), (channel 5 6), (channel 1 2), (channel 3 4), (channel 3 8), (channel 4 9)] puzzle4_9
     putStrLn $ showSolution solution
-    putStrLn $ show $ length $ solution
+    putStrLn $ "Solutions: " ++ (show $ length $ solution)
+    putStrLn $ "Winners: " ++ (show $ length $ filter (\(State nodes _ _) -> winner nodes) solution)

@@ -1,6 +1,7 @@
 
 import Data.Maybe
 import Debug.Trace
+import Control.Monad
 
 --traceRejection x y = trace x y
 traceStep s = traceShowId s
@@ -261,8 +262,10 @@ trySendToAnyLink state source
             quantity = maxTransferQuantity source dest
 
 applyTransfer :: [Node] -> Transfer -> [Node]
-applyTransfer nodes (Transfer quantity source dests) = transferFrom quantity source destedNodes
-    where destedNodes = foldr (transferTo quantity) nodes dests
+applyTransfer nodes (Transfer quantity source dests) = case rawDestedNodes of
+    Left x -> error x
+    Right destedNodes -> transferFrom quantity source destedNodes
+    where rawDestedNodes = foldM (transferTo quantity) nodes dests
 
 -- values.reduce(function (kindler, value) {
 --     return kindler.call(value);
@@ -274,8 +277,10 @@ transferFrom :: Int -> Node -> [Node] -> [Node]
 transferFrom quantity source nodes = replaceNode newSource nodes
     where newSource = source { mana = (mana source) - quantity }
 
-transferTo :: Int -> Node -> [Node] -> [Node]
-transferTo quantity dest nodes = if (capacity newDest < 0) then error ("not enough capacity in " ++ (show newDest) ++ " from " ++ (show dest)) else replaceNode newDest nodes
+transferTo :: Int -> Node -> [Node] -> Either String [Node]
+transferTo quantity dest nodes
+  | (capacity newDest < 0) = Left ("not enough capacity in " ++ (show newDest) ++ " from " ++ (show dest))
+  | otherwise = Right (replaceNode newDest nodes)
     where newDest = dest { mana = (mana dest) + quantity, capacity = (capacity dest) - quantity }
 
         

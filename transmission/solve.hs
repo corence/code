@@ -210,7 +210,7 @@ invertChannel (Channel x y) = Channel y x
 flowLinksRepeated :: State -> State
 flowLinksRepeated state = case (tryFlow state) of
                         Just newState -> flowLinksRepeated newState
-                        Nothing -> trace ("flowLinksRepeated just stopped") state
+                        Nothing -> state
 
 tryFlow :: State -> Maybe State
 tryFlow state
@@ -263,7 +263,7 @@ trySendToAnyLink state source
 
 applyTransfer :: [Node] -> Transfer -> [Node]
 applyTransfer nodes (Transfer quantity source dests) = case rawDestedNodes of
-    Left x -> error x
+    Left x -> error (x ++ "... applyTransfer -- nodes:" ++ (showListExploded "\n    " nodes) ++ "quantity: " ++ (show quantity) ++ "\nsource: " ++ (show source) ++ "\ndests: " ++ (showListExploded "\n    " dests))
     Right destedNodes -> transferFrom quantity source destedNodes
     --where rawDestedNodes = foldM (transferTo quantity) nodes dests
     where rawDestedNodes = transferToAll quantity dests nodes
@@ -284,12 +284,17 @@ transferFrom quantity source nodes = replaceNode newSource nodes
     where newSource = source { mana = (mana source) - quantity }
 
 transferTo :: Int -> Node -> [Node] -> Either String [Node]
-transferTo quantity dest nodes
+transferTo sourceQuantity dest nodes
   | (capacity newDest < 0) = Left ("not enough capacity in " ++ (show newDest) ++ " from " ++ (show dest))
   | otherwise = Right (replaceNode newDest nodes)
-    where newDest = dest { mana = (mana dest) + quantity, capacity = (capacity dest) - quantity }
+    where quantity = case (nodeType dest) of
+            Broadcaster -> min sourceQuantity (capacity dest)
+            otherwise -> sourceQuantity
+          newDest = dest { mana = (mana dest) + quantity, capacity = newCapacity }
+          newCapacity = case (nodeType dest) of
+            Broadcaster -> (capacity dest)
+            otherwise -> (capacity dest) - quantity
 
-        
 maxTransferQuantity :: Node -> Node -> Int
 maxTransferQuantity source dest = min (mana source) (capacityAvailable dest (outColor source))
 

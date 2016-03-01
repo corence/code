@@ -265,7 +265,13 @@ applyTransfer :: [Node] -> Transfer -> [Node]
 applyTransfer nodes (Transfer quantity source dests) = case rawDestedNodes of
     Left x -> error x
     Right destedNodes -> transferFrom quantity source destedNodes
-    where rawDestedNodes = foldM (transferTo quantity) nodes dests
+    --where rawDestedNodes = foldM (transferTo quantity) nodes dests
+    where rawDestedNodes = transferToAll quantity dests nodes
+
+transferToAll :: Int -> [Node] -> [Node] -> Either String [Node]
+transferToAll _ [] nodes = Right nodes
+transferToAll quantity (dest:dests) nodes = either (\_ -> result) (\newNodes -> transferToAll quantity dests newNodes) result
+  where result = transferTo quantity dest nodes
 
 -- values.reduce(function (kindler, value) {
 --     return kindler.call(value);

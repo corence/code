@@ -19,12 +19,18 @@ main = do
       putStrLn $ printTreeToSExpressions huffTree
       putStrLn $ stringLines $ printTreeIndented 0 "  " huffTree
       putStrLn $ stringLines $ printTree huffTree
-      runProblem "50f" (Just [True, False]) $ valueToHuffCode huffTree 'd'
-      --runProblem "50g" (HuffLeaf 'e' 9) $ huffTree
+      runProblem "50f" (Just [East, East, East]) $ valueToHuffCode huffTree 'd'
+      runProblem "50g" (Just [East, West, West]) $ valueToHuffCode huffTree 'c'
+      runProblem "50h" (Just [East, East, West, West]) $ valueToHuffCode huffTree 'f'
+      runProblem "50i" (Just [East, West, East]) $ valueToHuffCode huffTree 'b'
+      runProblem "50j" (Just 'f') $ huffCodeToValue huffTree [East, East, West, West]
+      runProblem "50k" Nothing $ huffCodeToValue huffTree [West, East, East, West, West]
+      runProblem "50l" Nothing $ valueToHuffCode huffTree 'q'
 
 type Freq a = (a, Int)
 
-type HuffCode = [Bool]
+data Direction = West | East deriving (Show, Eq)
+type HuffCode = [Direction]
 
 data HuffTree a = HuffNode (HuffTree a) (HuffTree a) Int | HuffLeaf a Int
     deriving (Eq, Show)
@@ -44,13 +50,10 @@ printTreeIndented indent marker (HuffNode leftTree rightTree frequency) = [makeS
 printTree :: (Show a) => HuffTree a -> [String]
 printTree (HuffLeaf value frequency) = [show frequency ++ ":" ++ show value]
 printTree (HuffNode leftTree rightTree frequency) = header : foundations
-  where foundations = mashStrings myNode (printTree leftTree) (printTree rightTree)
+  where foundations = mixStrings (printTree leftTree) separator (printTree rightTree)
         header = centerString (length $ head foundations) myNode
         myNode = show frequency ++ ":*"
-
-mashStrings :: String -> [String] -> [String] -> [String]
-mashStrings header lefts rights = mixStrings lefts separator rights
-  where separator = makeSpace (2 + length header)
+        separator = makeSpace (2 + length myNode)
 
 stringLines :: [String] -> String
 stringLines [] = ""
@@ -60,7 +63,7 @@ mergeStrings :: [String] -> String -> [String] -> [String]
 mergeStrings [] _ [] = []
 mergeStrings (l:ls) _ [] = error $ "mergeStrings: left strings are too long" ++ (show (l:ls))
 mergeStrings [] _ (r:rs) = error $ "mergeStrings: right strings are too long: " ++ (show (r:rs))
-mergeStrings (l:ls) separator (r:rs) = (l ++ separator ++ r) : mergeStrings ls separator rs
+mergeStrings (l:ls) separator (r:rs) = ((centerString (length r) l) ++ separator ++ (centerString (length l) r)) : mergeStrings ls separator rs
 
 mixStrings :: [String] -> String -> [String] -> [String]
 mixStrings ls separator rs
@@ -78,7 +81,9 @@ makeArray 0 _ = []
 makeArray length element = element : makeArray (length-1) element
 
 makeSpace :: Int -> String
-makeSpace n = makeArray n '.'
+makeSpace n
+  | n >= 0 = makeArray n '.'
+  | otherwise = ""
 
 longest :: [[a]] -> [a]
 longest [] = error "the longest array is no array. zen?"
@@ -91,15 +96,23 @@ longest (x:xs)
 freqToHuff :: Freq a -> HuffTree a
 freqToHuff (value, frequency) = HuffLeaf value frequency
 
+-- exhaustive search :(
 valueToHuffCode :: Eq a => HuffTree a -> a -> Maybe HuffCode
 valueToHuffCode (HuffLeaf hValue hFrequency) value
   | hValue == value = Just []
   | otherwise = Nothing
 valueToHuffCode (HuffNode leftTree rightTree _) value = case (valueToHuffCode leftTree value) of
-  Just huffLeft -> Just (False : huffLeft)
+  Just huffLeft -> Just (West : huffLeft)
   Nothing -> case (valueToHuffCode rightTree value) of
-    Just huffRight -> Just (True : huffRight)
+    Just huffRight -> Just (East : huffRight)
     Nothing -> Nothing
+
+-- O(n) where n is the length of the huff code :)
+huffCodeToValue :: Eq a => HuffTree a -> HuffCode -> Maybe a
+huffCodeToValue (HuffLeaf hValue _) [] = Just hValue
+huffCodeToValue (HuffLeaf _ _) _ = Nothing
+huffCodeToValue (HuffNode leftTree _ _) (West:codes) = huffCodeToValue leftTree codes
+huffCodeToValue (HuffNode _ rightTree _) (East:codes) = huffCodeToValue rightTree codes
 
 huffEncode50 :: [HuffTree a] -> HuffTree a
 huffEncode50 [] = error "needs more huffs imo"

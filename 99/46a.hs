@@ -38,20 +38,19 @@ printTreeToSExpressions (HuffLeaf value frequency) = "(" ++ show frequency ++ ":
 printTreeToSExpressions (HuffNode leftTree rightTree frequency) = "(" ++ show frequency ++ ":" ++ printTreeToSExpressions leftTree ++ " " ++ printTreeToSExpressions rightTree ++ ")"
 
 printTreeIndented :: (Show a) => Int -> String -> HuffTree a -> [String]
-printTreeIndented indent marker (HuffLeaf value frequency) = [makeArray indent ' ' ++ marker ++ show frequency ++ ":" ++ show value]
-printTreeIndented indent marker (HuffNode leftTree rightTree frequency) = [makeArray indent ' ' ++ marker ++ show frequency ++ ":"] ++ printTreeIndented (indent + 2) "< " leftTree ++ printTreeIndented (indent + 2) "> " rightTree
+printTreeIndented indent marker (HuffLeaf value frequency) = [makeSpace indent ++ marker ++ show frequency ++ ":" ++ show value]
+printTreeIndented indent marker (HuffNode leftTree rightTree frequency) = [makeSpace indent ++ marker ++ show frequency ++ ":"] ++ printTreeIndented (indent + 2) "< " leftTree ++ printTreeIndented (indent + 2) "> " rightTree
 
 printTree :: (Show a) => HuffTree a -> [String]
 printTree (HuffLeaf value frequency) = [show frequency ++ ":" ++ show value]
 printTree (HuffNode leftTree rightTree frequency) = header : foundations
   where foundations = mashStrings myNode (printTree leftTree) (printTree rightTree)
-        header = centerString (length $ longest foundations) myNode
+        header = centerString (length $ head foundations) myNode
         myNode = show frequency ++ ":*"
 
 mashStrings :: String -> [String] -> [String] -> [String]
 mashStrings header lefts rights = mixStrings lefts separator rights
-  where separator = makeArray (2 + length header) ' '
-        width = (length $ longest lefts) + (length separator) + (length $ longest rights)
+  where separator = makeSpace (2 + length header)
 
 stringLines :: [String] -> String
 stringLines [] = ""
@@ -65,18 +64,21 @@ mergeStrings (l:ls) separator (r:rs) = (l ++ separator ++ r) : mergeStrings ls s
 
 mixStrings :: [String] -> String -> [String] -> [String]
 mixStrings ls separator rs
-  | (length ls > length rs) = mixStrings ls separator (rs ++ [""])
-  | (length ls < length rs) = mixStrings (ls ++ [""]) separator rs
+  | (length ls > length rs) = mixStrings ls separator (rs ++ [makeSpace $ length $ head rs])
+  | (length ls < length rs) = mixStrings (ls ++ [makeSpace $ length $ head ls]) separator rs
   | otherwise = mergeStrings ls separator rs
 
 centerString :: Int -> String -> String
 centerString width s = leftPadding ++ s ++ rightPadding
-  where leftPadding = makeArray ((width - length s) `div` 2) ' '
-        rightPadding = makeArray ((width - length s + 1) `div` 2) ' '
+  where leftPadding = makeSpace ((width - length s) `div` 2)
+        rightPadding = makeSpace ((width - length s + 1) `div` 2)
         
 makeArray :: Int -> a -> [a]
 makeArray 0 _ = []
 makeArray length element = element : makeArray (length-1) element
+
+makeSpace :: Int -> String
+makeSpace n = makeArray n '.'
 
 longest :: [[a]] -> [a]
 longest [] = error "the longest array is no array. zen?"

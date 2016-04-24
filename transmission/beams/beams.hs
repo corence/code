@@ -29,15 +29,33 @@ colorOfOutput node = Just Silver
 --   find a Path that could be a Link
 --     link it!
 runStep :: State -> Maybe State
-runStep initialState = do
-  let linkToFlow = findLinkToFlow initialState
-  if (isJust linkToFlow)
-      then Nothing
-      else do
-          let pathToLink = findPathToLink initialState
-          if (isJust pathToLink)
-              then Nothing
-              else Nothing
+runStep initialState 
+  (findLinkToFlow initialState)
+    true = flowLink -> (newSource, newDest, Maybe newLink)
+  (findPathToLink initialState)
+
+-- for each link:
+--   is the source willing to send?
+--   is at least one dest willing to accept?
+--   if yes + yes, return this link
+--   otherwise, return any other link
+flowAnyLink :: State -> Maybe Link
+flowAnyLink (_, [], _) = Nothing
+flowAnyLink (nodes, (link:links), paths) = do
+  let source = getNode nodes sourceID
+  let color = colorOfOutput source
+  
+  if -- (we flow from this links source)
+      then -- (if we flow to this links dest)
+        then -- (if we need to add a new link)
+
+  if (maybe False anyDestCanReceiveColor (colorOfOutput source))
+      then Just link
+      else flowAnyLink (nodes, links, paths)
+  where source = getNode nodes sourceID
+        dests = map (getNode nodes) destIDs
+        (sourceID, destIDs) = link
+        anyDestCanReceiveColor color = any (canReceive color) dests
 
 -- for each link:
 --   is the source willing to send?
@@ -63,13 +81,13 @@ findLinkToFlow (nodes, (link:links), paths) =
 findPathToLink :: State -> Maybe Path
 findPathToLink (_, _, []) = Nothing
 findPathToLink (nodes, links, (path:paths)) =
-  if (canReceive color dest)
+  if (maybe False destCanReceiveColor (colorOfOutput source))
       then Just path
       else findPathToLink (nodes, links, paths)
-    where source = getNode nodes sourceID
-          dest = getNode nodes destID
-          (sourceID, destID) = path
-          color = colorOfOutput source
+  where source = getNode nodes sourceID
+        dest = getNode nodes destID
+        (sourceID, destID) = path
+        destCanReceiveColor color = canReceive color dest
   
 
 main = do

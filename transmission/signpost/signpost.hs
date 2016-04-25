@@ -145,7 +145,19 @@ react :: Board -> Maybe Action
 react board
   | length results > 0 = Just (head results)
   | otherwise = Nothing
-  where results = catMaybes (map (reactSingleOutput board) board)
+  --where results = catMaybes (map (reactSingleOutput board) board)
+  where results = convergeMaybes [(map (reactSingleOutput board) board)]
+
+convergeMaybes :: [[Maybe a]] -> [a]
+convergeMaybes maybeList = foldr (\maybes justs -> prependMaybes justs maybes) [] maybeList
+
+prependMaybes :: [a] -> [Maybe a] -> [a]
+prependMaybes justs maybes = foldr addIfHasValue justs maybes
+    where addIfHasValue :: Maybe b -> [b] -> [b]
+          addIfHasValue possibleValue justies = maybe justies (prepend justies) possibleValue
+
+prepend :: [a] -> a -> [a]
+prepend list element = element : list
 
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =

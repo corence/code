@@ -31,6 +31,8 @@ data SolveState = SolveState {
 --   Maneuver { id: 1-1, parent: 1, action: (first thing you could do after 1), board: (the board after reactions), reactions: [everything that happens auto] }
 --   Maneuver { id: 1-2, parent: 1, action: (second thing you could do after 1), board: (board), reactions: [re] }
 
+solve :: SolveState -> SolveState
+solve state = maybe state solve (solveStep state)
 
 -- given a Maneuver:
 --   - select & remove one of the nextActions. (could be breadth-first, depth-first, or maybe a-star)
@@ -46,8 +48,8 @@ data SolveState = SolveState {
 --   - one thing removed from nextActions
 --   - it is completed and put in maneuvers
 --   - all its followup actions go in nextActions
-doThing :: SolveState -> Maybe SolveState
-doThing state
+solveStep :: SolveState -> Maybe SolveState
+solveStep state
   | length (statePossibleActions state) <= 0 = Nothing
   | otherwise =
     let (maneuver:newPossibles) = statePossibleActions state in
@@ -127,22 +129,38 @@ puzzle1 = Map.fromList [
     ]
     -}
 
-puzzle2 = [
-    ("a1", 0, ["c3"], []),
-    ("a2", 0, ["a1"], []),
-    ("a3", 0, ["a1", "a2"], [])
-    ]
-
 puzzle3 = [
+    ("a1", 1, ["a2", "a3"]),
+    ("a2", 0, ["b3"]),
+    ("a3", 0, ["b2", "c1"]),
+    ("b1", 0, ["c1"]),
+    ("b2", 0, ["c2"]),
+    ("b3", 0, ["b2", "b1"]),
+    ("c1", 0, ["c2", "c3"]),
+    ("c2", 0, ["b2", "a2"]),
+    ("c3", 9, [])
     ]
 
+puzzleToBoard :: [(CellID, Int, [CellID])] -> Board
+puzzleToBoard protoCells = map reify protoCells
+    where reify (cellID, value, outputs) = (cellID, [cellID], value, 1, outputs, (inputs cellID))
+          inputs cellID = map (\(cellID, _, _) -> cellID) (filter (\(_, _, outputs) -> elem cellID outputs) protoCells)
+
+boardToSolveState :: Board -> SolveState
+boardToSolveState board = SolveState {
+    stateManeuvers = Map.empty,
+    statePossibleActions = [
+        Maneuver {
+                mid = "",
+                maneuverParent = "",
+                maneuverAction = ("a1", id),
+                maneuverReactions = [],
+                maneuverBoardBefore = puzzleToBoard puzzle3,
+                maneuverBoardAfter = []
+            }
+        ]
+}
+    
 main = do
-    let firstManeuver = Maneuver {
-        mid = "",
-        maneuverParent = "",
-        maneuverAction = ("a1", id),
-        maneuverReactions = [],
-        maneuverBoardBefore = [],
-        maneuverBoardAfter = []
-    }
-    putStrLn "signposts"
+    let solution = solve (boardToSolveState (puzzleToBoard puzzle3))
+    putStrLn $ "signposts " ++ (show (length (stateManeuvers solution))) ++ (show (length (statePossibleActions solution)))

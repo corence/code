@@ -1,15 +1,26 @@
 
+import Data.List
+import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Debug.Trace
 
 type CellID = String
 type Cell = (CellID, Int, [CellID], [CellID]) -- cell ID, value, outputs, inputs
-type Chain = (CellID, [CellID], Int, Int, [CellID], [CellID]) -- chain ID (same as first cell ID), IDs of all cells, value of first cell, length, outputs, inputs
+
+data Chain = Chain {
+    cid :: CellID,
+    chainCells :: [CellID],
+    chainValue :: Int,
+    chainLength :: Int,
+    chainOutputs :: [CellID],
+    chainInputs :: [CellID]
+}
 
 type Board = [Chain]
 
-type Action = (CellID, (Chain -> Chain))
+--type Action = (CellID, (Chain -> Chain))
+type Action = Board -> Board
 
 type ManeuverID = String
 data Maneuver = Maneuver {
@@ -22,7 +33,7 @@ data Maneuver = Maneuver {
     }
 
 instance Show Maneuver where
-    show maneuver = "m#" ++ mid maneuver 
+    show maneuver = "m#" ++ mid maneuver ++ "{reactions:" ++ (show (length (maneuverReactions maneuver))) ++ "}"
 
 data SolveState = SolveState {
     stateManeuvers :: Map ManeuverID Maneuver,
@@ -43,7 +54,7 @@ solve state = maybe state solve (solveStep state)
 
 solvePrintingly :: SolveState -> SolveState
 solvePrintingly state =
-    trace ("blomers " ++ (show state)) (maybe state id (solveStep state))
+    trace ("solvePrintingly " ++ (show state)) (maybe state id (solveStep state))
     --maybe (return state) solvePrintingly (solveStep state)
     --return state
     
@@ -131,7 +142,35 @@ actionToManeuver board parentID index action = Maneuver {
     }
 
 react :: Board -> Maybe Action
-react board = Nothing
+react board
+  | length results > 0 = Just (head results)
+  | otherwise = Nothing
+  where results = catMaybes (map (reactSingleOutput board) board)
+
+reactSingleOutput :: Board -> Chain -> Maybe Action
+reactSingleOutput board chain =
+    if ((length (chainOutputs chain)) == 1)
+        then Just (linkChains (cid chain) (head (chainOutputs chain)))
+        else Nothing
+
+linkChains :: CellID -> CellID -> Board -> Board
+linkChains chain1ID chain2ID board =
+    newChain : remainder
+        where newChain = chain1
+              remainder = filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board
+              chain1 = getChain chain1ID board
+              chain2 = getChain chain2ID board
+
+getChain :: CellID -> Board -> Chain
+getChain chainID board = fromJust $ find (\chain -> (cid chain) == chainID) board
+
+{-
+reactSingleOutput :: Board -> Chain -> Maybe Action
+reactSingleOutput board (chainID, cellIDs, value, length, outputs, inputs)
+  | length outputs == 1
+    | length tInputs > 1
+      where (getChain board (first outputs))
+      -}
 
 {-
 puzzle1 = Map.fromList [
@@ -158,7 +197,11 @@ puzzle3 = [
 
 puzzleToBoard :: [(CellID, Int, [CellID])] -> Board
 puzzleToBoard protoCells = map reify protoCells
-    where reify (cellID, value, outputs) = (cellID, [cellID], value, 1, outputs, (inputs cellID))
+    where reify (cellID, value, outputs) = Chain {
+        cid = cellID, chainCells = [cellID],
+        chainValue = value, chainLength = 1,
+        chainOutputs = outputs, chainInputs = (inputs cellID)
+    }
           inputs cellID = map (\(cellID, _, _) -> cellID) (filter (\(_, _, outputs) -> elem cellID outputs) protoCells)
 
 boardToSolveState :: Board -> SolveState
@@ -168,7 +211,7 @@ boardToSolveState board = SolveState {
         Maneuver {
                 mid = "",
                 maneuverParent = "",
-                maneuverAction = ("a1", id),
+                maneuverAction = id,
                 maneuverReactions = [],
                 maneuverBoardBefore = puzzleToBoard puzzle3,
                 maneuverBoardAfter = []

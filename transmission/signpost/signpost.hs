@@ -15,9 +15,13 @@ data Chain = Chain {
     chainLength :: Int,
     chainOutputs :: [CellID],
     chainInputs :: [CellID]
-}
+} deriving (Show)
 
 type Board = [Chain]
+
+formatList :: Show a => [a] -> String
+formatList [] = "\n"
+formatList (x:xs) = "\n" ++ (show x) ++ formatList xs
 
 --type Action = (CellID, (Chain -> Chain))
 type Action = Board -> Board
@@ -33,7 +37,8 @@ data Maneuver = Maneuver {
     }
 
 instance Show Maneuver where
-    show maneuver = "m#" ++ mid maneuver ++ "{reactions:" ++ (show (length (maneuverReactions maneuver))) ++ "}"
+    --show maneuver = "m#" ++ mid maneuver ++ "{reactions:" ++ (show (length (maneuverReactions maneuver))) ++ "}"
+    show maneuver = "{m#" ++ mid maneuver ++ "reactions:" ++ (show (length (maneuverReactions maneuver))) ++ ", boardBefore: " ++ (formatList $ maneuverBoardBefore maneuver) ++ ", boardAfter: " ++ (formatList $ maneuverBoardAfter maneuver) ++ "}"
 
 data SolveState = SolveState {
     stateManeuvers :: Map ManeuverID Maneuver,
@@ -54,9 +59,8 @@ solve state = maybe state solve (solveStep state)
 
 solvePrintingly :: SolveState -> SolveState
 solvePrintingly state =
-    trace ("solvePrintingly " ++ (show state)) (maybe state id (solveStep state))
-    --maybe (return state) solvePrintingly (solveStep state)
-    --return state
+    --trace ("solvePrintingly " ++ (show state)) (maybe state id (solveStep state))
+    trace ("solvePrintingly " ++ (show state)) (maybe state solvePrintingly (solveStep state))
     
 --solvePrintingly state = maybe (return state) (\state -> putStrLn ("printingly" ++ (show state))
 
@@ -119,13 +123,11 @@ generateReactions maneuver =
     --   make board
 
     let board = (maneuverBoardAfter maneuver) in
-        maybe maneuver (\reaction -> maneuver { maneuverBoardAfter = applyAction board reaction, maneuverReactions = reaction : (maneuverReactions maneuver) } ) (react board)
+        maybe maneuver (\reaction -> generateReactions (maneuver { maneuverBoardAfter = reaction board, maneuverReactions = reaction : (maneuverReactions maneuver) } )) (react board)
 
+-- this game actually features no guessing so this should always be empty
 act :: Maneuver -> [Action]
 act maneuver = []
-
-applyAction :: Board -> Action -> Board
-applyAction board action = board
 
 actionsToManeuvers :: Board -> ManeuverID -> [Action] -> [Maneuver]
 actionsToManeuvers board parentID actions =
@@ -146,7 +148,9 @@ react board
   | length results > 0 = Just (head results)
   | otherwise = Nothing
   --where results = catMaybes (map (reactSingleOutput board) board)
-  where results = convergeMaybes [(map (reactSingleOutput board) board)]
+  where results = convergeMaybes [
+         map (reactSingleOutput board) board
+         ]
 
 convergeMaybes :: [[Maybe a]] -> [a]
 convergeMaybes maybeList = foldr (\maybes justs -> prependMaybes justs maybes) [] maybeList
@@ -162,16 +166,35 @@ prepend list element = element : list
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =
     if ((length (chainOutputs chain)) == 1)
-        then trace ("reactSingleOutput heist") Just (linkChains (cid chain) (head (chainOutputs chain)))
-        else trace ("reactSingleOutput bad -- " ++ show (length (chainOutputs chain))) Nothing
+        then trace ("reactSingleOutput: link " ++ (cid chain) ++ " with " ++ (show $ head (chainOutputs chain)) ++ " on board " ++ (formatList board)) $ Just (replaceLinkChains (cid chain) (head (chainOutputs chain)))
+        else Nothing
 
-linkChains :: CellID -> CellID -> Board -> Board
-linkChains chain1ID chain2ID board =
+replaceLinkChains :: CellID -> CellID -> Board -> Board
+replaceLinkChains chain1ID chain2ID board =
     newChain : remainder
-        where newChain = chain1
+        where newChain = linkChains chain1 chain2
               remainder = filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board
               chain1 = getChain chain1ID board
               chain2 = getChain chain2ID board
+
+linkChains :: Chain -> Chain -> Chain
+linkChains chain1 chain2 = Chain {
+    cid = (cid chain1),
+    chainCells = (chainCells chain1) ++ (chainCells chain2),
+    chainValue = newValue,
+    chainLength = (chainLength chain1) + (chainLength chain2),
+    chainOutputs = (chainOutputs chain2),
+    chainInputs = (chainInputs chain1)
+}
+    where newValue
+            | value1 == 0 && value2 == 0 = 0
+            | value1 == 0 = value2 - length1
+            | value2 == 0 = value1
+            | value1 == value2 - length1 = value1
+            | otherwise = error "can't link chains due to value mismatch"
+          value1 = chainValue chain1
+          length1 = chainLength chain1
+          value2 = chainValue chain2
 
 getChain :: CellID -> Board -> Chain
 getChain chainID board = fromJust $ find (\chain -> (cid chain) == chainID) board
@@ -232,5 +255,6 @@ boardToSolveState board = SolveState {
 }
     
 main = do
-    let solution = solvePrintingly $ solvePrintingly (boardToSolveState (puzzleToBoard puzzle3))
+    let solution = solvePrintingly (boardToSolveState (puzzleToBoard puzzle3))
     putStrLn $ "signposts maneuvers: " ++ (show (length (stateManeuvers solution))) ++ ", actions: " ++ (show (length (statePossibleActions solution)))
+    putStrLn $ "final solution: " ++ (show solution)

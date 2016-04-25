@@ -91,7 +91,7 @@ solveStep state
         
         --maneuver2 = maneuver { maneuverBoardAfter = applyAction (maneuverAction maneuver) (maneuverBoardBefore maneuver) }
 
-        let maneuver2 = generateReactions maneuver in
+        let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver in
             let followups = act maneuver2 in
                 let followupManeuvers = actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
                     trace ("return actions, followup: " ++ show followupManeuvers ++ ", newP: " ++ show newPossibles) Just SolveState {
@@ -162,8 +162,8 @@ prepend list element = element : list
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =
     if ((length (chainOutputs chain)) == 1)
-        then Just (linkChains (cid chain) (head (chainOutputs chain)))
-        else Nothing
+        then trace ("reactSingleOutput heist") Just (linkChains (cid chain) (head (chainOutputs chain)))
+        else trace ("reactSingleOutput bad -- " ++ show (length (chainOutputs chain))) Nothing
 
 linkChains :: CellID -> CellID -> Board -> Board
 linkChains chain1ID chain2ID board =
@@ -226,7 +226,7 @@ boardToSolveState board = SolveState {
                 maneuverAction = id,
                 maneuverReactions = [],
                 maneuverBoardBefore = puzzleToBoard puzzle3,
-                maneuverBoardAfter = []
+                maneuverBoardAfter = puzzleToBoard puzzle3
             }
         ]
 }

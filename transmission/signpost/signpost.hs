@@ -43,7 +43,7 @@ solve state = maybe state solve (solveStep state)
 
 solvePrintingly :: SolveState -> SolveState
 solvePrintingly state =
-    trace ("blomers " ++ (show state)) state
+    trace ("blomers " ++ (show state)) (maybe state id (solveStep state))
     --maybe (return state) solvePrintingly (solveStep state)
     --return state
     
@@ -65,7 +65,7 @@ solvePrintingly state =
 --   - all its followup actions go in nextActions
 solveStep :: SolveState -> Maybe SolveState
 solveStep state
-  | length (statePossibleActions state) <= 0 = Nothing
+  | length (statePossibleActions state) <= 0 = trace ("skipped a step") Nothing
   | otherwise =
     let (maneuver:newPossibles) = statePossibleActions state in
         -- assume maneuver is incomplete, and looks like this:
@@ -83,9 +83,9 @@ solveStep state
         let maneuver2 = generateReactions maneuver in
             let followups = act maneuver2 in
                 let followupManeuvers = actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
-                    Just SolveState {
+                    trace ("return actions, followup: " ++ show followupManeuvers ++ ", newP: " ++ show newPossibles) Just SolveState {
                         stateManeuvers = Map.insert (mid maneuver2) maneuver2 (stateManeuvers state),
-                        statePossibleActions = followupManeuvers ++ (statePossibleActions state)
+                        statePossibleActions = followupManeuvers ++ newPossibles
                     }
         
         
@@ -177,5 +177,5 @@ boardToSolveState board = SolveState {
 }
     
 main = do
-    let solution = solvePrintingly (boardToSolveState (puzzleToBoard puzzle3))
+    let solution = solvePrintingly $ solvePrintingly (boardToSolveState (puzzleToBoard puzzle3))
     putStrLn $ "signposts maneuvers: " ++ (show (length (stateManeuvers solution))) ++ ", actions: " ++ (show (length (statePossibleActions solution)))

@@ -149,7 +149,8 @@ react board
   | otherwise = Nothing
   --where results = catMaybes (map (reactSingleOutput board) board)
   where results = convergeMaybes [
-         map (reactSingleOutput board) board
+         map (reactSingleOutput board) board,
+         map (reactSingleInput board) board
          ]
 
 convergeMaybes :: [[Maybe a]] -> [a]
@@ -166,19 +167,43 @@ prepend list element = element : list
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =
     if ((length (chainOutputs chain)) == 1)
-        then trace ("reactSingleOutput: link " ++ (cid chain) ++ " with " ++ (show $ head (chainOutputs chain)) ++ " on board " ++ (formatList board)) $ Just (replaceLinkChains (cid chain) (head (chainOutputs chain)))
+        then Just (replaceLinkChains (cid chain) (head (chainOutputs chain)))
+        else Nothing
+
+reactSingleInput :: Board -> Chain -> Maybe Action
+reactSingleInput board chain =
+    if ((length (chainInputs chain)) == 1)
+        then Just (replaceLinkChains (head (chainInputs chain)) (cid chain))
         else Nothing
 
 replaceLinkChains :: CellID -> CellID -> Board -> Board
 replaceLinkChains chain1ID chain2ID board =
     newChain : remainder
         where newChain = linkChains chain1 chain2
-              remainder = filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board
+              remainder = map (replaceChainReferences chain2ID chain1ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
               chain1 = getChain chain1ID board
               chain2 = getChain chain2ID board
 
+replaceChainReferences :: CellID -> CellID -> Chain -> Chain
+replaceChainReferences chain1ID chain2ID chain = chain {
+    chainInputs = map (replaceThing chain1ID chain2ID) (chainInputs chain),
+    chainOutputs = map (replaceThing chain1ID chain2ID) (chainOutputs chain)
+}
+
+replaceThing :: Eq a => a -> a -> a -> a
+replaceThing old new thing =
+    if old == thing
+        then new
+        else thing
+
+listReplace :: Eq a => a -> a -> [a] -> [a]
+listReplace _ _ [] = []
+listReplace old new (x:xs)
+  | old == x = new : listReplace old new xs
+  | otherwise = x : listReplace old new xs
+
 linkChains :: Chain -> Chain -> Chain
-linkChains chain1 chain2 = Chain {
+linkChains chain1 chain2 = trace ("linking " ++ (cid chain1) ++ " with " ++ (cid chain2)) $ Chain {
     cid = (cid chain1),
     chainCells = (chainCells chain1) ++ (chainCells chain2),
     chainValue = newValue,
@@ -197,7 +222,7 @@ linkChains chain1 chain2 = Chain {
           value2 = chainValue chain2
 
 getChain :: CellID -> Board -> Chain
-getChain chainID board = fromJust $ find (\chain -> (cid chain) == chainID) board
+getChain chainID board = fromMaybe (error $ "can't find cid " ++ chainID) $ find (\chain -> (cid chain) == chainID) board
 
 {-
 reactSingleOutput :: Board -> Chain -> Maybe Action

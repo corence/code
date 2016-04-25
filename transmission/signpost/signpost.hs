@@ -1,6 +1,7 @@
 
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Debug.Trace
 
 type CellID = String
 type Cell = (CellID, Int, [CellID], [CellID]) -- cell ID, value, outputs, inputs
@@ -20,10 +21,16 @@ data Maneuver = Maneuver {
         maneuverBoardAfter :: Board
     }
 
+instance Show Maneuver where
+    show maneuver = "m#" ++ mid maneuver 
+
 data SolveState = SolveState {
     stateManeuvers :: Map ManeuverID Maneuver,
     statePossibleActions :: [Maneuver]
     }
+
+instance Show SolveState where
+    show state = "state {maneuvers:" ++ show (stateManeuvers state) ++ ", actions:" ++ show (statePossibleActions state) ++ "}"
 
 -- solving:
 -- generate a tree
@@ -33,6 +40,14 @@ data SolveState = SolveState {
 
 solve :: SolveState -> SolveState
 solve state = maybe state solve (solveStep state)
+
+solvePrintingly :: SolveState -> SolveState
+solvePrintingly state =
+    trace ("blomers " ++ (show state)) state
+    --maybe (return state) solvePrintingly (solveStep state)
+    --return state
+    
+--solvePrintingly state = maybe (return state) (\state -> putStrLn ("printingly" ++ (show state))
 
 -- given a Maneuver:
 --   - select & remove one of the nextActions. (could be breadth-first, depth-first, or maybe a-star)
@@ -162,5 +177,5 @@ boardToSolveState board = SolveState {
 }
     
 main = do
-    let solution = solve (boardToSolveState (puzzleToBoard puzzle3))
-    putStrLn $ "signposts " ++ (show (length (stateManeuvers solution))) ++ (show (length (statePossibleActions solution)))
+    let solution = solvePrintingly (boardToSolveState (puzzleToBoard puzzle3))
+    putStrLn $ "signposts maneuvers: " ++ (show (length (stateManeuvers solution))) ++ ", actions: " ++ (show (length (statePossibleActions solution)))

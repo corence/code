@@ -196,11 +196,8 @@ replaceThing old new thing =
         then new
         else thing
 
-listReplace :: Eq a => a -> a -> [a] -> [a]
-listReplace _ _ [] = []
-listReplace old new (x:xs)
-  | old == x = new : listReplace old new xs
-  | otherwise = x : listReplace old new xs
+removeThingFromList :: Eq a => a -> [a] -> [a]
+removeThingFromList thing list = filter (/= thing) list
 
 linkChains :: Chain -> Chain -> Chain
 linkChains chain1 chain2 = trace ("linking " ++ (cid chain1) ++ " with " ++ (cid chain2)) $ Chain {
@@ -208,8 +205,8 @@ linkChains chain1 chain2 = trace ("linking " ++ (cid chain1) ++ " with " ++ (cid
     chainCells = (chainCells chain1) ++ (chainCells chain2),
     chainValue = newValue,
     chainLength = (chainLength chain1) + (chainLength chain2),
-    chainOutputs = (chainOutputs chain2),
-    chainInputs = (chainInputs chain1)
+    chainOutputs = filter (/= (cid chain1)) (chainOutputs chain2),
+    chainInputs = filter (/= (cid chain2)) (chainInputs chain1)
 }
     where newValue
             | value1 == 0 && value2 == 0 = 0

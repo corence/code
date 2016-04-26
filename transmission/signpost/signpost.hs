@@ -180,14 +180,14 @@ replaceLinkChains :: CellID -> CellID -> Board -> Board
 replaceLinkChains chain1ID chain2ID board =
     newChain : remainder
         where newChain = linkChains chain1 chain2
-              remainder = map (replaceChainReferences chain2ID chain1ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
+              remainder = map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
               chain1 = getChain chain1ID board
               chain2 = getChain chain2ID board
 
 replaceChainReferences :: CellID -> CellID -> Chain -> Chain
 replaceChainReferences chain1ID chain2ID chain = chain {
-    chainInputs = map (replaceThing chain1ID chain2ID) (chainInputs chain),
-    chainOutputs = map (replaceThing chain1ID chain2ID) (chainOutputs chain)
+    chainInputs = map (replaceThing chain2ID chain1ID) (chainInputs chain),
+    chainOutputs = filter (/= chain2ID) (chainOutputs chain)
 }
 
 replaceThing :: Eq a => a -> a -> a -> a
@@ -195,9 +195,6 @@ replaceThing old new thing =
     if old == thing
         then new
         else thing
-
-removeThingFromList :: Eq a => a -> [a] -> [a]
-removeThingFromList thing list = filter (/= thing) list
 
 linkChains :: Chain -> Chain -> Chain
 linkChains chain1 chain2 = trace ("linking " ++ (cid chain1) ++ " with " ++ (cid chain2)) $ Chain {
@@ -302,13 +299,13 @@ boardToSolveState board = SolveState {
                 maneuverParent = "",
                 maneuverAction = id,
                 maneuverReactions = [],
-                maneuverBoardBefore = puzzleToBoard puzzle3,
-                maneuverBoardAfter = puzzleToBoard puzzle3
+                maneuverBoardBefore = board,
+                maneuverBoardAfter = board
             }
         ]
 }
     
 main = do
-    let solution = solvePrintingly (boardToSolveState (puzzleToBoard puzzle3))
+    let solution = solvePrintingly (boardToSolveState (puzzleToBoard puzzle5))
     putStrLn $ "signposts maneuvers: " ++ (show (length (stateManeuvers solution))) ++ ", actions: " ++ (show (length (statePossibleActions solution)))
     putStrLn $ "final solution: " ++ (show solution)

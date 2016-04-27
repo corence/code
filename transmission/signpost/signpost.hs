@@ -93,15 +93,14 @@ solveStep state
         --      maneuverBoardAfter :: Board -- this is EMPTY (or whatever)
         --    }
         
-        --maneuver2 = maneuver { maneuverBoardAfter = applyAction (maneuverAction maneuver) (maneuverBoardBefore maneuver) }
-
-        let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver in
-            let followups = act maneuver2 in
-                let followupManeuvers = actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
-                    trace ("return actions, followup: " ++ show followupManeuvers ++ ", newP: " ++ show newPossibles) Just SolveState {
-                        stateManeuvers = Map.insert (mid maneuver2) maneuver2 (stateManeuvers state),
-                        statePossibleActions = followupManeuvers ++ newPossibles
-                    }
+        let maneuver1 = maneuver { maneuverBoardAfter = (maneuverAction maneuver) (maneuverBoardBefore maneuver) } in
+            let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver1 in
+                let followups = act (maneuverBoardAfter maneuver2) in
+                    let followupManeuvers = actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
+                        trace ("return actions, followup: " ++ show followupManeuvers ++ ", newP: " ++ show newPossibles) Just SolveState {
+                            stateManeuvers = Map.insert (mid maneuver2) maneuver2 (stateManeuvers state),
+                            statePossibleActions = followupManeuvers ++ newPossibles
+                        }
         
         
 
@@ -126,8 +125,9 @@ generateReactions maneuver =
         maybe maneuver (\reaction -> generateReactions (maneuver { maneuverBoardAfter = reaction board, maneuverReactions = reaction : (maneuverReactions maneuver) } )) (react board)
 
 -- this game actually features no guessing so this should always be empty
-act :: Maneuver -> [Action]
-act maneuver = []
+act :: Board -> [Action]
+act board = concat (map linkToEveryOutput board)
+    where linkToEveryOutput chain = map (\output -> replaceLinkChains (cid chain) output) (chainOutputs chain)
 
 actionsToManeuvers :: Board -> ManeuverID -> [Action] -> [Maneuver]
 actionsToManeuvers board parentID actions =

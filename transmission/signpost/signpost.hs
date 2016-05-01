@@ -92,6 +92,9 @@ solveStep state
         --      maneuverBoardBefore :: Board, -- this is finalized
         --      maneuverBoardAfter :: Board -- this is EMPTY (or whatever)
         --    }
+
+        -- do action
+        -- 
         
         let maneuver1 = maneuver { maneuverBoardAfter = (maneuverAction maneuver) (maneuverBoardBefore maneuver) } in
             let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver1 in
@@ -179,44 +182,101 @@ reactSingleInput board chain =
 replaceLinkChains :: CellID -> CellID -> Board -> Board
 replaceLinkChains chain1ID chain2ID board =
     newChain : remainder
-        where newChain = linkChains chain1 chain2
-              remainder = map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
+        where newChain = verifyChain $ linkChains chain1 chain2
+              remainder1 = map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
+              remainder = disconnectValueMismatches (cid newChain) remainder1
               chain1 = getChain chain1ID board
               chain2 = getChain chain2ID board
 
+disconnectValueMismatches :: CellID -> Board -> Board
+disconnectValueMismatches chainID board =
+    let boardA = foldr (\outputID board1 -> disconnectIfValueMismatch chain (getChain outputID board1) board1) board (chainOutputs chain) in
+        foldr (\inputID board1 -> disconnectIfValueMismatch (getChain inputID board1) chain board1) boardA (chainInputs chain)
+    where disconnectIfValueMismatch :: Chain -> Chain -> Board -> Board
+          disconnectIfValueMismatch chain1 chain2 board =
+              if valueMismatch chain1 chain2
+                  then dropOutputs (cid chain1) (cid chain2) (dropInputs (cid chain2) (cid chain1) board)
+                  else board
+          
+          dropOutputs :: CellID -> CellID -> Board -> Board
+          dropOutputs chainID outputID board1 = map (\c -> replaceChain chainID chain { chainOutputs = filter (/= outputID) (chainOutputs chain) } c) board1
+          dropInputs chainID inputID board1 = map (\c -> replaceChain chainID chain { chainInputs = filter (/= inputID) (chainInputs chain) } c) board1
+          chain = getChain chainID board
+
+valueMismatch :: Chain -> Chain -> Bool
+valueMismatch chain1 chain2
+  | (chainValue chain1 == 0) || (chainValue chain2 == 0) = False
+  | (chainValue chain1 + chainLength chain1) /= (chainValue chain2) = False
+  | otherwise = True
+
+--convergeMaybes maybeList = foldr (\maybes justs -> prependMaybes justs maybes) [] maybeList
+  -- for each input/output,
+  --   if the two chains have a value mismatch,
+  --     then drop them from each other's input/output
+  
+
+-- replace references from the old chain to the new chain
 replaceChainReferences :: CellID -> CellID -> Chain -> Chain
 replaceChainReferences chain1ID chain2ID chain = chain {
     chainInputs = map (replaceThing chain2ID chain1ID) (chainInputs chain),
     chainOutputs = filter (/= chain2ID) (chainOutputs chain)
 }
 
+verifyChain :: Chain -> Chain
+verifyChain chain
+  | (chainValue chain == 1) && (not (null (chainInputs chain))) = error $ "bad chain -- first chain shouldn't have inputs:\n" ++ (show chain)
+  | otherwise = chain
+
+{-
 replaceThing :: Eq a => a -> a -> a -> a
 replaceThing old new thing =
     if old == thing
         then new
         else thing
+-}
+
+replaceThing :: Eq a => a -> a -> a -> a
+replaceThing old new thing = replaceThingGood (== old) new thing
+
+replaceThingGood :: (a -> Bool) -> a -> a -> a
+replaceThingGood qualifier replacement thing =
+    if qualifier thing
+        then replacement
+        else thing
+
+replaceChain :: CellID -> Chain -> Chain -> Chain
+replaceChain chainID replacement chain =
+    replaceThingGood (\c -> (cid c) == chainID) replacement chain
 
 linkChains :: Chain -> Chain -> Chain
-linkChains chain1 chain2 = trace ("linking " ++ (cid chain1) ++ " with " ++ (cid chain2)) $ Chain {
-    cid = (cid chain1),
+linkChains chain1 chain2 = trace ("linking " ++ cid1 ++ " with " ++ cid2) $ Chain {
+    cid = cid1,
     chainCells = (chainCells chain1) ++ (chainCells chain2),
     chainValue = newValue,
     chainLength = (chainLength chain1) + (chainLength chain2),
-    chainOutputs = filter (/= (cid chain1)) (chainOutputs chain2),
-    chainInputs = filter (/= (cid chain2)) (chainInputs chain1)
+    chainOutputs = filter (/= cid1) (chainOutputs chain2),
+    chainInputs = filter (/= cid2) (chainInputs chain1)
 }
     where newValue
             | value1 == 0 && value2 == 0 = 0
             | value1 == 0 = value2 - length1
             | value2 == 0 = value1
             | value1 == value2 - length1 = value1
-            | otherwise = error "can't link chains due to value mismatch"
+            | otherwise = error $ "can't link chains from\n" ++ (show chain1) ++ "\nto\n" ++ (show chain2) ++ "\ndue to value mismatch"
+          cid1 = cid chain1
+          cid2 = cid chain2
           value1 = chainValue chain1
           length1 = chainLength chain1
           value2 = chainValue chain2
 
 getChain :: CellID -> Board -> Chain
 getChain chainID board = fromMaybe (error $ "can't find cid " ++ chainID) $ find (\chain -> (cid chain) == chainID) board
+
+setChain :: CellID -> Chain -> Board -> Board
+setChain chainID chain [] = []
+setChain chainID chain (c:cs)
+  | (cid c) == chainID = chain : cs
+  | otherwise = c : (setChain chainID chain cs)
 
 {-
 reactSingleOutput :: Board -> Chain -> Maybe Action
@@ -271,14 +331,14 @@ puzzle5 = [
     ("d1", 0, ["e1"]),
     ("d2", 0, ["c2", "b2", "a2"]),
     ("d3", 0, ["d4", "d5"]),
-    ("d4", 0, ["c3", "b2", "a1"]),
+    ("d4", 0, ["b2", "a1"]),
     ("d5", 0, ["e4"]),
 
     ("e1", 0, ["e2", "e3", "e4", "e5"]),
     ("e2", 0, ["d2", "c2", "b2", "a2"]),
     ("e3", 12, ["e4", "e5"]),
     ("e4", 0, ["d3", "c2", "b1"]),
-    ("e5", 0, ["d4", "c3", "b2", "a1"])
+    ("e5", 0, ["d4", "b2", "a1"])
     ]
 
 puzzleToBoard :: [(CellID, Int, [CellID])] -> Board

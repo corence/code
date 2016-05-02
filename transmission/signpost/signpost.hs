@@ -96,10 +96,10 @@ solveStep state
         -- do action
         -- 
         
-        let maneuver1 = maneuver { maneuverBoardAfter = (maneuverAction maneuver) (maneuverBoardBefore maneuver) } in
-            let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver1 in
-                let followups = act (maneuverBoardAfter maneuver2) in
-                    let followupManeuvers = actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
+        let maneuver1 = maneuver { maneuverBoardAfter = (maneuverAction maneuver) (maneuverBoardBefore maneuver) } :: Maneuver in
+            let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver1 :: Maneuver in
+                let followups = trace ("applying reactions") $ act (maneuverBoardAfter maneuver2) :: [Action] in
+                    let followupManeuvers = trace ("generating followups from " ++ (show followups)) $ actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
                         trace ("return actions, followup: " ++ show followupManeuvers ++ ", newP: " ++ show newPossibles) Just SolveState {
                             stateManeuvers = Map.insert (mid maneuver2) maneuver2 (stateManeuvers state),
                             statePossibleActions = followupManeuvers ++ newPossibles
@@ -225,7 +225,7 @@ replaceChainReferences chain1ID chain2ID chain = chain {
 verifyChain :: Chain -> Chain
 verifyChain chain
   | (chainValue chain == 1) && (not (null (chainInputs chain))) = error $ "bad chain -- first chain shouldn't have inputs:\n" ++ (show chain)
-  | otherwise = chain
+  | otherwise = trace ("nascent chain: " ++ (show chain)) chain
 
 {-
 replaceThing :: Eq a => a -> a -> a -> a

@@ -24,7 +24,13 @@ formatList [] = "\n"
 formatList (x:xs) = "\n" ++ (show x) ++ formatList xs
 
 --type Action = (CellID, (Chain -> Chain))
-type Action = Board -> Board
+data Action = Action {
+    actionName :: String,
+    actionAction :: Board -> Board
+}
+
+instance Show Action where
+    show action = actionName action
 
 type ManeuverID = String
 data Maneuver = Maneuver {
@@ -38,7 +44,8 @@ data Maneuver = Maneuver {
 
 instance Show Maneuver where
     --show maneuver = "m#" ++ mid maneuver ++ "{reactions:" ++ (show (length (maneuverReactions maneuver))) ++ "}"
-    show maneuver = "{m#" ++ mid maneuver ++ "reactions:" ++ (show (length (maneuverReactions maneuver))) ++ ", boardBefore: " ++ (formatList $ maneuverBoardBefore maneuver) ++ ", boardAfter: " ++ (formatList $ maneuverBoardAfter maneuver) ++ "}"
+    --show maneuver = "{m#" ++ mid maneuver ++ "reactions:" ++ (show (length (maneuverReactions maneuver))) ++ ", boardBefore: " ++ (formatList $ maneuverBoardBefore maneuver) ++ ", boardAfter: " ++ (formatList $ maneuverBoardAfter maneuver) ++ "}"
+    show maneuver = "{m#" ++ mid maneuver ++ "reactions:" ++ (show (maneuverReactions maneuver)) ++ ", boardBefore: " ++ (formatList $ maneuverBoardBefore maneuver) ++ ", boardAfter: " ++ (formatList $ maneuverBoardAfter maneuver) ++ "}"
 
 data SolveState = SolveState {
     stateManeuvers :: Map ManeuverID Maneuver,
@@ -96,7 +103,7 @@ solveStep state
         -- do action
         -- 
         
-        let maneuver1 = maneuver { maneuverBoardAfter = (maneuverAction maneuver) (maneuverBoardBefore maneuver) } :: Maneuver in
+        let maneuver1 = maneuver { maneuverBoardAfter = (actionAction (maneuverAction maneuver)) (maneuverBoardBefore maneuver) } :: Maneuver in
             let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver1 :: Maneuver in
                 let followups = trace ("applying reactions") $ act (maneuverBoardAfter maneuver2) :: [Action] in
                     let followupManeuvers = trace ("generating followups from " ++ (show followups)) $ actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
@@ -125,12 +132,12 @@ generateReactions maneuver =
     --   make board
 
     let board = (maneuverBoardAfter maneuver) in
-        maybe maneuver (\reaction -> generateReactions (maneuver { maneuverBoardAfter = reaction board, maneuverReactions = reaction : (maneuverReactions maneuver) } )) (react board)
+        maybe maneuver (\reaction -> generateReactions (maneuver { maneuverBoardAfter = (actionAction reaction) board, maneuverReactions = reaction : (maneuverReactions maneuver) } )) (react board)
 
 -- this game actually features no guessing so this should always be empty
 act :: Board -> [Action]
 act board = concat (map linkToEveryOutput board)
-    where linkToEveryOutput chain = map (\output -> replaceLinkChains (cid chain) output) (chainOutputs chain)
+    where linkToEveryOutput chain = map (\output -> Action { actionName = "wild guess", actionAction = replaceLinkChains (cid chain) output }) (chainOutputs chain)
 
 actionsToManeuvers :: Board -> ManeuverID -> [Action] -> [Maneuver]
 actionsToManeuvers board parentID actions =
@@ -170,23 +177,25 @@ prepend list element = element : list
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =
     if ((length (chainOutputs chain)) == 1)
-        then Just (replaceLinkChains (cid chain) (head (chainOutputs chain)))
+        then Just $ Action { actionName = "single output", actionAction = (replaceLinkChains (cid chain) (head (chainOutputs chain))) }
         else Nothing
 
 reactSingleInput :: Board -> Chain -> Maybe Action
 reactSingleInput board chain =
     if ((length (chainInputs chain)) == 1)
-        then Just (replaceLinkChains (head (chainInputs chain)) (cid chain))
+        then Just $ Action { actionName = "single input", actionAction = (replaceLinkChains (head (chainInputs chain)) (cid chain)) }
         else Nothing
 
 replaceLinkChains :: CellID -> CellID -> Board -> Board
-replaceLinkChains chain1ID chain2ID board =
-    newChain : remainder
-        where newChain = verifyChain $ linkChains chain1 chain2
-              remainder1 = map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
-              remainder = disconnectValueMismatches (cid newChain) remainder1
-              chain1 = getChain chain1ID board
-              chain2 = getChain chain2ID board
+replaceLinkChains chain1ID chain2ID =
+    makeAction
+        where makeAction board = newChain : remainder
+                where newChain = verifyChain $ linkChains chain1 chain2
+                      remainder1 = map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
+                      remainder = disconnectValueMismatches (cid newChain) remainder1
+                      remainder :: Board
+                      chain1 = getChain chain1ID board
+                      chain2 = getChain chain2ID board
 
 disconnectValueMismatches :: CellID -> Board -> Board
 disconnectValueMismatches chainID board =
@@ -357,7 +366,7 @@ boardToSolveState board = SolveState {
         Maneuver {
                 mid = "",
                 maneuverParent = "",
-                maneuverAction = id,
+                maneuverAction = Action { actionName = "noop", actionAction = id },
                 maneuverReactions = [],
                 maneuverBoardBefore = board,
                 maneuverBoardAfter = board

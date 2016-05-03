@@ -189,10 +189,10 @@ reactSingleInput board chain =
 replaceLinkChains :: CellID -> CellID -> Board -> Board
 replaceLinkChains chain1ID chain2ID =
     makeAction
-        where makeAction board = newChain : remainder
+        where makeAction board = trace ("making action " ++ (show $ newChain : remainder)) $ newChain : remainder
                 where newChain = verifyChain $ linkChains chain1 chain2
-                      remainder1 = map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
-                      remainder = disconnectValueMismatches (cid newChain) remainder1
+                      remainder1 = traceShowId $ map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
+                      remainder = traceShowId $ disconnectValueMismatches (cid newChain) remainder1
                       remainder :: Board
                       chain1 = getChain chain1ID board
                       chain2 = getChain chain2ID board
@@ -206,11 +206,10 @@ disconnectValueMismatches chainID board =
               if valueMismatch chain1 chain2
                   then dropOutputs (cid chain1) (cid chain2) (dropInputs (cid chain2) (cid chain1) board)
                   else board
-          
           dropOutputs :: CellID -> CellID -> Board -> Board
-          dropOutputs chainID outputID board1 = map (\c -> replaceChain chainID chain { chainOutputs = filter (/= outputID) (chainOutputs chain) } c) board1
-          dropInputs chainID inputID board1 = map (\c -> replaceChain chainID chain { chainInputs = filter (/= inputID) (chainInputs chain) } c) board1
-          chain = getChain chainID board
+          dropOutputs chainID outputID board1 = traceShowId $ map (\c -> replaceChain chainID chain { chainOutputs = filter (/= outputID) (chainOutputs chain) } c) board1
+          dropInputs chainID inputID board1 = traceShowId $ map (\c -> replaceChain chainID chain { chainInputs = filter (/= inputID) (chainInputs chain) } c) board1
+          chain = trace ("getting da chain " ++ chainID ++ " from board " ++ (formatList board)) $ getChain chainID board
 
 valueMismatch :: Chain -> Chain -> Bool
 valueMismatch chain1 chain2

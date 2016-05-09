@@ -104,8 +104,8 @@ solveStep state
         -- 
         
         let maneuver1 = maneuver { maneuverBoardAfter = (actionAction (maneuverAction maneuver)) (maneuverBoardBefore maneuver) } :: Maneuver in
-            let maneuver2 = trace ("maneuver is up, generating reactions") $ generateReactions maneuver1 :: Maneuver in
-                let followups = trace ("applying reactions") $ act (maneuverBoardAfter maneuver2) :: [Action] in
+            let maneuver2 = trace ("maneuver is up, new board is: " ++ (formatList (maneuverBoardAfter maneuver1)) ++ ", generating reactions") $ generateReactions maneuver1 :: Maneuver in
+                let followups = trace ("applying reactions against maneuverBoardAfter maneuver2 -- " ++ (formatList (maneuverBoardAfter maneuver2))) $ act (maneuverBoardAfter maneuver2) :: [Action] in
                     let followupManeuvers = trace ("generating followups from " ++ (show followups)) $ actionsToManeuvers (maneuverBoardAfter maneuver2) (maneuverParent maneuver2) followups in
                         trace ("return actions, followup: " ++ show followupManeuvers ++ ", newP: " ++ show newPossibles) Just SolveState {
                             stateManeuvers = Map.insert (mid maneuver2) maneuver2 (stateManeuvers state),
@@ -191,10 +191,10 @@ replaceLinkChains chain1ID chain2ID =
     makeAction
         where makeAction board = trace ("making action " ++ (show $ newChain : remainder)) $ newChain : remainder
                 where newChain = verifyChain $ linkChains chain1 chain2
-                      remainder1 = traceShowId $ map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
-                      remainder = traceShowId $ disconnectValueMismatches (cid newChain) remainder1
+                      remainder1 = trace ("replacing chain references from " ++ chain1ID ++ " to " ++ chain2ID ++ " against " ++ (formatList board)) $ map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
+                      remainder = trace ("gonna disconnectValueMismatches on " ++ (cid newChain) ++ " against " ++ (formatList remainder1)) $ disconnectValueMismatches (cid newChain) remainder1
                       remainder :: Board
-                      chain1 = getChain chain1ID board
+                      chain1 = trace ("getting chain 1 from board " ++ (formatList board)) $ getChain chain1ID board
                       chain2 = getChain chain2ID board
 
 disconnectValueMismatches :: CellID -> Board -> Board
@@ -204,7 +204,7 @@ disconnectValueMismatches chainID board =
     where disconnectIfValueMismatch :: Chain -> Chain -> Board -> Board
           disconnectIfValueMismatch chain1 chain2 board =
               if valueMismatch chain1 chain2
-                  then dropOutputs (cid chain1) (cid chain2) (dropInputs (cid chain2) (cid chain1) board)
+                  then trace ("dropping outputs") $ dropOutputs (cid $ trace ("cidding chain1") chain1) (cid chain2) (dropInputs (cid chain2) (cid chain1) board)
                   else board
           dropOutputs :: CellID -> CellID -> Board -> Board
           dropOutputs chainID outputID board1 = traceShowId $ map (\c -> replaceChain chainID chain { chainOutputs = filter (/= outputID) (chainOutputs chain) } c) board1
@@ -233,6 +233,7 @@ replaceChainReferences chain1ID chain2ID chain = chain {
 verifyChain :: Chain -> Chain
 verifyChain chain
   | (chainValue chain == 1) && (not (null (chainInputs chain))) = error $ "bad chain -- first chain shouldn't have inputs:\n" ++ (show chain)
+  | (chainValue chain + chainLength chain > 25) && (not (null (chainOutputs chain))) = error $ "bad chain -- last chain shouldn't have outputs:\n" ++ (show chain)
   | otherwise = trace ("nascent chain: " ++ (show chain)) chain
 
 {-

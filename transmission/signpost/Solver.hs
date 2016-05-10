@@ -49,13 +49,40 @@ solve solver
             | otherwise = terminalSteps solver
 
 resolvePlan :: Plan -> Step
-resolvePlan plan = error "not implemented"
+resolvePlan plan = Step {
+                        stepActions = actions,
+                        stepPreBoard = preBoard,
+                        stepPostBoard = postBoard,
+                        stepParent = parent,
+                        stepId = (stepId parent) ++ " -> " ++ (actionName $ planAction plan)
+                    }
+                    where (actions, postBoard) = resolveAction (planAction plan) preBoard
+                          parent = planParent plan
+                          preBoard = stepPostBoard parent
 
 selectPlan :: [Plan] -> (Plan, [Plan])
 selectPlan (plan:plans) = (plan, plans)
 
+{-
 resolveAction :: Action -> Board -> ([Action], Board)
-resolveAction action board = error "not done"
+resolveAction action board = case followup of
+    Nothing -> ([], board)
+    Just reaction -> addAction action (resolveAction reaction newBoard)
+    where newBoard = action board
+          followup = react newBoard
+          addAction action (actions, finalBoard) = (action : actions, finalBoard)
+-}
+
+resolveAction :: Action -> Board -> ([Action], Board)
+resolveAction action board = (action : finalActions, finalBoard)
+    where newBoard = (actionTransformer action) board
+          (finalActions, finalBoard) = case (react newBoard) of
+            Just reaction -> resolveAction reaction newBoard
+            Nothing -> ([], newBoard)
+
+--resolveAction3 initialAction initialBoard = foldr (\action board -> ) initialBoard [action]
+        --foldr (\a \b) bInitial as
+        --foldr (\inputID board1 -> disconnectIfValueMismatch (getChain inputID board1) chain board1) boardA (chainInputs chain)
 
 guess :: Board -> [Action]
 guess board = concat (map linkToEveryOutput board)
@@ -105,4 +132,26 @@ valueMismatch chain1 chain2
   | (chainValue chain1 == 0) || (chainValue chain2 == 0) = False
   | (chainValue chain1 + chainLength chain1) /= (chainValue chain2) = False
   | otherwise = True
+
+react :: Board -> Maybe Action
+react board
+  | length results > 0 = Just (head results)
+  | otherwise = Nothing
+  --where results = catMaybes (map (reactSingleOutput board) board)
+  where results = convergeMaybes [
+         map (reactSingleOutput board) board,
+         map (reactSingleInput board) board
+         ]
+
+reactSingleOutput :: Board -> Chain -> Maybe Action
+reactSingleOutput board chain =
+    if ((length (chainOutputs chain)) == 1)
+        then Just $ Action { actionName = "single output", actionTransformer = (replaceLinkChains (cid chain) (head (chainOutputs chain))), actionBoard = board }
+        else Nothing
+
+reactSingleInput :: Board -> Chain -> Maybe Action
+reactSingleInput board chain =
+    if ((length (chainInputs chain)) == 1)
+        then Just $ Action { actionName = "single input", actionTransformer = (replaceLinkChains (head (chainInputs chain)) (cid chain)), actionBoard = board }
+        else Nothing
 

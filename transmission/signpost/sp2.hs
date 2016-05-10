@@ -37,39 +37,6 @@ actionToManeuver board parentID index action = Maneuver {
         maneuverBoardAfter = board
     }
 
-react :: Board -> Maybe Action
-react board
-  | length results > 0 = Just (head results)
-  | otherwise = Nothing
-  --where results = catMaybes (map (reactSingleOutput board) board)
-  where results = convergeMaybes [
-         map (reactSingleOutput board) board,
-         map (reactSingleInput board) board
-         ]
-
-convergeMaybes :: [[Maybe a]] -> [a]
-convergeMaybes maybeList = foldr (\maybes justs -> prependMaybes justs maybes) [] maybeList
-
-prependMaybes :: [a] -> [Maybe a] -> [a]
-prependMaybes justs maybes = foldr addIfHasValue justs maybes
-    where addIfHasValue :: Maybe b -> [b] -> [b]
-          addIfHasValue possibleValue justies = maybe justies (prepend justies) possibleValue
-
-prepend :: [a] -> a -> [a]
-prepend list element = element : list
-
-reactSingleOutput :: Board -> Chain -> Maybe Action
-reactSingleOutput board chain =
-    if ((length (chainOutputs chain)) == 1)
-        then Just $ Action { actionName = "single output", actionAction = (replaceLinkChains (cid chain) (head (chainOutputs chain))) }
-        else Nothing
-
-reactSingleInput :: Board -> Chain -> Maybe Action
-reactSingleInput board chain =
-    if ((length (chainInputs chain)) == 1)
-        then Just $ Action { actionName = "single input", actionAction = (replaceLinkChains (head (chainInputs chain)) (cid chain)) }
-        else Nothing
-
 setChain :: CellID -> Chain -> Board -> Board
 setChain chainID chain [] = []
 setChain chainID chain (c:cs)

@@ -36,6 +36,9 @@ data Step = InitStep {
     stepParent :: Step
 }
 
+instance Show Step where
+    show step = "{" ++ stepId step ++ "}"
+
 data Solver = Solver {
     openPlans :: [Plan],
     terminalSteps :: [Step]

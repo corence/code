@@ -32,3 +32,5 @@ main = do
     let solver = (initSolver (puzzleToBoard puzzle5))
     let solution = solve solver
     putStrLn $ "done solved that"
+    putStrLn $ "num things left to solve: " ++ (show $ length $ openPlans solution)
+    putStrLn $ "first terminal: " ++ (show $ head $ terminalSteps solution)

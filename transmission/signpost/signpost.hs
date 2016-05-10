@@ -1,7 +1,7 @@
 
 module Signpost
 ( Board
-, Chain(cid, chainCells, chainValue, chainLength, chainOutputs, chainInputs)
+, Chain(Chain, cid, chainCells, chainValue, chainLength, chainOutputs, chainInputs)
 , CellID
 , getChain
 , linkChains

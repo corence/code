@@ -1,6 +1,10 @@
 
 module Solver
-( 
+( Solver(Solver, openPlans, terminalSteps)
+, Plan(Plan, planAction, planParent)
+, Step(Step, InitStep, stepActions, stepPreBoard, stepPostBoard, stepParent, stepId)
+, Action(Action, actionName, actionTransformer, actionBoard)
+, solve
 ) where
 
 import Signpost
@@ -21,12 +25,15 @@ data Plan = Plan {
     planParent :: Step
 }
 
-data Step = InitStep Board | Step {
+data Step = InitStep {
+    stepId :: String,
+    stepPostBoard :: Board
+} | Step {
+    stepId :: String,
     stepActions :: [Action],
     stepPreBoard :: Board,
     stepPostBoard :: Board,
-    stepParent :: Step,
-    stepId :: String
+    stepParent :: Step
 }
 
 data Solver = Solver {

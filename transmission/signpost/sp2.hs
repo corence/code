@@ -29,7 +29,7 @@ initSolver board = Solver {
     }
 
 main = do
-    let solver = (initSolver (puzzleToBoard puzzle5))
+    let solver = (initSolver (puzzleToBoard puzzle3))
     let solution = solve solver
     putStrLn $ "done solved that"
     putStrLn $ "num things left to solve: " ++ (show $ length $ openPlans solution)

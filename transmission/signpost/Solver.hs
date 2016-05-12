@@ -15,6 +15,9 @@ data Plan = Plan {
     planParent :: Step
 }
 
+instance Show Plan where
+    show plan = "{" ++ (stepId (planParent plan)) ++ "::" ++ show (planAction plan) ++ "}"
+
 data Step = InitStep {
     stepId :: String,
     stepPostBoard :: Board
@@ -43,7 +46,7 @@ solve solver
       }
     where newPlans = map (makePlan newStep) (guess (stepPostBoard newStep))
           (plan, plans) = selectPlan (openPlans solver)
-          newStep = resolvePlan plan
+          newStep = resolvePlan $ trace ("resolving plan " ++ show plan) plan
           terminals
             | null newPlans = newStep : terminalSteps solver
             | otherwise = terminalSteps solver
@@ -71,10 +74,10 @@ resolveAction action board = (action : finalActions, finalBoard)
             Nothing -> ([], newBoard)
 
 guess :: Board -> [Action]
-guess board = concat (map linkToEveryOutput board)
+guess board = (\guesses -> trace ("generated guesses: " ++ show guesses) guesses) $ concat (map linkToEveryOutput board)
     where linkToEveryOutput chain = map (makeAction (cid chain)) (chainOutputs chain)
           makeAction :: CellID -> CellID -> Action
-          makeAction source target = Action { actionName = "wild guess", actionTransformer = linkChainsInBoard source target, actionBoard = board }
+          makeAction source target = Action { actionName = source ++ "->" ++ target, actionTransformer = linkChainsInBoard source target, actionBoard = board }
 
 makePlan :: Step -> Action -> Plan
 makePlan parent action = Plan {
@@ -84,7 +87,7 @@ makePlan parent action = Plan {
     
 react :: Board -> Maybe Action
 react board
-  | length results > 0 = trace ("reacted: " ++ (show (head results))) $ Just (head results)
+  | length results > 0 = trace ("----------------------------------------------\nreacted: " ++ (show (head results)) ++ "\n----------------------------------------------") $ Just (head results)
   | otherwise = Nothing
   --where results = catMaybes (map (reactSingleOutput board) board)
   where results = convergeMaybes [

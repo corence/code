@@ -90,7 +90,9 @@ linkChainsInBoard :: CellID -> CellID -> Board -> Board
 linkChainsInBoard chain1ID chain2ID board = newBoard
     --where newBoard = disconnectValueMismatches chain1ID $ replaceReferences chain2ID chain1ID $ replaceLinkedChains $ board
     where newBoard
-                    = (\b -> trace ("3. disconnected " ++ formatList b) b)
+                    = (\b -> trace ("4. associated " ++ formatList b) b)
+                    $ associateValueMatches chain1ID
+                    $ (\b -> trace ("3. disassociated " ++ formatList b) b)
                     $ disassociateValueMismatches chain1ID
                     $ (\b -> trace ("2. re-referenced " ++ formatList b) b)
                     $ replaceReferences chain2ID chain1ID
@@ -117,28 +119,36 @@ verifyChain board chain
   | not (null mismatchedOutputs) = error $ "bad chain -- outputs " ++ show mismatchedOutputs ++ " don't value-match:\n" ++ (show chain)
   | not (null mismatchedInputs) = error $ "bad chain -- inputs " ++ show mismatchedInputs ++ " don't value-match:\n" ++ (show chain)
   | otherwise = trace ("nascent chain: " ++ (show chain)) chain
-  where mismatchedOutputs = filter (\outputID -> not $ doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
-        mismatchedInputs = filter (\inputID -> not $ doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 
+  where mismatchedOutputs = filter (\outputID -> not $ couldLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
+        mismatchedInputs = filter (\inputID -> not $ couldLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 
 
 disassociateValueMismatches :: CellID -> Board -> Board
-disassociateValueMismatches chainID board = outputFilter $ inputFilter board
-  where mismatchedOutputs = filter (\outputID -> not $ doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
-        mismatchedInputs = filter (\inputID -> not $ doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 
+disassociateValueMismatches chainID board = foldr (\(source, target) b -> disassociateChainsInBoard (cid source) (cid target) b) board mismatches
+  where potentials = (map (\outputID -> (chain, getChain outputID board)) (chainOutputs chain)) ++ (map (\inputID -> (getChain inputID board, chain)) (chainInputs chain))
+        mismatches = filter (\(source, target) -> not $ couldLinkValuesMatch source target) potentials
         chain = getChain chainID board
-        outputFilter board = foldr (\outputID b -> disassociateChainsInBoard chainID outputID b) board mismatchedOutputs
-        inputFilter board = foldr (\inputID b -> disassociateChainsInBoard inputID chainID b) board mismatchedInputs
+
+associateValueMatches :: CellID -> Board -> Board
+associateValueMatches chainID board = foldr (\(source, target) b -> linkChainsInBoard (cid source) (cid target) b) board matches
+  where potentials = (map (\outputID -> (chain, getChain outputID board)) (chainOutputs chain)) ++ (map (\inputID -> (getChain inputID board, chain)) (chainInputs chain))
+        matches = filter (\(source, target) -> doLinkValuesMatchStrict source target) potentials
+        chain = getChain chainID board
 
 unlinkValueMismatchesComment :: CellID -> Board -> Board
 unlinkValueMismatchesComment chainID board = replaceChain chainID newChain board
     where newChain = chain {
-                            chainInputs = filter (\inputID -> doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain),
-                            chainOutputs = filter (\outputID -> doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain)
+                            chainInputs = filter (\inputID -> couldLinkValuesMatch (getChain inputID board) chain) (chainInputs chain),
+                            chainOutputs = filter (\outputID -> couldLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain)
                         }
           chain = getChain chainID board
           
-doLinkValuesMatch :: Chain -> Chain -> Bool
-doLinkValuesMatch chain1 chain2
+couldLinkValuesMatch :: Chain -> Chain -> Bool
+couldLinkValuesMatch chain1 chain2
   | (chainValue chain1 == 0) || (chainValue chain2 == 0) = True
+  | otherwise = doLinkValuesMatchStrict chain1 chain2
+  
+doLinkValuesMatchStrict :: Chain -> Chain -> Bool
+doLinkValuesMatchStrict chain1 chain2
   | (chainValue chain1 + chainLength chain1) == (chainValue chain2) = True
   | otherwise = False
   

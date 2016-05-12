@@ -90,7 +90,7 @@ linkChainsInBoard chain1ID chain2ID board = newBoard
     --where newBoard = disconnectValueMismatches chain1ID $ replaceReferences chain2ID chain1ID $ replaceLinkedChains $ board
     where newBoard
                     = (\b -> trace ("3. disconnected " ++ formatList b) b)
-                    $ disconnectValueMismatches chain1ID
+                    $ unlinkValueMismatches chain1ID
                     $ (\b -> trace ("2. re-referenced " ++ formatList b) b)
                     $ replaceReferences chain2ID chain1ID
                     $ (\b -> trace ("1. linked " ++ formatList b) b)
@@ -105,7 +105,7 @@ linkChainsInBoard chain1ID chain2ID board = newBoard
                                                     chainOutputs = filter (/= fromID) (chainOutputs chain)
                                                   }) board
 
-comment chain1ID chain2ID board = disconnectValueMismatches chain1ID board
+comment chain1ID chain2ID board = unlinkValueMismatches chain1ID board
     where chain1 = getChain chain1ID board
           boardWithout1 = filter (\chain -> (cid chain) /= chain1ID) board
           otherChains = filter (\chain -> (cid chain) /= chain2ID) boardWithout1
@@ -119,7 +119,7 @@ replaceLinkChains chain1ID chain2ID board =
         trace ("adding chain " ++ show newChain ++ " to remainder " ++ show remainder) $ newChain : remainder
                 where newChain = verifyChain $ linkChains chain1 chain2
                       remainder1 = trace ("replacing chain references from " ++ chain1ID ++ " to " ++ chain2ID ++ " against " ++ (formatList board)) $ map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
-                      remainder = trace ("gonna disconnectValueMismatches on " ++ (cid newChain) ++ " against " ++ (formatList remainder1)) $ disconnectValueMismatches (cid newChain) remainder1
+                      remainder = trace ("gonna unlinkValueMismatches on " ++ (cid newChain) ++ " against " ++ (formatList remainder1)) $ unlinkValueMismatches (cid newChain) remainder1
                       remainder :: Board
                       chain1 = trace ("getting chain 1 from board " ++ (formatList board)) $ getChain chain1ID board
                       chain2 = getChain chain2ID board
@@ -130,23 +130,16 @@ verifyChain chain
   | (chainValue chain + chainLength chain > 25) && (not (null (chainOutputs chain))) = error $ "bad chain -- last chain shouldn't have outputs:\n" ++ (show chain)
   | otherwise = trace ("nascent chain: " ++ (show chain)) chain
 
-disconnectValueMismatches :: CellID -> Board -> Board
-disconnectValueMismatches chainID board =
-    let boardA = foldr (\outputID board1 -> disconnectIfValueMismatch chain (getChain outputID board1) board1) board (chainOutputs chain) in
-        foldr (\inputID board1 -> disconnectIfValueMismatch (getChain inputID board1) chain board1) boardA (chainInputs chain)
-    where disconnectIfValueMismatch :: Chain -> Chain -> Board -> Board
-          disconnectIfValueMismatch chain1 chain2 board =
-              if valueMismatch chain1 chain2
-                  then trace ("dropping outputs") $ dropOutputs (cid $ trace ("cidding chain1") chain1) (cid chain2) (dropInputs (cid chain2) (cid chain1) board)
-                  else board
-          dropOutputs :: CellID -> CellID -> Board -> Board
-          dropOutputs chainID outputID board1 = traceShowId $ replaceChain chainID chain { chainOutputs = filter (/= outputID) (chainOutputs chain) } board1
-          dropInputs chainID inputID board1 = traceShowId $ replaceChain chainID chain { chainInputs = filter (/= inputID) (chainInputs chain) } board1
-          chain = trace ("getting da chain " ++ chainID ++ " from board " ++ (formatList board)) $ getChain chainID board
-
-valueMismatch :: Chain -> Chain -> Bool
-valueMismatch chain1 chain2
-  | (chainValue chain1 == 0) || (chainValue chain2 == 0) = False
-  | (chainValue chain1 + chainLength chain1) /= (chainValue chain2) = False
-  | otherwise = True
-
+unlinkValueMismatches :: CellID -> Board -> Board
+unlinkValueMismatches chainID board = replaceChain chainID newChain board
+    where newChain = chain {
+                            chainInputs = filter (\inputID -> doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain),
+                            chainOutputs = filter (\outputID -> doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain)
+                        }
+          chain = getChain chainID board
+          
+doLinkValuesMatch :: Chain -> Chain -> Bool
+doLinkValuesMatch chain1 chain2
+  | (chainValue chain1 == 0) || (chainValue chain2 == 0) = True
+  | (chainValue chain1 + chainLength chain1) == (chainValue chain2) = True
+  | otherwise = False

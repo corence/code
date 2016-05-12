@@ -8,7 +8,8 @@ module Signpost
 , linkChains
 , replaceChainReferences
 , replaceChain
-, replaceLinkChains
+, linkChainsInBoard
+, verifyBoard
 ) where
 
 import Data.Maybe
@@ -79,7 +80,7 @@ removeChain :: CellID -> Board -> Board
 removeChain chainID [] = error $ "tried to remove " ++ chainID ++ " from a board that didn't have it"
 removeChain chainID (cell:cells) = if (cid cell) == chainID
     then cells
-    else removeChain chainID cells
+    else cell : removeChain chainID cells
 
 -- 1) remove chain1 and chain2
 -- 2) replace chain1's outputs with those from chain2
@@ -90,11 +91,12 @@ linkChainsInBoard chain1ID chain2ID board = newBoard
     --where newBoard = disconnectValueMismatches chain1ID $ replaceReferences chain2ID chain1ID $ replaceLinkedChains $ board
     where newBoard
                     = (\b -> trace ("3. disconnected " ++ formatList b) b)
-                    $ unlinkValueMismatches chain1ID
+                    $ disassociateValueMismatches chain1ID
                     $ (\b -> trace ("2. re-referenced " ++ formatList b) b)
                     $ replaceReferences chain2ID chain1ID
                     $ (\b -> trace ("1. linked " ++ formatList b) b)
                     $ replaceLinkedChains
+                    $ (\b -> trace ("0. linkChainsInBoard " ++ chain1ID ++ " " ++ chain2ID ++ formatList b) b)
                     $ board 
           replaceLinkedChains board = replaceChain chain1ID newChain (removeChain chain2ID board)
               where chain1 = getChain chain1ID board
@@ -105,33 +107,29 @@ linkChainsInBoard chain1ID chain2ID board = newBoard
                                                     chainOutputs = filter (/= fromID) (chainOutputs chain)
                                                   }) board
 
-comment chain1ID chain2ID board = unlinkValueMismatches chain1ID board
-    where chain1 = getChain chain1ID board
-          boardWithout1 = filter (\chain -> (cid chain) /= chain1ID) board
-          otherChains = filter (\chain -> (cid chain) /= chain2ID) boardWithout1
+verifyBoard :: Board -> Board
+verifyBoard board = map (verifyChain board) board
 
-          renewedChains = map (renewInputs . renewOutputs) otherChains
-              where renewInputs chain = chain { chainInputs = map (replaceThing chain2ID chain1ID) (chainInputs chain) }
-                    renewOutputs chain = chain { chainOutputs = filter (/= chain2ID) (chainOutputs chain) }
-
-replaceLinkChains :: CellID -> CellID -> Board -> Board
-replaceLinkChains chain1ID chain2ID board =
-        trace ("adding chain " ++ show newChain ++ " to remainder " ++ show remainder) $ newChain : remainder
-                where newChain = verifyChain $ linkChains chain1 chain2
-                      remainder1 = trace ("replacing chain references from " ++ chain1ID ++ " to " ++ chain2ID ++ " against " ++ (formatList board)) $ map (replaceChainReferences chain1ID chain2ID) (filter (\c -> (cid c) /= chain1ID && (cid c) /= chain2ID) board)
-                      remainder = trace ("gonna unlinkValueMismatches on " ++ (cid newChain) ++ " against " ++ (formatList remainder1)) $ unlinkValueMismatches (cid newChain) remainder1
-                      remainder :: Board
-                      chain1 = trace ("getting chain 1 from board " ++ (formatList board)) $ getChain chain1ID board
-                      chain2 = getChain chain2ID board
-
-verifyChain :: Chain -> Chain
-verifyChain chain
+verifyChain :: Board -> Chain -> Chain
+verifyChain board chain
   | (chainValue chain == 1) && (not (null (chainInputs chain))) = error $ "bad chain -- first chain shouldn't have inputs:\n" ++ (show chain)
   | (chainValue chain + chainLength chain > 25) && (not (null (chainOutputs chain))) = error $ "bad chain -- last chain shouldn't have outputs:\n" ++ (show chain)
+  | not (null mismatchedOutputs) = error $ "bad chain -- outputs " ++ show mismatchedOutputs ++ " don't value-match:\n" ++ (show chain)
+  | not (null mismatchedInputs) = error $ "bad chain -- inputs " ++ show mismatchedInputs ++ " don't value-match:\n" ++ (show chain)
   | otherwise = trace ("nascent chain: " ++ (show chain)) chain
+  where mismatchedOutputs = filter (\outputID -> not $ doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
+        mismatchedInputs = filter (\inputID -> not $ doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 
 
-unlinkValueMismatches :: CellID -> Board -> Board
-unlinkValueMismatches chainID board = replaceChain chainID newChain board
+disassociateValueMismatches :: CellID -> Board -> Board
+disassociateValueMismatches chainID board = outputFilter $ inputFilter board
+  where mismatchedOutputs = filter (\outputID -> not $ doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
+        mismatchedInputs = filter (\inputID -> not $ doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 
+        chain = getChain chainID board
+        outputFilter board = foldr (\outputID b -> disassociateChainsInBoard chainID outputID b) board mismatchedOutputs
+        inputFilter board = foldr (\inputID b -> disassociateChainsInBoard inputID chainID b) board mismatchedInputs
+
+unlinkValueMismatchesComment :: CellID -> Board -> Board
+unlinkValueMismatchesComment chainID board = replaceChain chainID newChain board
     where newChain = chain {
                             chainInputs = filter (\inputID -> doLinkValuesMatch (getChain inputID board) chain) (chainInputs chain),
                             chainOutputs = filter (\outputID -> doLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain)
@@ -143,3 +141,10 @@ doLinkValuesMatch chain1 chain2
   | (chainValue chain1 == 0) || (chainValue chain2 == 0) = True
   | (chainValue chain1 + chainLength chain1) == (chainValue chain2) = True
   | otherwise = False
+  
+disassociateChainsInBoard :: CellID -> CellID -> Board -> Board
+disassociateChainsInBoard chain1ID chain2ID board = replaceChain chain1ID newChain1 (replaceChain chain2ID newChain2 board)
+    where newChain1 = chain1 { chainOutputs = filter (/= chain2ID) (chainOutputs chain1) }
+          newChain2 = chain2 { chainInputs = filter (/= chain1ID) (chainInputs chain2) }
+          chain1 = getChain chain1ID board
+          chain2 = getChain chain2ID board

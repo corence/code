@@ -65,7 +65,7 @@ selectPlan (plan:plans) = (plan, plans)
 
 resolveAction :: Action -> Board -> ([Action], Board)
 resolveAction action board = (action : finalActions, finalBoard)
-    where newBoard = (actionTransformer action) board
+    where newBoard = (actionTransformer action) (verifyBoard board)
           (finalActions, finalBoard) = case (react newBoard) of
             Just reaction -> resolveAction reaction newBoard
             Nothing -> ([], newBoard)
@@ -74,7 +74,7 @@ guess :: Board -> [Action]
 guess board = concat (map linkToEveryOutput board)
     where linkToEveryOutput chain = map (makeAction (cid chain)) (chainOutputs chain)
           makeAction :: CellID -> CellID -> Action
-          makeAction source target = Action { actionName = "wild guess", actionTransformer = replaceLinkChains source target, actionBoard = board }
+          makeAction source target = Action { actionName = "wild guess", actionTransformer = linkChainsInBoard source target, actionBoard = board }
 
 makePlan :: Step -> Action -> Plan
 makePlan parent action = Plan {
@@ -95,12 +95,12 @@ react board
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =
     if ((length (chainOutputs chain)) == 1)
-        then Just $ Action { actionName = "single output " ++ cid chain ++ "=>" ++ (head (chainOutputs chain)), actionTransformer = (replaceLinkChains (cid chain) (head (chainOutputs chain))), actionBoard = board }
+        then Just $ Action { actionName = "single output " ++ cid chain ++ "=>" ++ (head (chainOutputs chain)), actionTransformer = (linkChainsInBoard (cid chain) (head (chainOutputs chain))), actionBoard = board }
         else Nothing
 
 reactSingleInput :: Board -> Chain -> Maybe Action
 reactSingleInput board chain =
     if ((length (chainInputs chain)) == 1)
-        then Just $ Action { actionName = "single input " ++ (head (chainInputs chain)) ++ "=>" ++ (cid chain), actionTransformer = (replaceLinkChains (head (chainInputs chain)) (cid chain)), actionBoard = board }
+        then Just $ Action { actionName = "single input " ++ (head (chainInputs chain)) ++ "=>" ++ (cid chain), actionTransformer = (linkChainsInBoard (head (chainInputs chain)) (cid chain)), actionBoard = board }
         else Nothing
 

@@ -30,8 +30,10 @@ puzzleUnwrapDirs protoCells = map (\(cellID, value, direction) -> (cellID, value
                   | prevCellID == newCellID = []
                   -- the newly generated cell doesn't exist (probably is outside the grid) -- return nothing
                   | null $ filter (\(oldCellID, _, _) -> oldCellID == newCellID) protoCells = []
-                  -- the new cell doesn't follow from the source cell -- skip over it
-                  | newCellValue > 0 && (newCellValue /= sourceCellValue + 1) = expand protoCells (sourceCellID, sourceCellValue, direction) newCellID
+                  -- the new cell value doesn't follow from the source cell -- skip over it
+                  | (newCellValue > 0) && (sourceCellValue > 0) && (newCellValue /= sourceCellValue + 1) = expand protoCells (sourceCellID, sourceCellValue, direction) newCellID
+                  -- the new cell has a value of 1
+                  | (newCellValue == 1) = expand protoCells (sourceCellID, sourceCellValue, direction) newCellID
                   -- the new cell is fine -- include it in the results
                   | otherwise = newCellID : (trace ("cool, new cell " ++ newCellID) $ expand protoCells (sourceCellID, sourceCellValue, direction) newCellID)
                     where newCellID = move direction prevCellID
@@ -41,12 +43,12 @@ puzzleUnwrapDirs protoCells = map (\(cellID, value, direction) -> (cellID, value
                 move :: String -> CellID -> CellID
                 move direction [x, y] = trace ((show [newX, newY]) ++ " is new for direction " ++ direction) $ [newX, newY]
                     where newX
-                            | elem 'w' direction = pred x
-                            | elem 'e' direction = succ x
+                            | elem 'n' direction = pred x
+                            | elem 's' direction = succ x
                             | otherwise = x
                           newY
-                            | elem 'n' direction = pred y
-                            | elem 's' direction = succ y
+                            | elem 'w' direction = pred y
+                            | elem 'e' direction = succ y
                             | otherwise = y
           
           {-
@@ -74,6 +76,14 @@ initSolver board = Solver {
 
 main = do
     let solver = initSolver $ (\b -> (trace $ formatList b) b) $ puzzleToBoard $ puzzleUnwrapDirs puzzle7
+    putStrLn $ "initial state: "
+    putStrLn $ formatList $ stepPostBoard $ planParent $ head $ openPlans $ solver
+    putStrLn $ "initial plan: "
+    putStrLn $ show $ openPlans $ solver
+    putStrLn $ "initial board: "
+    putStrLn $ show $ stepPostBoard $ planParent $ head $ openPlans $ solver
+    putStrLn $ "first board: "
+    putStrLn $ formatList $ (actionTransformer $ planAction $ head $ openPlans $ solver) []
     let solution = solve solver
     putStrLn $ "done solved that"
     putStrLn $ "num things left to solve: " ++ (show $ length $ openPlans solution)

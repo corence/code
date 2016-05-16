@@ -7,7 +7,6 @@ module Solver
 ) where
 
 import Signpost
-import Debug.Trace
 import ListUtil
 
 data Plan = Plan {

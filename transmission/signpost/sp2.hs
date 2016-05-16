@@ -3,7 +3,6 @@ import Data.List
 import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Debug.Trace
 
 import Solver
 import Signpost

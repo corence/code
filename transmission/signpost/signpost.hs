@@ -14,7 +14,6 @@ module Signpost
 
 import Data.Maybe
 import Data.List
-import Debug.Trace
 import ListUtil
 
 type CellID = String

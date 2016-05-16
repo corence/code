@@ -4,7 +4,11 @@ module ListUtil
 , replaceThing
 , replaceThingGood
 , convergeMaybes
+, trace
 ) where
+
+--import Debug.Trace
+trace _ = id
 
 formatList :: Show a => [a] -> String
 formatList [] = "\n"

@@ -19,15 +19,25 @@ puzzleToBoard protoCells = map reify protoCells
     }
           inputs cellID = map (\(cellID, _, _) -> cellID) (filter (\(_, _, outputs) -> elem cellID outputs) protoCells)
 
-puzzleUnwrapDirs :: [(CellID, Int, String)] -> [(CellID, Int, [CellID])]
-puzzleUnwrapDirs protoCells = map (\(cellID, value, direction) -> (cellID, value, expand protoCells direction cellID)) protoCells
-          where expand :: [(CellID, Int, String)] -> String -> CellID -> [CellID]
-                expand protoCells direction sourceCellID
-                  | sourceCellID == newCellID = []
-                  | (length $ filter (\(oldCellID, oldValue, _) -> oldCellID == newCellID && oldValue == 1) protoCells) > 0 = expand protoCells direction newCellID
+type ProtoCell = (CellID, Int, String)
+type PuzzleCell = (CellID, Int, [CellID])
+
+puzzleUnwrapDirs :: [ProtoCell] -> [PuzzleCell]
+puzzleUnwrapDirs protoCells = map (\(cellID, value, direction) -> (cellID, value, expand protoCells (cellID, value, direction) cellID)) protoCells
+          -- expand: get all the CellID along the given direction from sourceCell
+          where expand :: [ProtoCell] -> ProtoCell -> CellID -> [CellID]
+                expand protoCells (sourceCellID, sourceCellValue, direction) prevCellID
+                  -- we didn't move -- we are in a loop (probably because this is the final cell) so just return nothing
+                  | prevCellID == newCellID = []
+                  -- the newly generated cell doesn't exist (probably is outside the grid) -- return nothing
                   | null $ filter (\(oldCellID, _, _) -> oldCellID == newCellID) protoCells = []
-                  | otherwise = newCellID : (trace ("cool, new cell " ++ newCellID) $ expand protoCells direction newCellID)
-                    where newCellID = move direction sourceCellID
+                  -- the new cell doesn't follow from the source cell -- skip over it
+                  | newCellValue > 0 && (newCellValue /= sourceCellValue + 1) = expand protoCells (sourceCellID, sourceCellValue, direction) newCellID
+                  -- the new cell is fine -- include it in the results
+                  | otherwise = newCellID : (trace ("cool, new cell " ++ newCellID) $ expand protoCells (sourceCellID, sourceCellValue, direction) newCellID)
+                    where newCellID = move direction prevCellID
+                          newCellValue = head $ getProtoCellValues newCellID protoCells
+                          getProtoCellValues :: CellID -> [(CellID, Int, String)] -> [Int]
                           getProtoCellValues cellID protoCells = map (\(_, value, _) -> value) (filter (\(oldCellID, _, _) -> oldCellID == cellID) protoCells)
                 move :: String -> CellID -> CellID
                 move direction [x, y] = trace ((show [newX, newY]) ++ " is new for direction " ++ direction) $ [newX, newY]

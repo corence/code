@@ -115,12 +115,15 @@ verifyBoard board = map (verifyChain board) board
 verifyChain :: Board -> Chain -> Chain
 verifyChain board chain
   | (chainValue chain == 1) && (not (null (chainInputs chain))) = error $ "bad chain -- first chain shouldn't have inputs:\n" ++ (show chain)
-  | (chainValue chain + chainLength chain > 25) && (not (null (chainOutputs chain))) = error $ "bad chain -- last chain shouldn't have outputs:\n" ++ (show chain)
+  | (chainValue chain + chainLength chain > (countCells board)) && (not (null (chainOutputs chain))) = error $ "bad chain -- last chain shouldn't have outputs:\n" ++ (show chain)
   | not (null mismatchedOutputs) = error $ "bad chain -- outputs " ++ show mismatchedOutputs ++ " don't value-match:\n" ++ (show chain)
   | not (null mismatchedInputs) = error $ "bad chain -- inputs " ++ show mismatchedInputs ++ " don't value-match:\n" ++ (show chain)
   | otherwise = trace ("nascent chain: " ++ (show chain)) chain
   where mismatchedOutputs = filter (\outputID -> not $ couldLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
         mismatchedInputs = filter (\inputID -> not $ couldLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 
+
+countCells :: Board -> Int
+countCells = foldr (\chain -> (+ (chainLength chain))) 0
 
 disassociateValueMismatches :: CellID -> Board -> Board
 disassociateValueMismatches chainID board = foldr (\(source, target) b -> disassociateChainsInBoard (cid source) (cid target) b) board mismatches

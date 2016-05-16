@@ -1,6 +1,6 @@
 
 module Solver
-( Solver(Solver, openPlans, terminalSteps)
+( Solver(Solver, openPlans, terminalSteps, guesses)
 , Plan(Plan, planAction, planParent)
 , Step(Step, InitStep, stepActions, stepPreBoard, stepPostBoard, stepParent, stepId)
 , solve
@@ -34,7 +34,8 @@ instance Show Step where
 
 data Solver = Solver {
     openPlans :: [Plan],
-    terminalSteps :: [Step]
+    terminalSteps :: [Step],
+    guesses :: [Action]
 }
 
 solve :: Solver -> Solver
@@ -42,9 +43,11 @@ solve solver
   | length (openPlans solver) <= 0 = solver
   | otherwise = solve $ Solver {
       openPlans = newPlans ++ plans,
-      terminalSteps = terminals
+      terminalSteps = terminals,
+      guesses = (guesses solver) ++ newGuesses
       }
-    where newPlans = map (makePlan newStep) (guess (stepPostBoard newStep))
+    where newGuesses = guess (stepPostBoard newStep)
+          newPlans = map (makePlan newStep) newGuesses
           (plan, plans) = selectPlan (openPlans solver)
           newStep = resolvePlan $ trace ("resolving plan " ++ show plan) plan
           terminals
@@ -74,7 +77,9 @@ resolveAction action board = (action : finalActions, finalBoard)
             Nothing -> ([], newBoard)
 
 guess :: Board -> [Action]
-guess board = (\guesses -> trace ("generated guesses: " ++ show guesses) guesses) $ concat (map linkToEveryOutput board)
+guess _ = []
+
+commentguess board = (\guesses -> trace ("generated guesses: " ++ show guesses) guesses) $ concat (map linkToEveryOutput board)
     where linkToEveryOutput chain = map (makeAction (cid chain)) (chainOutputs chain)
           makeAction :: CellID -> CellID -> Action
           makeAction source target = Action { actionName = source ++ "->" ++ target, actionTransformer = linkChainsInBoard source target, actionBoard = board }

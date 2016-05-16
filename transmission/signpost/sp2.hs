@@ -65,7 +65,8 @@ puzzleUnwrapDirs protoCells = map (\(cellID, value, direction) -> (cellID, value
 initSolver :: Board -> Solver
 initSolver board = Solver {
     openPlans = [initialPlan],
-    terminalSteps = []
+    terminalSteps = [],
+    guesses = []
 }
     where initialPlan = Plan {
         planAction = Action { actionName = "init", actionTransformer = (\_ -> board), actionBoard = [] },
@@ -78,3 +79,10 @@ main = do
     putStrLn $ "done solved that"
     putStrLn $ "num things left to solve: " ++ (show $ length $ openPlans solution)
     putStrLn $ "first terminal: " ++ (show $ head $ terminalSteps solution)
+    putStrLn $ "guesses: " ++ (show $ guesses solution)
+    putStrLn $ "terminals: " ++ (show $ terminalSteps solution)
+    putStrLn $ "--------"
+    putStrLn $ "--------"
+    putStrLn $ "--------"
+    putStrLn $ "--------"
+    putStrLn $ "boards: " ++ (formatList $ map stepPostBoard (terminalSteps solution))

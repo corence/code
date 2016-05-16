@@ -30,3 +30,6 @@ prependMaybes justs maybes = foldr addIfHasValue justs maybes
 prepend :: [a] -> a -> [a]
 prepend list element = element : list
 
+times :: Int -> (a -> a) -> a -> a
+times 0 _ item = item
+times num func item = times (pred num) func (func item)

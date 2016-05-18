@@ -94,10 +94,11 @@ react board
   | length results > 0 = trace ("----------------------------------------------\nreacted: " ++ (show (head results)) ++ "\n----------------------------------------------") $ Just (head results)
   | otherwise = Nothing
   --where results = catMaybes (map (reactSingleOutput board) board)
-  where results = convergeMaybes [
-         map (reactSingleOutput board) board,
-         map (reactSingleInput board) board
-         ]
+  where results :: [Action]
+        results = (convergeMaybes [
+            map (reactSingleOutput board) board,
+            map (reactSingleInput board) board
+            ]) ++ (concat $ map (reactConsecutiveValues board) board)
 
 reactSingleOutput :: Board -> Chain -> Maybe Action
 reactSingleOutput board chain =
@@ -111,3 +112,32 @@ reactSingleInput board chain =
         then Just $ Action { actionName = "single input " ++ (head (chainInputs chain)) ++ "=>" ++ (cid chain), actionTransformer = (linkChainsInBoard (head (chainInputs chain)) (cid chain)), actionBoard = board }
         else Nothing
 
+reactConsecutiveValues = reactConsecutiveValuesSupreme
+
+-- for the given chain
+  -- for each of its outputs as a chain
+    -- if this and that chain match
+      -- then add a new action to the results
+reactConsecutiveValuesCombinators :: Board -> Chain -> [Action]
+reactConsecutiveValuesCombinators board chain = linksFromPairs matchingPairs
+    where linksFromPairs = map (\(sourceID, targetID) -> makeLinkAction sourceID targetID)
+          matchingPairs = map (\outputID -> ((cid chain), outputID)) matchingOutputs
+          matchingOutputs = filter (\outputID -> isConsecutive chain (getChain outputID board)) (chainOutputs chain)
+          makeLinkAction sourceID targetID = Action { actionName = "consecutive values " ++ sourceID ++ "=>" ++ targetID, actionTransformer = (linkChainsInBoard sourceID targetID), actionBoard = board }
+          isConsecutive source target = (chainValue source + chainLength source) == chainValue target
+          
+reactConsecutiveValuesFold :: Board -> Chain -> [Action]
+reactConsecutiveValuesFold board chain = foldr makeMatchingLinks [] (chainOutputs chain)
+    where makeMatchingLinks outputID results = if isConsecutive chain output
+                then makeLinkAction (cid chain) outputID : results
+                else results
+                    where output = getChain outputID board
+                          makeLinkAction sourceID targetID = Action { actionName = "consecutive values " ++ sourceID ++ "=>" ++ targetID, actionTransformer = (linkChainsInBoard sourceID targetID), actionBoard = board }
+                          isConsecutive source target = (chainValue source + chainLength source) == chainValue target
+                          
+reactConsecutiveValuesSupreme :: Board -> Chain -> [Action]
+reactConsecutiveValuesSupreme board chain = map (makeLinkAction (cid chain)) $ filter (\outputID -> isConsecutive chain (getChain outputID board)) $ chainOutputs chain
+    where makeLinkAction :: CellID -> CellID -> Action
+          makeLinkAction sourceID targetID = Action { actionName = "consecutive values " ++ sourceID ++ "=>" ++ targetID, actionTransformer = (linkChainsInBoard sourceID targetID), actionBoard = board }
+          isConsecutive :: Chain -> Chain -> Bool
+          isConsecutive source target = (chainValue source + chainLength source) == chainValue target

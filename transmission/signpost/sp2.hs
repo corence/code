@@ -9,14 +9,14 @@ import Signpost
 import SignpostPuzzles
 import ListUtil
 
-puzzleToBoard :: [(CellID, Int, [CellID])] -> Board
-puzzleToBoard protoCells = map reify protoCells
+puzzleToBoard :: [PuzzleCell] -> Board
+puzzleToBoard puzzleCells = map reify puzzleCells
     where reify (cellID, value, outputs) = Chain {
         cid = cellID, chainCells = [cellID],
         chainValue = value, chainLength = 1,
         chainOutputs = outputs, chainInputs = (inputs cellID)
     }
-          inputs cellID = map (\(cellID, _, _) -> cellID) (filter (\(_, _, outputs) -> elem cellID outputs) protoCells)
+          inputs cellID = map (\(cellID, _, _) -> cellID) (filter (\(_, _, outputs) -> elem cellID outputs) puzzleCells)
 
 type ProtoCell = (CellID, Int, String)
 type PuzzleCell = (CellID, Int, [CellID])
@@ -94,4 +94,4 @@ main = do
     putStrLn $ "--------"
     putStrLn $ "--------"
     putStrLn $ "--------"
-    putStrLn $ "boards: " ++ (formatList $ map stepPostBoard (terminalSteps solution))
+    putStrLn $ "boards: " ++ (concat $ map formatList $ map stepPostBoard (terminalSteps solution))

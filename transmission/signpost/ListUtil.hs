@@ -7,8 +7,8 @@ module ListUtil
 , trace
 ) where
 
---import Debug.Trace
-trace _ = id
+import Debug.Trace
+--trace _ = id
 
 formatList :: Show a => [a] -> String
 formatList [] = "\n"

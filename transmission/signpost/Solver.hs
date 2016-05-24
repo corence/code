@@ -4,6 +4,7 @@ module Solver
 , Plan(Plan, planAction, planParent)
 , Step(Step, InitStep, stepActions, stepPreBoard, stepPostBoard, stepParent, stepId)
 , solve
+, resolveAction
 ) where
 
 import Signpost
@@ -15,7 +16,7 @@ data Plan = Plan {
 }
 
 instance Show Plan where
-    show plan = "{" ++ (stepId (planParent plan)) ++ "::" ++ show (planAction plan) ++ "}"
+    show plan = "{" ++ (stepId (planParent plan)) ++ " :: " ++ show (planAction plan) ++ "}"
 
 data Step = InitStep {
     stepId :: String,
@@ -69,16 +70,14 @@ selectPlan :: [Plan] -> (Plan, [Plan])
 selectPlan (plan:plans) = (plan, plans)
 
 resolveAction :: Action -> Board -> ([Action], Board)
-resolveAction action board = (action : finalActions, finalBoard)
-    where newBoard = (actionTransformer action) (verifyBoard board)
-          (finalActions, finalBoard) = case (react newBoard) of
+resolveAction action board = (action : followups, finalBoard)
+    where newBoard = (actionTransformer action) (verifyBoard action board)
+          (followups, finalBoard) = case (react newBoard) of
             Just reaction -> resolveAction reaction newBoard
             Nothing -> ([], newBoard)
 
 guess :: Board -> [Action]
-guess _ = []
-
-commentguess board = (\guesses -> trace ("generated guesses: " ++ show guesses) guesses) $ concat (map linkToEveryOutput board)
+guess board = (\guesses -> trace ("generated guesses: " ++ show guesses) guesses) $ concat (map linkToEveryOutput board)
     where linkToEveryOutput chain = map (makeAction (cid chain)) (chainOutputs chain)
           makeAction :: CellID -> CellID -> Action
           makeAction source target = Action { actionName = source ++ "->" ++ target, actionTransformer = linkChainsInBoard source target, actionBoard = board }

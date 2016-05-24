@@ -43,6 +43,9 @@ instance Show Action where
 getChain :: CellID -> Board -> Chain
 getChain chainID board = fromMaybe (error $ "can't find cid " ++ chainID) $ find (\chain -> (cid chain) == chainID) board
 
+getChain2 :: Board -> CellID -> Chain
+getChain2 board chainID = fromMaybe (error $ "can't find cid " ++ chainID) $ find (\chain -> (cid chain) == chainID) board
+
 linkChains :: Chain -> Chain -> Chain
 linkChains chain1 chain2 = trace ("linking " ++ cid1 ++ " with " ++ cid2) $ Chain {
     cid = cid1,
@@ -89,12 +92,14 @@ linkChainsInBoard :: CellID -> CellID -> Board -> Board
 linkChainsInBoard chain1ID chain2ID board = newBoard
     --where newBoard = disconnectValueMismatches chain1ID $ replaceReferences chain2ID chain1ID $ replaceLinkedChains $ board
     where newBoard
-                    = (\b -> trace ("4. associated " ++ formatList b) b)
+                    = (\b -> trace ("5. associated " ++ formatList b) b)
                     $ associateValueMatches chain1ID
-                    $ (\b -> trace ("3. disassociated " ++ formatList b) b)
+                    $ (\b -> trace ("4. disassociated " ++ formatList b) b)
                     $ disassociateValueMismatches chain1ID
-                    $ (\b -> trace ("2. re-referenced " ++ formatList b) b)
+                    $ (\b -> trace ("3. replaceReferences " ++ chain2ID ++ " " ++ chain1ID ++ formatList b) b)
                     $ replaceReferences chain2ID chain1ID
+                    $ (\b -> trace ("2. disassociateRunnersUp " ++ chain1ID ++ " " ++ chain2ID ++ formatList b) b)
+                    $ disassociateRunnersUp chain1ID chain2ID
                     $ (\b -> trace ("1. linked " ++ formatList b) b)
                     $ replaceLinkedChains
                     $ (\b -> trace ("0. linkChainsInBoard " ++ chain1ID ++ " " ++ chain2ID ++ formatList b) b)
@@ -107,16 +112,20 @@ linkChainsInBoard chain1ID chain2ID board = newBoard
                                                     chainInputs = map (replaceThing fromID toID) (chainInputs chain),
                                                     chainOutputs = filter (/= fromID) (chainOutputs chain)
                                                   }) board
+          disassociateRunnersUp fromID toID board = map (\chain -> chain {
+                                                    chainInputs = filter (/= fromID) (chainInputs chain),
+                                                    chainOutputs = filter (/= toID) (chainOutputs chain)
+                                                  }) board
 
-verifyBoard :: Board -> Board
-verifyBoard board = map (verifyChain board) board
+verifyBoard :: Action -> Board -> Board
+verifyBoard action board = trace ("verifying from action " ++ show action ++ ": " ++ formatList board) $ map (verifyChain board) board
 
 verifyChain :: Board -> Chain -> Chain
 verifyChain board chain
   | (chainValue chain == 1) && (not (null (chainInputs chain))) = error $ "bad chain -- first chain shouldn't have inputs:\n" ++ (show chain)
   | (chainValue chain + chainLength chain > (countCells board)) && (not (null (chainOutputs chain))) = error $ "bad chain -- last chain shouldn't have outputs:\n" ++ (show chain)
   | not (null mismatchedOutputs) = error $ "bad chain -- outputs " ++ show mismatchedOutputs ++ " don't value-match:\n" ++ (show chain)
-  | not (null mismatchedInputs) = error $ "bad chain -- inputs " ++ show mismatchedInputs ++ " don't value-match:\n" ++ (show chain)
+  | not (null mismatchedInputs) = error $ "bad chain -- inputs " ++ show mismatchedInputs ++ " don't value-match:\n" ++ (show chain) ++ "\n versus " ++ (formatList $ map (getChain2 board) mismatchedInputs)
   | otherwise = trace ("nascent chain: " ++ (show chain)) chain
   where mismatchedOutputs = filter (\outputID -> not $ couldLinkValuesMatch chain (getChain outputID board)) (chainOutputs chain) 
         mismatchedInputs = filter (\inputID -> not $ couldLinkValuesMatch (getChain inputID board) chain) (chainInputs chain) 

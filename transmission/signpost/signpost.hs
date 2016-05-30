@@ -169,3 +169,10 @@ disassociateChainsInBoard chain1ID chain2ID board = replaceChain chain1ID newCha
           newChain2 = chain2 { chainInputs = filter (/= chain1ID) (chainInputs chain2) }
           chain1 = getChain chain1ID board
           chain2 = getChain chain2ID board
+
+associate :: CellID -> CellID -> Board -> Board
+associate chain1ID chain2ID board = replaceChain chain1ID newChain1 (replaceChain chain2ID newChain2 board)
+    where newChain1 = chain1 { chainOutputs = addIfMissing chain2ID (chainOutputs chain1) }
+          newChain2 = chain2 { chainInputs = addIfMissing chain1ID (chainInputs chain2) }
+          chain1 = getChain chain1ID board
+          chain2 = getChain chain2ID board

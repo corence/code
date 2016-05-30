@@ -1,6 +1,7 @@
 
 module ListUtil
-( formatList
+( addIfMissing
+, formatList
 , replaceThing
 , replaceThingGood
 , convergeMaybes
@@ -37,3 +38,6 @@ prepend list element = element : list
 times :: Int -> (a -> a) -> a -> a
 times 0 _ item = item
 times num func item = times (pred num) func (func item)
+
+addIfMissing :: Eq a => a -> [a] -> [a]
+addIfMissing a list = if elem a list then list else a:list

@@ -6,6 +6,7 @@ module SignpostPuzzles
 ) where
 
 import Signpost
+import Puzzle
 
 type Direction = String
 
@@ -20,7 +21,7 @@ puzzle1 = Map.fromList [
     ]
     -}
 
-puzzle3 = [
+puzzle3 = Puzzle [
     ("a1", 1, ["a2", "a3"]),
     ("a2", 0, ["b3"]),
     ("a3", 0, ["b2", "c1"]),
@@ -30,9 +31,9 @@ puzzle3 = [
     ("c1", 0, ["c2", "c3"]),
     ("c2", 0, ["b2", "a2"]),
     ("c3", 9, [])
-    ] :: [(CellID, Int, [CellID])]
+    ]
 
-puzzle5 = [
+puzzle5 = Puzzle [
     ("a1", 0, ["a2", "a3", "a4", "a5"]),
     ("a2", 0, ["b3", "c4", "d5"]),
     ("a3", 0, ["a4", "a5"]),
@@ -62,7 +63,7 @@ puzzle5 = [
     ("e3", 12, ["e4", "e5"]),
     ("e4", 0, ["d3", "c2", "b1"]),
     ("e5", 0, ["d4", "b2", "a1"])
-    ] :: [(CellID, Int, [CellID])]
+    ]
 
 puzzle7 = [
     ("a1", 1, "se"),
@@ -120,4 +121,4 @@ puzzle7 = [
     ("g5", 0, "n"),
     ("g6", 0, "nw"),
     ("g7", 49, "")
-    ] :: [(CellID, Int, String)]
+    ] :: [ProtoCell]

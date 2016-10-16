@@ -48,10 +48,12 @@ r_childs (RNode _ _ childs) = childs
 r_add_child :: RTree v -> RTree v -> RTree v
 r_add_child child node = RNode (n_elements + c_elements) (zone_add n_zone c_zone) (child : n_childs)
     where (RNode n_elements n_zone n_childs) = node
-          (RNode c_elements c_zone c_childs) = child
+          c_elements = r_num_elements child
+          c_zone = r_zone child
+          c_childs = r_childs child
 
 r_pair_nodes :: RTree v -> RTree v -> RTree v
-r_pair_nodes first second = r_add_child second $ r_add_child r_void first
+r_pair_nodes first second = r_add_child second $ r_add_child first r_void
 
 -- 0) remove the child
 -- 1) insert into the child
@@ -79,6 +81,14 @@ r_insert capacity leaf node
     where (RNode n_elements n_zone n_childs) = node
           (RLeaf l_pos l_value) = leaf
           childs_containing_new_pos = sortWith r_num_elements $ filter (\c -> zone_contains l_pos (r_zone c)) n_childs
+
+-- return all leaves in a zone
+r_lookup_zone :: Zone -> RTree v -> [RTree v]
+r_lookup_zone zone (RNode r_num_elements r_zone r_childs) = concat $ map (r_lookup_zone zone) r_childs
+r_lookup_zone zone (RLeaf pos value) = if zone_contains pos zone
+                                      then [RLeaf pos value]
+                                      else []
+
 
 main = do
     let leaves = [

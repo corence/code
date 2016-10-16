@@ -1,0 +1,132 @@
+
+/*
+some relevant movers:
+ - source: id of the object that caused this
+ - actor: id of the controller of the source
+ - generator: id of the ability that caused this (if an object is copied, the copy will have new ability IDs)
+ - progenitor: id of the event that created this event
+eg if i chuck a Lightning Bolt at your face, the resulting Lose Life event:
+ - source: the Lightning Bolt object
+ - actor: the controller of that object
+ - generator: the ability belonging to the "source" object that reads "deal 3 damage to target creature or player".
+ - progenitor: id of the Deal Damage event
+alternative names that suck less:
+ - sourceObject
+ - sourcePlayer
+ - sourceAbility
+ - sourceEvent
+sourceEvent seems the definitive Source that can derive the others.
+
+1) processing an event can create two additional fields in it:
+ - result: this can be any data type (probably an int, id, or array)
+ - spawn: any followup events that get created. (hopefully this *won't be needed* as we should be able to manage this using universal Triggered Abilities -- for example: "Whenever a player is dealt damage, she loses that much life" and "Whenever a creature receives damage, add that many damage emblems.") PITA to implement, but cool! (only problem is these triggers need to go straight to the stack, not to the Triggered zone)
+ - ignore the line above. spawn isn't advanced enough because it's always going to need backrefs.
+
+note: if the effect totally fizzles, it won't be added to the event log.
+if it's subject to a replacement effect, only the final event will be recorded, not the attempted one.
+
+*/
+// {name: 'create_object', source: source, object: object};
+
+// (idea? whenever a creation happens from the given sourceEvent, populate it with these values)
+// or, this:
+function process_create_copy_object(event) {
+    var creation = process_create_object({
+        name: 'create_object',
+        zone: event.subjectFrom.zone
+    });
+    var unification = process_copy_object(event);
+    event.result = [creation.result, unification.result];
+    return event;
+}
+
+// source, subject, amount
+function process_deal_damage(event) {
+    if(!event.subject.exists_on_battlefield) {
+        return Events.noop;
+    }
+    before_event(event);
+    if(event.amount > 0)
+}
+
+// whenever a source would deal damage, that source deals double damage instead.
+// { 'name': 'replacement_effect', source: (id of Furnace of Rath), subject: (id of deal_damage event in the Event Zone), replacement: (id of new deal_damage event) }
+
+// Destroy all creatures.
+// source, query, action
+function process_multi_event(event) {
+    event.result = [];
+    world.search(event.query).each(function (subject) {
+        var action = clone(event.action);
+        action.subject = subject;
+        process_event(action);
+        event.result.push(action.result);
+    });
+    return event;
+}
+
+function resolve_event(event) {
+    get_continuous_effects(event).each(function (effect) {
+        event = effect(event);
+    });
+}
+
+event_resolutions = {
+    'multi_event': function (event) {
+        event.result = [];
+        world.search(event.query).each(function (subject) {
+            var action = clone(event.action);
+            action.subject = subject;
+            process_event(action);
+            event.result.push(action.result);
+        });
+        return event;
+    },
+};
+
+function create_copy_object(source, fromObject, fields) {
+    var creation = process_create_object(create_object(source, fromObject.zone));
+}
+
+function copy_object(source, fromObject, toObject, fields) {
+    return fields.map(function (field) {
+        return {name: 'set_field', layer: 1, fromObject: fromObject, toObject: toObject, field: field};
+    });
+}
+
+function add_counter(source, subject, template, amount) {
+    var result = [];
+    for (var i = 0; i < amount; ++i) {
+        result.push({name: 'add_counter', subject: subject, template: template});
+    }
+    return result;
+}
+
+function gain_life(source, subject, amount) {
+    return {name: 'gain_life', subject: subject, amount: amount, source: source};
+}
+
+function deal_damage(source, subject, amount) {
+    return {name: 'deal_damage', subject: subject, amount: amount, source: source};
+}
+
+function lose_life(source, subject, amount) {
+    return {name: 'lose_life', subject: subject, amount: amount, source: source};
+}
+
+function take_extra_turn(source, subject) {
+    return {name: 'take_extra_turns', subject: subject, source: source};
+}
+
+function rezone(source, subject, origin, destination) {
+}
+
+event_parameters = {
+    gain_life: ['source', 'subject', 'amount'],
+    deal_damage: ['source', 'subject', 'amount'],
+    lose_life: ['source', 'subject', 'amount'],
+    take_extra_turn: ['source', 'subject'],
+    counter_spell: ['source', 'subject'],
+    rezone: ['source', 'subject', 'origin', 'destination'],
+    condition: ['source', 'test', 'positive', 'negative']
+};

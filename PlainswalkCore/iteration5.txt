@@ -1,0 +1,157 @@
+
+// 1) targeting can choose an Object. Objects are the ubiquitous things. You have 60 objects in your library; each of them refers to a Card. Objects have an owner and controller; multiple objects can point to a card.
+// 2) "rezone" action creates a new object based on the object's card, and obliterates the old one. A token that is rezoned creates nothing.
+// 3) counters, emblems, players are still objects.
+// 4) when an object is obliterated, targeting doesn't care (it won't check until the targeting ability resolves). but attached permanents will be notified immediately (because they have a trigger on the object rezoning).
+// 5) now we can use history! this means that an object should have much less state attached to it -- all the state is in the history backlog. some things that no longer need state:
+//   - choice of targets (query back to the casting)
+//   - undying (the old object is still available)
+//   - kicker (query back to the casting)
+// 6) objects have some "immutable" state (that can be mutated by replacement effects)
+// 7) probably they have some "mutable" state too, like tapping, face-up/face-down. (are these actually different from immutable state?) (we could actually handle these with attachments if we're crazy)
+// 8) not too sure about attachments -- are they state or just events?
+
+/*
+You may choose new targets for target instant or sorcery spell. Then copy that spell. You may choose new targets for the copy.
+*/
+
+/*
+114.8a An object that looks for a “[spell or ability] with a single target” checks the number of times any objects, players, or zones became the target of that spell or ability when it was put on the stack, not the number of its targets that are currently legal. If the same object, player, or zone became a target more than once, each of those instances is counted separately.
+*/
+
+/*
+400.7. An object that moves from one zone to another becomes a new object with no memory of, or relation to, its previous existence.
+*/
+
+/*
+109.1. An object is an ability on the stack, a card, a copy of a card, a token, a spell, a permanent, or an emblem.
+*/
+
+/*
+109.3. An object’s characteristics are name, mana cost, color, color indicator, card type, subtype, supertype, rules text, abilities, power, toughness, loyalty, hand modifier, and life modifier. Objects can have some or all of these characteristics. Any other information about an object isn’t a characteristic. For example, characteristics don’t include whether a permanent is tapped, a spell’s target, an object’s owner or controller, what an Aura enchants, and so on.
+*/
+
+/*
+112.3. There are four general categories of abilities:
+112.3a Spell abilities are abilities that are followed as instructions while an instant or sorcery spell is resolving. Any text on an instant or sorcery spell is a spell ability unless it’s an activated ability, a triggered ability, or a static ability that fits the criteria described in rule 112.6.
+112.3b Activated abilities have a cost and an effect. They are written as “[Cost]: [Effect.] [Activation instructions (if any).]” A player may activate such an ability whenever he or she has priority. Doing so puts it on the stack, where it remains until it’s countered, it resolves, or it otherwise leaves the stack. See rule 602, “Activating Activated Abilities.”
+112.3c Triggered abilities have a trigger condition and an effect. They are written as “[Trigger condition], [effect],” and include (and usually begin with) the word “when,” “whenever,” or “at.” Whenever the trigger event occurs, the ability is put on the stack the next time a player would receive priority and stays there until it’s countered, it resolves, or it otherwise leaves the stack. See rule 603, “Handling Triggered Abilities.”
+112.3d Static abilities are written as statements. They’re simply true. Static abilities create continuous effects which are active while the permanent with the ability is on the battlefield and has the ability, or while the object with the ability is in the appropriate zone. See rule 604, “Handling Static Abilities.”
+*/
+
+/*
+Joraga Warcaller
+G
+1/1
+Creature - Elf Warrior
+Green
+Multikicker {C}{G}
+this enters the battlefield with a +1/+1 counter on it for each time it was kicked.
+Other Elf creatures you control get +1/+1 for each +1/+1 counter on Joraga Warcaller.
+*/
+
+function Query_multikick_etb(ability) {
+    return function (self) {
+        var etb = Query.event({name: 'rezone', object: '$self', destination: 'battlefield'});
+        var spell = etb[0].source;
+        if (spell) {
+            var ets = Query.event({name: 'rezone', object: spell, destination: 'battlefield'});
+            var cast = ets[0].source; // apparently events are objects too
+            if (cast) {
+                var multikick = Query.event({name: 'multikick', source: cast, abilility: ability});
+                if (multikick && multikick.length > 0) {
+                    return multikick;
+                }
+            }
+        }
+
+        return false;
+    };
+}
+
+function trigger_on_multikick_etb(ability) {
+    return function (self) {
+        mk = Query_multikick_etb(ability);
+        if (mk && (mk.length > 0)) {
+            return ability;
+        } else {
+            return false;
+        }
+    };
+}
+
+function multikick(manaCost) {
+    return {
+        trigger: Events.cast,
+        resolution: [
+            repeatable_option(function (cast) {
+                return {
+                    cost: [
+                        payMana(manaCost)
+                    ],
+                    resolution: [
+                        raiseEvent('multikick', cast)
+                    ]
+                };
+            })
+        ]
+    };
+}
+
+function handleTriggers(event) {
+    this.triggers.forEach(function (trigger) {
+        if (trigger.match(event)) {
+            trigger.resolutions.forEach(function (resolution) {
+                resolution.go(event);
+            });
+        }
+    });
+}
+
+joraga_warcaller = {
+    name: 'Joraga Warcaller',
+    types: ['Creature'],
+    subtypes: ['Elf', 'Warrior'],
+    // whenever you cast this spell, you may pay {C}{G} any number of times.
+    // before this permanent enters the battlefield, for each kick, add +1/+1.
+
+    triggered_abilities: [
+        multikick('1G')
+    ],
+
+    replacement_effects: [
+        {
+            trigger: trigger_on_multikick_etb(self.abilities[0]),
+            resolution: [
+                Actions.makeStackObject([
+                    Actions.each(Query_multikick_etb(self.abilities[0]), Actions.plus_plus('$permanent')),
+                    Actions.resume()
+                ])
+            ]
+        }
+    ]
+};
+
+// steps to initialise a multikicker creature
+// 1a) replacement resolution: "etb with +1"
+// 1b) replacement effect: "whenever this permanent would etb, instead it will etb with +1" (this isn't actually used by this card!)
+// 2a) detect multikicks:
+//      i. this etb must be moving from the stack.
+//      ii. a spell resolution event is the source of this etb.
+//      iii. that event has a spell.
+//      iv. sanity-check that the spell matches this permanent.
+//      v. that spell moved from somewhere to the stack.
+//      vi. verify that a spell cast caused this ets.
+//      vii. verify that the spell cast matches the spell on the stack.
+//      viii. scan for multikick events against this spellcast event.
+//      ix. filter the multikicks to ones that match the specific multikick ability. (bloody splice)
+// 2b) etb trigger: "whenever this enters the battlefield, do 1a for each multikick"
+
+// +1 effect: function(event) { event.permanent.counters++; return [event]; }
+// replacement effect: { trigger: Query for ETB, resolution: [function(Event)] } (this isn't used by this card)
+// detect multikicks: function(event) { }
+// etb trigger: { trigger: Query for ETB, resolution: [function(Event)] }
+
+//
+
+// proposal: all actions (costs, resolutions, etc) return an array of events -- or false if they failed

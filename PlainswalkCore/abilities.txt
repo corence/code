@@ -1,0 +1,90 @@
+
+{
+    costs: [
+        manaCost,
+        pay3Life,
+        target_nonblack_creature
+    ],
+    resolutions: [
+        destroy_target_creature
+    ]
+}
+
+{
+    name: "Disintegrate",
+    activate: {
+        costs: [
+            cast,
+            choose(X),
+            manaCost(X R),
+            target
+        ],
+        results: [
+            stack
+        ]
+    }
+    resolutions: [
+        targets_valid([target]),
+        x damage to target,
+        exile-on-death to target
+    ]
+}
+
+{
+    name: "Coal Stoker",
+    triggers: [
+        {
+            costs: [
+                etb,
+                has_attached("Cast From Hand")
+            ],
+            results: [
+                stack(gain(mana("RRR")))
+            ]
+        }
+    ],
+        
+    activate: {
+        costs: [
+            cast,
+            manaCost("3R")
+        ],
+        results: [
+            stack,
+            attach(create("Cast From Hand", "Command"), this)
+        ]
+    }
+    resolutions: [
+        move to battlefield
+    ]
+}
+
+{
+    name: "Cast From Hand",
+    triggers: [
+        {
+            events: [
+                event_move(attached_card, stack, _)
+            ],
+            results: [
+                stack(destroy(this))
+            ]
+        }
+    ]
+}
+
+CoalStoker = Card {
+    name = "Coal Stoker",
+    triggers = [
+        Ability {
+            costs = [
+                doesMove(this, Nothing, Just Battlefield),
+                hasAttachment("Cast From Hand")
+            ],
+            results = [
+                create(Stack, GainMana(mana("RRR")))
+            ]
+        }
+    ],
+}
+

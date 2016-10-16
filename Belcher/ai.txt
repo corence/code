@@ -1,0 +1,132 @@
+
+ - choose a goal:
+  1) warrens
+  2) wish-warrens
+  3) wish-redraw
+  4) wish-flashback
+  5) belch
+  6) abide
+  
+simple:
+name	needs	gives	cast?	sorc?	draw?	discard?
+tinder wall	G	RR	Y	N	N	N
+elvish spirit guide	0	G	N	N	N	N
+simian sprit guide	0	R	N	N	N	N
+street wraith	0	0	N	N	Y	N
+chrome mox	0*	X	Y	N	N	1
+lion's eye	0	XXX*	Y	N	N	99
+lotus petal	0	X	Y	N	N	N
+gitax probe	0	0	Y	Y	Y	N
+rite of flame	R	R,RR,RRR,RRRR	Y	Y	N	N
+desperate ritual	1R	RRR	Y	Y	N	N
+double desperates	11RR	RRRRRR	Y	Y	N	N
+land grant	0	X,0	Y	Y	N	N
+manamorph	1X	XX	Y	Y	Y	N
+pyretic	1R	RRR	Y	Y	N	N
+seething	2R	RRRRR	Y	Y	N	N
+
+ - lion's eye can only trigger during a wish, or a redraw, or to fire the belcher
+ - chrome mox needs to junk a card -- probably leave it out for bot v1
+ - double desperates replaces a desperate ritual when you have 11RR in flux
+ - land grant doesn't generate mana in multiples
+
+super
+warren: count the Cast this turn, and double that = goblins
+wish: tutor warren, redraw, or flashback
+redraw: discard all, draw 7
+flashback: all sorc currently in the graveyard gain flashback
+belcher: 3 mana to win
+
+
+
+stages:
+1) mulligan?
+2) cast all street wraiths
+3) eval each goal and figure out how far to each
+3a) warren: we can do at least 3R, and cast at least 4 in turn 1, 5 in turn 2, 6 in turn 3+, and we have warren
+3b) we can do 7 mana and we have a belch
+3c) we can do 4 mana this turn and 3 mana next turn -- that's a belch
+3d) wish: we can do at least 4RR, and we have wish
+3e) wish-warren: we can cast at least 4 times in turn 1, 5 in turn 2, 6 in turn 3+
+3f) wish-reset: we can convert 4RR to 3RBB, and we haven't done wish-reset
+3g) wish-flames: we can generate 4RRR, we have another win-con (or wish) in hand or a sorc in graveyard, and we can fund it if we flash back
+4) willingness to risk starting early: 
+4a) a goal is only n mana short (either kickstart or sustained mana)
+4b) we have x card-draw spells in hand
+4c) it's now turn t
+4d) on turn 1, we need x >= n + 2
+4e) on turn 2, we need x >= n + 1
+4f) on turn 4+, we need x >= n
+5) we can do x mana if there is a clear path to casting it
+6) if we didn't start, then wait
+
+
+priority:
+a) if we're uncertain about starting storm, then all non-sorc get +realtime priority
+b) if we're planning to keep going next turn, then prioritize a) permanent mana, getting to the exact mana amount
+c) if we're planning to redraw, lower priority on X mana sources (manamorphose, lotus petal)
+
+always function:
+elvish spirit guide
+simian sprit guide
+street wraith
+lotus petal
+gitax probe
+
+simple conditions:
+land grant
+lion's eye
+tinder wall
+pyretic
+manamorph
+seething
+
+bigger conditions:
+chrome mox
+rite of flame
+desperate ritual
+
+super:
+warren
+wish
+belcher
+flasher
+resetter
+
+sample hand:
+ - land grant
+ - burning wish
+ - rite of flame
+ - manamorphose
+ - manamorphose
+ - elvish spirit guide
+ - seething song
+
+mana: elvish spirit => G, land grant => GY, rite of flame => GRR, seething => RRRRR... 5 mana
+ 
+goals:
+3a) warren: no
+3b) belch-now: no
+3c) belch-next: no
+3d) wish: -1 ~2
+3e) wish-warren: -1 ~2, storm 7
+3f) wish-reset: -1 ~2
+3g) wish-flames: -2 ~2, but no following goal
+
+too risky to try for wish-warren, so wait
+
+draw:
+ - lotus petal
+
+mana: elvish spirit => G, land grant => GY, rite of flame => GRR, seething => RRRRR, lotus => XRRRRR
+ 
+goals:
+3a) warren: no
+3b) belch-now: no
+3c) belch-next: no
+3d) wish: 0 ~2
+3e) wish-warren: 0 ~2, storm 8
+3f) wish-reset: 0 ~2
+3g) wish-flames: -1 ~2, but no following goal
+
+

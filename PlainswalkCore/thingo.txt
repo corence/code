@@ -1,0 +1,58 @@
+
+ - attackers
+ - blockers
+ - unblockables
+ - removal (with tempo loss)
+ - counterspells
+ - my-land-bouncers
+ - burn
+ - card draw/sight
+
+quadrants:
+ - buildup -- summon creatures; defend creatures
+ - built but with no finish -- dig for finishers; block and delay; defend creatures
+ - built then lost creatures -- dig for creatures; block and delay
+ - built with finishers -- burst and see what happens
+
+goals:
+a) summon/attack
+b) protect creatures
+c) defend me (block and delay)
+d) dig
+e) burn
+
+f) storm
+g) evasion
+
+h) removal
+i) disrupt
+
+delver: attack
+kiln: summon 2, attack 10
+sootstoke: protect
+spiketail hatchling: summon 2, attack 1, protect, disrupt
+calcite: summon 3, attack 4, protect, defend 4
+nivix: summon 3, attack 10, defend 4
+spiketail drakeling: summon 3, attack 2, protect, disrupt
+artful dodge: evasion 2, storm 2
+gitax: protect creatures, dig, storm 0
+ground rift: evasion, storm
+intervene: storm, protect
+bolt: burn, disrupt, evasion
+preordain: dig, storm
+shadow rift: dig, evasion, storm
+vapor snag: disrupt, evasion, protect
+daze: protect, storm 0, disrupt
+manamorphose: storm 0
+temur battle rage: storm 99, evasion
+veil of secrecy: protect, evasion
+voyage's end: protect, disrupt, evasion, dig
+compulsive research: dig
+gush: storm, dig
+
+quadrants:
+ - buildup -- summon creatures; defend creatures. a) summon, b) protect i) disrupt c) defend
+ - built then lost creatures -- dig for creatures; block and delay. b) protect i) disrupt d) dig h) removal
+ - built but with no finish -- dig for finishers; block and delay; defend creatures. a) protect b) disrupt c) defend d) dig
+ - built with finishers -- burst and see what happens
+ 

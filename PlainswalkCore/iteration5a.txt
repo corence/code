@@ -1,0 +1,132 @@
+
+/*
+ok, so get this:
+1) the game state can be fully recreated by replaying all Initial State and Player Choice events from the start of the game.
+2) these, and any event that can cause a trigger, are all stored in the Event Log.
+3) each of these events can be applied or reversed on the current game state.
+4) therefore the current game state is *mutable*. immutability just gives us hassle here with no real upside!
+5) kicker is a special case of modal spells, and is totally irrelevant to the permanent.
+6) casting a spell follows the *real game's rules*:
+  a) declare casting
+  b) create the object on the stack
+  c) select modes -- including alternate costs, additional costs, value of X
+  d) pay costs and select targets. (it's possible that #b may be part of this)
+  e) the above list may be changed by how Copying Objects is implemented.
+7) copying objects is damned tricky, but it dictates much of the data model:
+ - counters and attachments: not copied
+ - controller: not copied (overwritten)
+ - targets: copied
+ - modes: copied
+ - sunburst costs, batwing brume costs: not copied
+ - fling's "sacrifice a creature": copied
+ - kicker: copied
+ - current power/toughness: not copied
+ - cloned power/toughness: copied
+8) objects have *no* tracking of the layer system. Copying a permanent will copy abilities -- not status. Therefore:
+ - a grizzly bear is no longer vanilla. It has the following characteristic-defining abilities: "Grizzly Bears is green." "Grizzly Bears is 2/2."
+ - if an ongoing effect changes, the permanent will be rebuilt using all current effects and the layer system.
+9) effects can have a Source (the object that caused the effect), an Actor (the controller of the source. needed?), and a Generator (the id of the ability that created the effect).
+10) effects that return a result *store that result in the event log*.
+
+    706.2. When copying an object, the copy acquires the copiable values of the original object’s characteristics and, for an object on the stack, choices made when casting or activating it (mode, targets, the value of X, whether it was kicked, how it will affect multiple targets, and so on). The “copiable values” are the values derived from the text printed on the object (that text being name, mana cost, color indicator, card type, subtype, supertype, rules text, power, toughness, and/or loyalty), as modified by other copy effects, by its face-down status, and by “as . . . enters the battlefield” and “as . . . is turned face up” abilities that set power and toughness (and may also set additional characteristics). Other effects (including type-changing and text-changing effects), status, and counters are not copied.
+
+                Example: Chimeric Staff is an artifact that reads “{X}: Chimeric Staff becomes an X/X artifact creature until end of turn.” Clone is a creature that reads, “You may have Clone enter the battlefield as a copy of any creature on the battlefield.” After a Staff has become a 5/5 artifact creature, a Clone enters the battlefield as a copy of it. The Clone is an artifact, not a 5/5 artifact creature. (The copy has the Staff’s ability, however, and will become a creature if that ability is activated.)
+                Example: Clone enters the battlefield as a copy of a face-down Grinning Demon (a creature with morph {2}{B}{B}). The Clone is a colorless 2/2 creature with no name, no types, no abilities, and no mana cost. It will still be face up. Its controller can’t pay {2}{B}{B} to turn it face up.
+
+    706.3. The copy’s copiable values become the copied information, as modified by the copy’s status (see rule 110.6). Objects that copy the object will use the new copiable values.
+
+                Example: Vesuvan Doppelganger reads, “You may have Vesuvan Doppelganger enter the battlefield as a copy of any creature on the battlefield except it doesn’t copy that creature’s color and it gains ‘At the beginning of your upkeep, you may have this creature become a copy of target creature except it doesn’t copy that creature’s color. If you do, this creature gains this ability.’” A Vesuvan Doppelganger enters the battlefield as a copy of Runeclaw Bear (a 2/2 green Bear creature with no abilities). Then a Clone enters the battlefield as a copy of the Doppelganger. The Clone is a 2/2 blue Bear named Runeclaw Bear that has the Doppelganger’s upkeep-triggered ability.
+                Example: Tomoya the Revealer (a flipped flip card) becomes a copy of Nezumi Shortfang (an unflipped flip card). Tomoya’s characteristics become the characteristics of Stabwhisker the Odious, which is the flipped version of Nezumi Shortfang.
+                Example: A face-down Grinning Demon (a creature with morph) becomes a copy of a face-up Branchsnap Lorian (a 4/1 green creature with trample and morph {G}). The Demon’s characteristics become the characteristics of Branchsnap Lorian. However, since the creature is face down, it remains a 2/2 colorless creature with no name, types, or abilities, and no mana cost. It can be turned face up for {G}. If it’s turned face up, it will have the characteristics of Branchsnap Lorian.
+                Example: A face-down Grinning Demon (a creature with morph) becomes a copy of Wandering Ones (a 1/1 blue Spirit creature that doesn’t have morph). It will be a face-down Wandering Ones. It remains a 2/2 colorless creature with no name, types, or abilities, and no mana cost. Its controller can’t turn it face up as a special action. If an effect turns it face up, it will have the characteristics of Wandering Ones.
+
+    706.4. Some effects cause a permanent that’s copying a permanent to copy a different object while remaining on the battlefield. The change doesn’t trigger enters-the-battlefield or leaves-the-battlefield abilities. This also doesn’t change any noncopy effects presently affecting the permanent.
+
+                Example: Unstable Shapeshifter reads, “Whenever a creature enters the battlefield, Unstable Shapeshifter becomes a copy of that creature and gains this ability.” It’s affected by Giant Growth, which reads “Target creature gets +3/+3 until end of turn.” If a creature enters the battlefield later this turn, Unstable Shapeshifter will become a copy of that creature, but it will still get +3/+3 from the Giant Growth.
+*/
+
+// Natural Spring
+// Sorcery
+// 3GG
+// Gain 8 life.
+
+// 1) gain x life: create event, create objects
+
+// events:
+
+var cards = {};
+cards['Natural Spring'] = {
+    types: ['Sorcery'],
+    mana_cost: '3GG',
+    resolutions: [
+        gain_life('self', 'controller', 8)
+    ]
+};
+
+stack_objects['Natural Spring'] = {
+    types: ['Sorcery'],
+    mana_cost: '3GG',
+    resolutions: [
+        gain_life('self', $controller, 8)
+    ]
+};
+
+cards['Incremental Blight'] = {
+    types: ['Sorcery'],
+    mana_cost: '3BB',
+    targets: [38, 49, 52],
+    resolutions: [
+        
+    ]
+};
+
+function create_object(source, object) {
+    return {name: 'create_object', source: source, object: object};
+}
+
+function create_copy_object(source, fromObject, fields) {
+    var creation = process_create_object(create_object(source, fromObject.zone));
+}
+
+function copy_object(source, fromObject, toObject, fields) {
+    return fields.map(function (field) {
+        return {name: 'set_field', layer: 1, fromObject: fromObject, toObject: toObject, field: field};
+    });
+}
+
+function add_counter(source, subject, template, amount) {
+    var result = [];
+    for (var i = 0; i < amount; ++i) {
+        result.push({name: 'add_counter', subject: subject, template: template});
+    }
+    return result;
+}
+
+function gain_life(source, subject, amount) {
+    return {name: 'gain_life', subject: subject, amount: amount, source: source};
+}
+
+function deal_damage(source, subject, amount) {
+    return {name: 'deal_damage', subject: subject, amount: amount, source: source};
+}
+
+function lose_life(source, subject, amount) {
+    return {name: 'lose_life', subject: subject, amount: amount, source: source};
+}
+
+function take_extra_turn(source, subject) {
+    return {name: 'take_extra_turns', subject: subject, source: source};
+}
+
+function rezone(source, subject, origin, destination) {
+}
+
+event_parameters = {
+    gain_life: ['source', 'subject', 'amount'],
+    deal_damage: ['source', 'subject', 'amount'],
+    lose_life: ['source', 'subject', 'amount'],
+    take_extra_turn: ['source', 'subject'],
+    counter_spell: ['source', 'subject'],
+    rezone: ['source', 'subject', 'origin', 'destination'],
+    condition: ['source', 'test', 'positive', 'negative']
+};

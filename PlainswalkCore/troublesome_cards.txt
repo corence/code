@@ -1,0 +1,83 @@
+
+Coal Stoker
+3R
+Creature
+3/3
+When Coal Stoker enters the battlefield, if you cast it from your hand, add RRR to your mana pool.
+
+ - cast it
+   -- pay costs
+   -- choose targets (none)
+   -- move it to the stack
+ - resolve it
+   -- move it to the battlefield
+     -- trigger with intervening if
+
+implementations:
+1) rule additions
+    a) 
+    When you cast Coal Stoker, attach an Emblem to it called Stoke_Hand that says:
+        When this card moves from your Hand to the Stack, attach an emblem called Stoke_Stack to it that says:
+            When this card moves from the Stack to the Battlefield, create an emblem called Stoke_Battlefield, and attach it to Coal Stoker.
+
+    b)
+    When Coal Stoker enters the battlefield, if it has an Emblem called Stoke_Battlefield attached to it, destroy Stoke_Battlefield and add RRR to your mana pool.
+
+2) better rule additions
+    a) When you cast Coal Stoker, create an Emblem called Stoke on the Battlefield that says:
+        This card doesn't detach when its target moves to the Stack or to the Battlefield.
+
+    b) When Coal Stoker enters the battlefield, if it has an Emblem called Stoke attached to it, destroy Stoke and add RRR to your mana pool.
+
+3) history scanner
+    When Coal Stoker enters the battlefield, search history.
+
+history:
+
+Move implements Event
+ - from :: Zone
+ - to :: Zone
+ - timestamp :: Timestamp
+ - card :: Card
+ - cause :: Event
+
+Replace implements Event
+ - old :: Event # could be DealDamage
+ - new :: Event # could be PreventDamage or AddCounters
+ - timestamp :: Timestamp
+ - cause :: Event (probably Trigger or State)
+
+DealDamage implements Event
+ - source :: Card
+ - selection :: Card
+ - amount :: Int
+ - cause :: Event (could be Resolve, Combat)
+
+LoseLife implements Event
+ - selection :: Card
+ - amount :: Int
+ - cause :: Event (probably DealDamage)
+
+PreventDamage implements Event
+ - selection :: Card
+ - amount :: int
+ - cause :: Event (probably Trigger or State from an ongoing effect)
+
+GetDestroyed implements Event
+ - selection :: Card
+ - cause :: Event
+
+DoNothing implements Event
+ - cause :: Event
+
+AddCounters implements Event
+ - selection :: Card
+ - name :: String
+ - amount :: Int
+ - cause :: Event
+
+Kick implements Event
+ - cause :: Event (PlayerChoice)
+ - kickerAbility :: Ability  # this is used so multiple Kicker abilities can all be once-per-cast
+ - cast :: Event
+ 

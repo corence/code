@@ -1,0 +1,98 @@
+
+{
+    name: 'Lightning Bolt',
+    costs: [
+        Costs.payMana('R'),
+        Costs.target(this.name)
+    ]
+    resolution: [
+        numTargets: Actions.find(['zone:battlefield', 'type:[Player,Creature]', 'targetedBy:this']),
+        enoughTargets: Actions.math('$numTargets > 0'),
+        Actions.dealDamage(this.name, 3)
+    ]
+}
+
+/*
+You may choose new targets for target instant or sorcery spell. Then copy that spell. You may choose new targets for the copy.
+*/
+
+/*
+114.8a An object that looks for a “[spell or ability] with a single target” checks the number of times any objects, players, or zones became the target of that spell or ability when it was put on the stack, not the number of its targets that are currently legal. If the same object, player, or zone became a target more than once, each of those instances is counted separately.
+*/
+
+/*
+400.7. An object that moves from one zone to another becomes a new object with no memory of, or relation to, its previous existence.
+*/
+
+/*
+109.1. An object is an ability on the stack, a card, a copy of a card, a token, a spell, a permanent, or an emblem.
+*/
+
+/*
+109.3. An object’s characteristics are name, mana cost, color, color indicator, card type, subtype, supertype, rules text, abilities, power, toughness, loyalty, hand modifier, and life modifier. Objects can have some or all of these characteristics. Any other information about an object isn’t a characteristic. For example, characteristics don’t include whether a permanent is tapped, a spell’s target, an object’s owner or controller, what an Aura enchants, and so on.
+*/
+
+/*
+112.3. There are four general categories of abilities:
+112.3a Spell abilities are abilities that are followed as instructions while an instant or sorcery spell is resolving. Any text on an instant or sorcery spell is a spell ability unless it’s an activated ability, a triggered ability, or a static ability that fits the criteria described in rule 112.6.
+112.3b Activated abilities have a cost and an effect. They are written as “[Cost]: [Effect.] [Activation instructions (if any).]” A player may activate such an ability whenever he or she has priority. Doing so puts it on the stack, where it remains until it’s countered, it resolves, or it otherwise leaves the stack. See rule 602, “Activating Activated Abilities.”
+112.3c Triggered abilities have a trigger condition and an effect. They are written as “[Trigger condition], [effect],” and include (and usually begin with) the word “when,” “whenever,” or “at.” Whenever the trigger event occurs, the ability is put on the stack the next time a player would receive priority and stays there until it’s countered, it resolves, or it otherwise leaves the stack. See rule 603, “Handling Triggered Abilities.”
+112.3d Static abilities are written as statements. They’re simply true. Static abilities create continuous effects which are active while the permanent with the ability is on the battlefield and has the ability, or while the object with the ability is in the appropriate zone. See rule 604, “Handling Static Abilities.”
+*/
+
+{
+    name: 'Wild Ricochet',
+    costs: [
+        manaCost: Costs.payMana('2RR'),
+        target: Costs.target('zone:stack', 'type:[Instant, Sorcery]')
+    ],
+    resolution: [
+        targetOK: Action.checkTargets,
+        x: Action.changeCard('$target', '$target', 
+
+
+    
+        retarget: changeTarget('$target', selectCard('targeting system of $target')),
+        copy: clone('$target', {}),
+        secondTarget: runCost(copy, 'target')
+        retarget2: changeTarget(copy, secondTarget)
+    ]
+}
+
+/*
+Boseiju, Who Shelters All
+Legendary Land
+$this comes into play tapped.
+<tap>, pay 2 life: Add 1 to your mana pool. If that mana is spent on an instant or sorcery spell, that spell can't be countered by spells or abilities.
+*/
+
+{
+    name: 'Boseiju, Who Shelters All',
+    type: ['Legendary', 'Land'],
+    triggers: [
+        comesIntoPlayTapped: Triggers.comesIntoPlayTapped
+    ],
+    abilities: [
+        tapForUncounterableInstantSorceryMana: tapForUncounterableInstantSorceryMana
+    ]
+}
+
+{
+    name: 'Tap for uncounterable instant or sorcery mana',
+    type: ability,
+    costs: [
+        tap: tap
+    ],
+    results: [
+        mana: Actions.instantiate('zone:manaPool', uncounterableInstantOrSorceryMana)
+    ]
+}
+
+{
+    name: 'Uncounterable instant or sorcery mana'
+    type: 'mana',
+    subtype: 'gray',
+    results: [
+        // make the spell uncounterable here
+    ]
+}

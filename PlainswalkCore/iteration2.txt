@@ -1,0 +1,193 @@
+
+ - each counter is a card
+ - cards have:
+  - template (this never, ever changes -- this is the printed card! includes Token. all Lightning Bolts share a template)
+  - properties (owner, current zone [maybe], all abilities (??))
+  - spell (results of all choices made while casting and all costs paid, controller)
+  - permanent (power, toughness, type, subtype, battlefield abilities (??))
+
+ - activated abilities and triggered abilities should be cards that clone themselves when they go on the stack. this gives them:
+  - costs
+  - resolution
+  - something to put on the stack
+basically, when something will need to go on the stack, the thing that goes on the stack should have a bunch more info than just the resolution. Mostly because it makes it more consistent with Lightning Bolt; it also simplifies the data model (in terms of number of elements) even though it muddles the roles a bit.
+State-based actions and mana abilities would probably thus be represented by (cloned?) cards too, just for consistency.
+  
+
+scene: [
+    {
+        name: Lightning Bolt
+        template: {
+            spell: {
+                resolution: [
+                    numTargets: Actions.find(['zone:battlefield', 'type:[Player,Creature]', 'targetedBy:this']),
+                    enoughTargets: Actions.math('$numTargets > 0'),
+                    Actions.dealDamage('$target', 3)
+                ]
+            }
+        }
+        properties: {
+            owner: player1
+            zone: <hand>
+            abilities: [
+                {
+                    name: 'Cast',
+                    costs: {
+                        payMana: Costs.payMana('R'),
+                        target: Costs.target('zone:battlefield', 'type:[Player,Creature]')
+                    },
+                    outcomes: {
+                        makeSpell: Actions.makeSpell('this', 'target:$target'),
+                        move: Actions.alterProperties('this', 'zone:stack')
+                    }
+                }
+            ]
+        }
+        spell: null
+        permanent: null
+    },
+    {
+        name: Mountain
+        template: {
+        }
+        properties: {
+            owner: player1
+            zone: <battlefield>
+        }
+        spell: null
+        permanent: {
+            type: [basic, land]
+        }
+    },
+    {
+        name: Battlefield
+        template: {
+        }
+        properties: {
+            owner: game
+        }
+        spell: null
+        permanent: {
+            type: [zone]
+        }
+    },
+    {
+        name: 'Mana pool',
+        type: 'zone',
+        permanent: {
+            abilities: [
+                {
+                    name: TapMountainForMana,
+                    // if this isn't ordered, then it'll need some retry/backtracking or something. or replace the map with a list of tuples/pairs -- probably better. javascript has them ordered though
+                    costs: {
+                        player: Costs.activated,
+                        source: Costs.selectCard(['type:basic', 'controller:$player', 'zone:battlefield', 'name:Mountain']),
+                        tap: Costs.tap(['card:$source'])
+                    },
+                    resolution: [
+                        Actions.spawn('Red mana', ['zone:manapool'])
+                    ]
+                }
+            ]
+        }
+    }
+    {
+        name: 'Red mana'
+        template: {
+        }
+        properties: {
+        }
+        spell: null
+        Jpermanent: {
+        }
+    },
+    {
+        name: 'Player',
+        template: {
+        },
+        permanent: {
+            abilities: [
+                {
+                    name: 'Cast a spell',
+                    costs: {
+                        player: Costs.activated(this),
+                        card: Costs.selectCard(['type:spell', 'owner:this']),
+                        ability: Queries.findAbility('$card', 'Cast')
+                    },
+                    outcomes: {
+                        cast: Actions.activate('$ability')
+                    }
+                }
+            ]
+        }
+    }
+]
+
+function parseMana(amount, omninumeric) {
+    var result = {};
+
+    //var replacements = ['X', 'Y', 'Z', 'W/U', 'W/B', 'W/R', 'W/G', ... 'R/G', 'W', 'U', 'B', 'R', 'G'];
+    var replacements = [
+        ['X', 'X'],
+        ['Y', 'Y'],
+        ['Z', 'Z'],
+        ['W/U', ['White', 'Blue']],
+        ['W/B', ['White', 'Black']],
+        ['R/G', ['Red', 'Green']],
+        ['W', 'White'],
+        ['G', 'Green'],
+        ['Green Phi', ['Green', '2 life']]
+    ];
+
+    replacements.map(function (r) {
+        while(match(r[0])) {
+            replace(r[0], '');
+            result.push(r[1]);
+        }
+    });
+
+    match('^\d$') {
+        replace('')
+        if(omninumeric) {
+            //result['*' += n]
+            //result[['White', 'Blue', 'Black', 'Red', 'Green']] += n; // shit -- can't use an array as a key
+            for(var i=0; i<n; ++i) {
+                result.push(['White', 'Blue', 'Black', 'Red', 'Green']);
+            }
+        } else {
+            //result['_' += n]
+            //result['Colorless'] += n;
+            for(var i=0; i<n; ++i) {
+                result.push(['Colorless']);
+            }
+        }
+    }
+
+    if(amount !== '') throw;
+    
+    return result;
+}
+
+Costs = {
+    function payMana(amount) {
+        var manaCosts = parseMana(amount, true);
+        return function (scene) {
+            manaCosts.map(function (cost)) {
+                var manaCard = Costs.selectCard(['zone:manapool', 'controller:self', 'type:mana', 'name:' + cost]).execute(scene);
+                var success = Actions.destroy(manaCard);
+                if(!success) return false;
+            }
+            /*
+            var selections = [];
+            
+            manaCosts.map(function (cost)) {
+                selections.push(Costs.selectCard(['zone:manapool', 'controller:self', 'type:mana', 'name:' + cost]));
+            }
+
+            Queries.distinct(selections);
+            */
+        };
+    }
+}
+
+// 

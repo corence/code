@@ -1,0 +1,34 @@
+
+sims:
+Mission: Cook dinner
+outcomes: +8 dinner objects, -1 preppedMaterials
+
+Mission: Prep dinner materials
+outcomes: +1 preppedMaterials, -1 rawMaterials
+
+Mission: Get dinner materials
+outcomes: +1 rawMaterials, -20 simoleans
+
+
+class Mission where
+
+data CookDinner = CookDinner {
+    CD_getMaterials = FindResource "preppedMaterials" 1
+}
+
+instance Mission CookDinner where
+  outcomes 
+
+
+
+
+
+class Ordinal t where
+  lesser :: t -> t -> Bool
+  greater :: t -> t -> Bool
+
+instance Ordinal Int where
+  lesser x y = x < y
+  greater x y = x > y
+
+

@@ -1,0 +1,56 @@
+
+- layer 0: Nothing MTG-specific (should be reusable for pokemon or samurai card games, and probably for Uno too)
+ - activated abilities
+ - triggered abilities
+ - cards (concept)
+ - counters (concept)
+ - effects (with a return value and possible failure)
+ - surrender
+ - attachments (this seems suitably general)
+
+- layer 1: Grizzly Bears with Lignify and Giant Strength attached
+ - Mana Cost effect
+ - Card [with power, types, creature subtypes]
+ - permanents, tokens (copy a card, attach it)
+ - replacement effects
+
+- layer 2: kicker and multikicker
+
+- layer 2: Giant Growth on Grizzly Bears; Lightning Bolt on player; Blood Artist
+ - APNAP
+ - zone cards; moving between zones triggers things
+ - Resolve effect
+ - priority (this is an effect; it depends on The Stack, but it's referenced by step cards)
+ - player cards
+ - blood artist (replacement effects that affect other units)
+ - damage (emblems + counters); life
+ - lethal damage
+
+- layer 3: Advanced rules. Everflowing Chalice; Flicker to avoid Explosive Growth and shake off enchants and equipment. Illuminate, Pollen Remedy, Orim's Chant, Goblin Bushwhacker, Vigorous Charge, Onna Stick, whenever casts.
+ - Mark of Sakiko
+ - Tap effect as a cost
+ - enter-the-battlefield effects
+ - add to your mana pool
+ - multikicker
+ - detach on change zones
+ - evaporate on detach
+
+- layer 3: playable!
+ - step cards
+ - turn order and looping turns (probably emblem: when this turn ends, put another one on the end of the turn queue)
+ - combat rules (the core parts that are on step cards and emblems)
+ - combat damage
+
+- layer 4:
+ - game initialization -- the card of Starting The Game. this will be triggered as the very first ability, and it will be the only card
+ - card abilities: Haste, Flash, Flashback, Domain, Islandwalk, Lifelink (doesn't stack!!)
+ - other effects: Discard (in various forms), Regenerate (attaches a death-replacement emblem), 
+ - Fireball -- X cost and excessive conditionals (or you could make it a Multikicker like Comet Storm)
+ - emblemic rules: jet lag emblems, life and poison counters (and losing the game from these)
+ - +1/+1 counters (this is emblemic too)
+ - fog -- combat damage prevention (likely an emblem)
+ - healing salve -- damage prevention (likely an emblem per point of damage)
+ - Protection
+
+- layer 5:
+ - actual cards

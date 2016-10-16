@@ -1,0 +1,20 @@
+
+These are the things that need to be stateful -- as cards are stateless:
+
+1) permanent
+Any Card in the Battlefield with the Enchantment, Creature, Land and/or Artifact types has a Permanent. This is a copy of that card, adjusted for all current effects on it. (includes: mind control, giant growth, +1 counters, lignify)
+
+When the permanent is regenerated, players make choices for the order of replacement effects. These choices remain on the battlefield. Therefore we can regenerate all permanents at any time.
+
+2) choices
+Any choice that may still affect the game. This includes the X cost of Fireball, and the modal choice of Piracy Charm.
+
+3) current priority (or is this driven by cards?)
+
+4) controllers. (ownership is written on the card itself.)
+Note that controllers can only be distinct from owners in the stack and battlefield.
+
+5) attachments
+This includes aura enchantment, artifact equipment, and targeting. This might be a subset of choices.
+When an ability resolves, we need to be able to scan for the 
+

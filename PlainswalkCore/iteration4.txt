@@ -1,0 +1,19 @@
+
+type Card = Card {
+    cardName :: String,
+    cardCosts :: [[]],
+    cardResolutions :: [],
+    cardTargets :: Maybe [Card]
+}
+
+wildRicochetResolution :: Card -> [Card] -> Status -> Maybe Status
+wildRicochetResolution this (spell:[]) status = Just $ insert newSpell $ replace adjustedSpell status
+    where adjustedSpell = 
+wildRicochetResolution _ targets status = Just $ insert (RulesViolation "wildRicochet needs a single target" for targets
+    
+    
+
+wildRicochet = Card {
+    cardResolutions = [
+    ] 
+}

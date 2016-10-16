@@ -1,0 +1,13 @@
+
+-- layer 0: Nothing MTG-specific (should be reusable for pokemon or samurai card games, and probably for Uno too)
+ -- activated abilities
+ -- triggered abilities
+ -- cards (concept)
+ -- counters (concept)
+ -- effects (with a return value and possible failure)
+ -- surrender
+ -- attachments (this seems suitably general)
+
+data TriggeredAbility = TriggeredAbility {
+    events :: [Event]s
+}

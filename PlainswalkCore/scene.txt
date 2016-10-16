@@ -1,0 +1,46 @@
+
+some events:
+ - when a creature has 0 toughness, move it to the graveyard
+ - when a player plays a blue spell, gain 1 life
+ - when you would draw a card, draw 2 cards
+ - when a player would gain life, do nothing
+
+
+Event = Cast {
+    card :: Card,
+    board :: Board
+}
+
+--instance Event Cast where
+
+
+triggerPlayerCastsBlueSpell event = case event of
+  Cast card _ = cColor(card) `containsColor` colorBlue
+  otherwise = False
+
+
+
+
+Battlefield card
+  -> links to Player1
+  -> links to Player2
+  -> ability: triggered, At the end step, for all permanents, clear all damage.
+  -> ability: triggered, foreach(creature as it), When toughness <= 0, move(it, battlefield, graveyard).
+  -> ability: triggered, foreach(creature as it), When damage >= toughness, destroy(it).
+
+Player1 card
+  -> links to Life Emblem
+
+Life emblem
+  -> has 20 Life counters
+
+
+Nyx-fleece Ram card
+  -> ability: triggered, When now is upkeep, gainLife(getController(this))
+
+Grizzly Bears permanent
+  -> power 0, toughness 4
+  -> retains no abilities
+
+Lignify card
+  -> ability: static, 

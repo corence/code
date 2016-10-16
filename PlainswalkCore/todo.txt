@@ -1,0 +1,138 @@
+
+concepts:
+ - priority
+ - select -- choose a Card, with conditions. This is Target without the Target (previously Focus). eg, Clone's comes-into-play ability
+ - the stack: this contains cards. each card has 0 or 1 "resolve" abilities -- these can only be activated by the stack.
+ - markers -- these are Counters without the counters
+ - effects -- each entry in the right-hand-side of an ability. eg, Cast, Tether, Deal Damage. (Previously called Acts)
+ - Type and Subtype -- cards inherit implicit rules from these (which can be overridden)
+ - card -- this can be a physical card or a token. Some things that are cards: the player, everything in any zone including the stack
+ - Everything is a card -- even markers. omg.
+ - A Card has:
+   -- name
+   -- mana cost
+   -- isToken
+   -- types
+   -- subtypes
+   -- abilities
+   -- triggers (these are probably ongoings)
+   -- ongoings (these probably include state-based effects)
+   -- power
+   -- toughness
+   -- face up / face down (?) [pretty sure this is an emblem]
+   -- current zone (?) [probably attach the zone to a card]
+   -- tapped (?) [pretty sure this is an emblem]
+   -- attachments
+
+core rules:
+ - activated abilities: meet the conditions, pay the costs, and execute the ability (which might put something on the stack, or anything else)
+ - ongoing effects
+ - surrender -- this player loses the game.
+ - player card?
+
+NOT core rules:
+ - initial battlefield setup -- each player just starts with a deck list, nothing more
+ - instants can be played any time
+ - creatures and players die from too much damage or poison
+ - step() { remove a step from the Step Queue } -- these are all built-in to Step cards as triggered abilities as part of the sequence (after priority is completed), and Steps are always controlled by the current player
+ - steps advance through the Step Queue
+ - turns advance through the Turn Queue
+ - the stack (and all other zones -- these are cards)
+ - priority (this is all printed on step cards)
+ - jet lag, in-combat, tap to attack, damage resolution (these are Emblems or printed on the combat step cards)
+ - Morphed status -- that's an emblem
+
+step effects:
+ - at the beginning of your untap step, clear all jet lag emblems from permanents you control
+ - at the beginning of the Declare Attackers step, choose any number of permanents you control with the following conditions: (no 
+ - untap: Trigger all beginning-of-turns. Untap Everything. Conclude Step. [note: the Jet Lag emblem attaches a stackless Clear All Jet Lag Emblems trigger to this -- all triggers here are stackless, i think.]
+ - upkeep: Trigger all upkeep triggers. Priority. Conclude Step.
+ - draw: Draw. Conclude Step.
+ - main: activatable ability: tether land. activatable ability: combat. activatable ability: Priority. activatable ability: Conclude Step.
+ - combat: (this puts a bunch of cards on top of the turn stack)
+ - declare attackers: choose any number of opponents. for each chosen opponent, choose any number of cards with the following conditions: (permanent) (controlled by me) (no jet lag) (untapped) (no defender). each of these gets a Combat emblem and an Attacker emblem with the defender selected. The attacker and Combat emblems both have conditions for detaching -- such as regeneration or changing zones.
+ - declare blockers: priority. Each attacked player declares blockers (choose any number of cards with the following conditions: (permanent) (controlled by them) (untapped), and for each of these, choose an attacking creature with the following conditions: (attacking the right player) (able to block) and attach a Defending (permament ID) emblem.
+ - Damage (first strike only) step
+ - Damage (not first strike) step
+ - End combat step
+ 
+zone effects:
+ - when a card changes zones, clear all counters from it
+ - when a card leaves the battlefield, detach its instance
+ - when a card enters the battlefield, attach a jet lag emblem
+ - when a card on the battlefield changes controller, attach a jet lag emblem
+ - when a card enters the battlefield, create an Instance and attach that to it. This instance can be rebuilt at any time and consists of the creature's effective abilities + stats after all replacement effects are applied.
+ - when a card leaves the battlefield, abandon its instance
+
+ability effects:
+ - Haste: Whenever jet lag is attached to this card, detach it.
+ - Vigilance: During the Declare Attackers step, if this card would tap, don't.
+
+things that have cards:
+ - the player
+ - turns, phases, and steps
+
+things that use markers:
+ - damage
+ - life
+ - mana
+ - (possibly) current power/toughness/indestructibles
+ - (possibly) kicker
+ - hand capacity
+
+some effects:
+ - Tether -- Move this card to the battlefield.
+ - Cast -- Move this card to the stack.
+ - Draw -- If your library is empty, you lose the game. Otherwise, move one card from your Library to your hand. (stackless)
+ - Discard -- Die(choose a card in your hand).
+ - Die (card) -- Move the card to the graveyard.
+ - Sacrifice -- Sacrifice (choose a permanent).
+ - Sacrifice (selection) -- The creature Dies.
+ - Choose (options) -- given a set of options, pick one.
+ - Decide (range) -- pick a number within the range.
+ - Select (conditions) -- Choose a card, filtered by the conditions.
+ - Target (thing) -- select a thing. (this will trigger some side-effects).
+ - Pay Mana -- If it has an X, Decide it, then Pay Mana the result. Otherwise, Consume mana the amount.
+ - X Mana -- choose an amount, then consume it.
+ - Consume mana (colors) -- Sacrifice matching mana from your mana pool. If you can't, Invalidate.
+ - Invalidate -- a game rule has been violated; we need to backtrack or abort.
+ - Summon -- move this card to the battlefield. (also used for artifacts and enchantments)
+ - Spawn (card, zone) -- Creates a token which is a copy of the given card, in the given zone.
+ - Lose -- This player loses the game.
+ - Attach(selection) -- this must be a permanent. if either card changes zones, abort or detach. record the attachment. this triggers some onAttach logic. both things get some onMove detach logic.
+
+some ongoing effects:
+ - Silence -- No abilities can be activated. (If an ability would be activated, instead Invalidate.) This is probably core.
+ - "Nonbasic lands are Mountains." --> ReplaceCardAttribute(conditions, attribute, replacement) --> ReplaceCardAttribute("permanent + land + ! basic land", "card template", template["Mountain"])
+ - "You can't lose the game by having 0 or less life." --> ReplaceCardAttribute("you", "ongoing: PlayerDie", "")
+ - Players can't gain life. --> AddCardAttribute("player", "ongoing: 
+
+some intrinsic abilities for Cards:
+ - AddToken -- 
+
+intrinsic abilitis for Lands:
+ - Tether -- (hand) (once per turn) (land) 0: Tether this card.
+
+intrinsic abilitis for Spells:
+ - Cast -- (hand), (has mana cost), (main step), (stack is empty) Mana Cost: Cast this card. 
+ - Flash (inherited from type Instant)
+ - Resolve -- (stack), (not All Targets Invalid): (do this spell/ability's effects)
+
+intrinsic abilities for Players:
+ - PlayerDie -- If this card has no Life counters on it, you lose the game. (stackless)
+ - Overflow -- While your hand size is greater than the number of hand capacity on this card, discard.
+
+intrinsic abilities for Tokens:
+ - Annihilate (isToken), (!battlefield), (!stack), (!manaPool): This card disappears.
+
+some abilities of steps:
+ - Untap -- 
+ - when this step appears in the queue, clear the queue and end the turn
+ - end turn: if this is a Recurring turn, move it to the back of the queue. Otherwise, annihilate it.
+
+explicit abilities:
+ - Undying -- (triggered), (this moves from battlefield to graveyard), (has no +1/+1): Replace event #2 with "this gets a +1/+1 counter, this loses all damage markers"
+ - Blood Artist's Trigger -- (triggered), (battlefield), (any other creature moves from battlefield to graveyard): You gain 1 life. Target player loses 1 life.
+ - Flashback -- (graveyard), (stack is empty) Flashback cost: Cast this card.
+ - Flash -- (hand), (has mana cost), Mana cost: Cast this card. [note: some Steps will have intrinsic Silence effects that prevent casting -- like "choose blockers" or "untap".]
+ 

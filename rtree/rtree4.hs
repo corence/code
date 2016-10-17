@@ -21,6 +21,12 @@ zone_contains :: Pos -> Zone -> Bool
 zone_contains _ ZVoid = False
 zone_contains pos (Zone nw se) = and (zipWith (<=) nw pos) && and (zipWith (>=) se pos)
 
+zone_overlaps :: Zone -> Zone -> Bool
+zone_overlaps ZVoid _ = False
+zone_overlaps _ ZVoid = False
+zone_overlaps (Zone [n1, w1] [s1, e1]) (Zone [n2, w2] [s2, e2]) = 
+  not $ (e1 < w2) || (w1 > e2) || (s1 < n2) || (n1 > s2)
+
 zone_extend :: Pos -> Zone -> Zone
 zone_extend pos ZVoid = Zone pos pos
 zone_extend pos (Zone nw se) = Zone most_nw most_se
@@ -83,8 +89,8 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
 r_insert :: Int -> RLeaf v -> RTree v -> RTree v
 r_insert capacity leaf node
   | length n_childs_containing_new_pos > 0 = r_insert_into_first_child capacity leaf node
-  | length n_childs < capacity = r_insert_into_first_child capacity leaf (r_node_add_child r_void node)
   | isNothing n_leaf = r_set_leaf leaf node
+  | length n_childs < capacity = r_insert_into_first_child capacity leaf (r_node_add_child r_void node)
   | otherwise = r_insert capacity leaf (r_node_add_child node r_void)
     where (RNode n_elements n_zone n_leaf n_childs) = node
           (RLeaf l_pos _) = leaf
@@ -96,9 +102,9 @@ r_lookup_zone :: Zone -> RTree v -> [RLeaf v]
 r_lookup_zone zone (RNode n_num_elements n_zone n_leaf n_childs) = case matching_leaf of
                                                                        Just leaf -> leaf : child_results
                                                                        Nothing -> child_results
-    where child_results = if zone_overlaps x y
+    where child_results = if zone_overlaps zone n_zone
                               then concat $ map (r_lookup_zone zone) n_childs
-                              else nothing
+                              else []
           matching_leaf = case n_leaf of
                               Just (RLeaf l_pos l_value) -> if zone_contains l_pos zone
                                                                 then Just (RLeaf l_pos l_value)
@@ -110,7 +116,7 @@ main = do
     let leaves = [
                     ([3,5], "garbage"),
                     ([9,4], "mental"),
-                    ([1,5], "fifteen"),
+                    --([1,5], "fifteen"),
                     ([0,0], "origin"),
                     ([3,3], "third")
                  ]

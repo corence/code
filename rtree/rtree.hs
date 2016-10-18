@@ -100,10 +100,12 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
 -- 3) otherwise: find the child with the rect nearest to the new point, and extend it
 r_insert :: Int -> RLeaf v -> RTree v -> RTree v
 r_insert capacity leaf node
-  | length n_childs_containing_new_pos > 0 = r_insert_into_first_child capacity leaf node
-  | isNothing n_leaf = r_set_leaf leaf node
-  | length n_childs < capacity = r_insert_into_first_child capacity leaf (r_node_add_child r_void node)
-  | otherwise = r_insert capacity leaf (r_node_add_child node r_void)
+  | length n_childs_containing_new_pos > 0 = r_insert_into_first_child capacity leaf node -- there's a child node who matches the zone -- pass it down there
+  | isNothing n_leaf = r_set_leaf leaf node -- add it to this node
+  | length n_childs < capacity = r_insert_into_first_child capacity leaf (r_node_add_child r_void node) -- make a new child and pass it in there
+  | otherwise = r_insert_into_first_child capacity leaf node -- pass it down the line for someone else to deal with
+  -- | otherwise = error "what"
+  -- | otherwise = node
     where (RNode n_elements n_zone n_leaf n_childs) = node
           (RLeaf l_pos _) = leaf
           n_childs_containing_new_pos = filter (\c -> zone_contains l_pos (r_node_zone c)) n_childs

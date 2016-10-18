@@ -43,6 +43,14 @@ data RTree v = RNode Int Zone (Maybe (RLeaf v)) [RTree v] deriving Show
 data RLeaf v = RLeaf Pos v deriving Show
 r_void = RNode 0 ZVoid Nothing []
 
+r_print :: (Show v) => Int -> RTree v -> String
+r_print depth node = concat (replicate depth "  ")
+                        ++ "[" ++ show n_num_elements ++ "] "
+                        ++ show n_zone ++ " "
+                        ++ show n_leaf ++ "\n"
+                        ++ concat (map (r_print (depth+1)) n_childs)
+                        where (RNode n_num_elements n_zone n_leaf n_childs) = node
+
 r_set_leaf :: RLeaf v -> RTree v -> RTree v
 r_set_leaf leaf node = RNode (n_elements + 1) (zone_extend l_pos n_zone) (Just leaf) n_childs
     where (RNode n_elements n_zone Nothing n_childs) = node
@@ -60,7 +68,7 @@ r_node_remove_first_child node = (n_child, RNode (n_num_elements - c_num_element
         
 sorted_insert_by_num_elements :: RTree v -> [RTree v] -> [RTree v]
 sorted_insert_by_num_elements element [] = [element]
-sorted_insert_by_num_elements element  (n:ns) = if e_num_elements < n_num_elements
+sorted_insert_by_num_elements element  (n:ns) = if e_num_elements <= n_num_elements
                                                     then element : n : ns
                                                     else n : (sorted_insert_by_num_elements element ns)
   where (RNode e_num_elements e_zone e_leaf e_childs) = element
@@ -116,12 +124,15 @@ main = do
     let leaves = [
                     ([3,5], "garbage"),
                     ([9,4], "mental"),
-                    --([1,5], "fifteen"),
+                    ([1,5], "fifteen"),
                     ([0,0], "origin"),
                     ([3,3], "third")
                  ]
 
+    let peeves = map (\n -> ([n,n], (n+n))) [1..9] :: [(Pos, Int)]
+
     let trees = foldr (\(pos, value) trees -> r_insert 3 (RLeaf pos value) (head trees) : trees) [r_void] leaves
 
-    mapM_ print trees
+    --mapM_ print trees
+    mapM_ putStrLn $ map (r_print 0) trees
 

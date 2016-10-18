@@ -15,7 +15,7 @@ import Data.Maybe
 -- 3) otherwise: find the child with the rect nearest to the new point, and extend it
 
 type Pos = [Int]
-data Zone = ZVoid | Zone Pos Pos deriving Show
+data Zone = ZVoid | Zone Pos Pos deriving (Show, Eq)
 
 zone_contains :: Pos -> Zone -> Bool
 zone_contains _ ZVoid = False
@@ -39,8 +39,8 @@ zone_add zone ZVoid = zone
 zone_add zone (Zone nw se) = zone_extend se (zone_extend nw zone)
 
 -- RNode num_elements zone childs | RLeaf pos value
-data RTree v = RNode Int Zone (Maybe (RLeaf v)) [RTree v] deriving Show
-data RLeaf v = RLeaf Pos v deriving Show
+data RTree v = RNode Int Zone (Maybe (RLeaf v)) [RTree v] deriving (Show, Eq)
+data RLeaf v = RLeaf Pos v deriving (Show, Eq)
 r_void = RNode 0 ZVoid Nothing []
 
 r_print :: (Show v) => Int -> RTree v -> String

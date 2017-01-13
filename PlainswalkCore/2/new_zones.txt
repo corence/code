@@ -1,0 +1,21 @@
+potential new zones. Some of them will likely be culled.
+
+the Queue:
+ - when you do a complex action like casting a spell, that spawns multiple actions in sequence, they go here.
+ - state-based actions might happen in this zone.
+
+the Substack:
+ - when game events are interrupting each other they go here.
+
+the trigger pool:
+ - simultaneous triggers all fall here. Whenever this zone is non-empty, players in apnap order must select a trigger to resolve.
+
+
+When a player would gain priority, something like this will happen:
+ - the trigger pool must be cleared
+ - the substack must be cleared
+ - the queue must be cleared
+ - after that, the player gets some choices about what's currently on the stack.
+
+the mana pool:
+ - contains Mana card tokens. Some of them have special restrictions; most don't. Cards can be sacrificed from this zone.

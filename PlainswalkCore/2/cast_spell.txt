@@ -1,0 +1,283 @@
+
+to cast a spell:
+ - declare the casting
+ - create object on the stack
+ - modal, kicker, splice, alternative costs, additional costs, announce choices for hybrid/phyrexian mana
+ - choose number of targets
+ - choose targets
+ - if we are dividing or distributing counters or damage, divide them now
+ - check if the spell is legal
+ - determine the mana cost
+ - *if* there's a mana payment, you can activate mana abilities
+ - pay the cost
+ - *now* the spell creates the cast event and triggers cast reactions
+ - if the spell's controller had priority, she retains it
+
+alt:
+ - raise "cast" event
+ - create object with basic properties
+ - resolve modals -- this includes distribution of counters and damage, modal, kicker, splice, alternative costs, additional costs, announce choices for hybrid/phyrexian mana
+ - choose targets
+ - finalise mana cost
+ - pay costs (this includes activating mana abilities, if the cost has mana)
+ - done
+ 
+
+
+
+card ->
+{
+    name: "Joraga Warcaller",
+    color: ["green"],
+    types: ["Creature"],
+    subtypes: ["Elf", "Warrior"],
+    resolution: ["summon"],
+    controller: "player1",
+    costs: {
+        mana_cost: "G"
+    }
+    modes: ["multikicker 1G"]
+}
+
+# 601.2a To propose the casting of a spell, a player first moves that card (or that copy of a card) from where it is to the stack. It becomes the topmost object on the stack. It has all the characteristics of the card (or the copy of a card) associated with it, and that player becomes its controller. The spell remains on the stack until it’s countered, it resolves, or an effect moves it elsewhere.
+
+-> this object gets added to the stack by player1
+{
+    name: "Joraga Warcaller",
+    card: "card272",
+    color: ["green"],
+    resolution: ["summon"],
+    controller: "player1",
+    costs: {
+        mana_cost: "G"
+    }
+    modes: [
+        {
+            "action": "repeat",
+            "iterations": {
+                "choice": "range"
+            },
+            "resolution": [
+                {
+                    action: "add_mana",
+                    subject: "$spell",
+                    object: {
+                        costs: {
+                            mana_cost: "1G"
+                        }
+                    }
+                },
+                {
+                    action: "add_to_array",
+                    subject: "$spell",
+                    object: {
+                        resolution: {
+                            mana_cost: "1G"
+                        }
+                    }
+                },
+                {
+                    action: "add_mana",
+                    subject: "$spell",
+                    field: "costs.additional_mana",
+                    amount: "1G"
+                },
+                {
+                    action: "array_add_element",
+                    subject: "$spell",
+                    field: "resolution",
+                    object: ""
+                }
+            ]
+        }
+    ]
+}
+
+601.2b If the spell is modal, the player announces the mode choice (see rule 700.2). If the player wishes to splice any cards onto the spell (see rule 702.46), he or she reveals those cards in his or her hand. If the spell has alternative or additional costs that will be paid as it’s being cast such as buyback or kicker costs (see rules 117.8 and 117.9), the player announces his or her intentions to pay any or all of those costs (see rule 601.2f). A player can’t apply two alternative methods of casting or two alternative costs to a single spell. If the spell has a variable cost that will be paid as it’s being cast (such as an {X} in its mana cost; see rule 107.3), the player announces the value of that variable. If the value of that variable is defined in the text of the spell by a choice that player would make later in the announcement or resolution of the spell, that player makes that choice at this time instead of that later time. If a cost that will be paid as the spell is being cast includes hybrid mana symbols, the player announces the nonhybrid equivalent cost he or she intends to pay. If a cost that will be paid as the spell is being cast includes Phyrexian mana symbols, the player announces whether he or she intends to pay 2 life or the corresponding colored mana cost for each of those symbols. Previously made choices (such as choosing to cast a spell with flashback from a graveyard or choosing to cast a creature with morph face down) may restrict the player’s options when making these choices.
+601.2d If the spell requires the player to divide or distribute an effect (such as damage or counters) among one or more targets, the player announces the division. Each of these targets must receive at least one of whatever is being divided.
+
+-> pick the mode here
+{
+    name: "Joraga Warcaller",
+    card: "card272",
+    color: ["green"],
+    resolution: ["summon", "+1", "+1"],
+    controller: "player1",
+    costs: {
+        mana_cost: "G",
+        additional_mana: "2GG"
+    }
+}
+
+
+601.2c The player announces his or her choice of an appropriate player, object, or zone for each target the spell requires. A spell may require some targets only if an alternative or additional cost (such as a buyback or kicker cost), or a particular mode, was chosen for it; otherwise, the spell is cast as though it did not require those targets. If the spell has a variable number of targets, the player announces how many targets he or she will choose before he or she announces those targets. In some cases, the number of targets will be defined by the spell’s text. Once the number of targets the spell has is determined, that number doesn’t change, even if the information used to determine the number of targets does. The same target can’t be chosen multiple times for any one instance of the word “target” on the spell. However, if the spell uses the word “target” in multiple places, the same object, player, or zone can be chosen once for each instance of the word “target” (as long as it fits the targeting criteria). If any effects say that an object or player must be chosen as a target, the player chooses targets so that he or she obeys the maximum possible number of such effects without violating any rules or effects that say that an object or player can’t be chosen as a target. The chosen players, objects, and/or zones each become a target of that spell. (Any abilities that trigger when those players, objects, and/or zones become the target of a spell trigger at this point; they’ll wait to be put on the stack until the spell has finished being cast.)
+Example: If a spell says “Tap two target creatures,” then the same creature can’t be chosen twice; the spell requires two different legal targets. A spell that says “Destroy target artifact and target land,” however, can target the same artifact land twice because it uses the word “target” in multiple places.
+
+-> this spell is untargeted
+{
+    name: "Joraga Warcaller",
+    card: "card272",
+    color: ["green"],
+    resolution: ["summon", "+1", "+1"],
+    controller: "player1",
+    costs: {
+        mana_cost: "G",
+        additional_mana: "2GG"
+    }
+}
+
+601.2e The game checks to see if the proposed spell can legally be cast. If the proposed spell is illegal, the game returns to the moment before the casting of that spell was proposed (see rule 720, “Handling Illegal Actions”).
+601.2f The player determines the total cost of the spell. Usually this is just the mana cost. Some spells have additional or alternative costs. Some effects may increase or reduce the cost to pay, or may provide other alternative costs. Costs may include paying mana, tapping permanents, sacrificing permanents, discarding cards, and so on. The total cost is the mana cost or alternative cost (as determined in rule 601.2b), plus all additional costs and cost increases, and minus all cost reductions. If multiple cost reductions apply, the player may apply them in any order. If the mana component of the total cost is reduced to nothing by cost reduction effects, it is considered to be {0}. It can’t be reduced to less than {0}. Once the total cost is determined, any effects that directly affect the total cost are applied. Then the resulting total cost becomes “locked in.” If effects would change the total cost after this time, they have no effect.
+
+
+ -- we need a replacement effect. Joraga Warcaller ETB with an additional +1 on it.
+
+{
+    name: "Joraga Warcaller",
+    card: "card272",
+    color: ["green"],
+    variables: {
+        dude: {
+            "name": "Joraga Warcaller",
+            "power": 1,
+            "toughness": 1,
+            "color": ["green"],
+            types: ["Creature"],
+            subtypes: ["Elf", "Warrior"],
+            controller: "player1",
+            owner: "player1"
+        }
+    },
+    resolution: [
+        {
+            "action": "create_trigger",
+            "event": { "action": "summon", "source": "$this", "subject": { "name": "Joraga Warcaller" } },
+            "resolution": [
+                { "action": "add_counter", "type": "+1", "subject": "$subject" }
+            ]
+        },
+        {
+            "action": "create_trigger",
+            "event": { "action": "summon", "source": "$this", "subject": { "name": "Joraga Warcaller" } },
+            "resolution": [
+                { "action": "add_counter", "type": "+1", "subject": "$subject" }
+            ]
+        },
+        { "action": "summon", "subject": "$dude" }
+    ],
+    controller: "player1",
+    costs: {
+        mana_cost: "G",
+        additional_mana: "2GG"
+    }
+}
+
+-- implementation of "summon"
+{
+    "action": "create_trigger",
+    "event": {
+        "action": "summon"
+    },
+    "resolution": [
+        {
+            "action": "move",
+            "subject": {
+                "action": "clone",
+                "subject": "$subject"
+            },
+            "from": { "action": "get_field", "subject": "$subject", "field": "zone" },
+            "destination": "battlefield"
+        }
+    ]
+}
+
+{
+    "action": "create_trigger",
+    "event": {
+        "action": "move"
+    },
+    "resolution": [
+        {
+            "action": "set_field",
+            "subject": "$subject",
+            "field": "zone",
+            "value": "$destination"
+        }
+    ]
+}
+    
+    
+
+// note: event_log has other irrelevant details in each event, such as controller, card, and source
+var event_log = [
+    { "event": "declare_cast", "card": "<id of card>" },
+    { "event": "create", "zone": "stack" },
+    { "event": "choose_mode", "subject": "<id of mode>" },
+    { "event": "modify_object", "value": "enter with +1" },
+    { "event": "modify_object", "value": "enter with +1" },
+    { "event": "modify_object", "value": "add 1G cost" },
+    { "event": "modify_object", "value": "add 1G cost" },
+    { "event": "verify_spell_validity", "card": "<id of card>"},
+    { "event": "pay_cost", [{ mana_cost: "2GGG" }]},
+    { "event": "finalize_cast", "card": "<id of card>" }
+]
+
+function cast_spell(card) {
+    raise_event("declare_cast");
+    const spell = clone(card.spell_stub);
+    spell.zone = stack;
+    resolve_modes(spell);
+    verify(spell);
+    pay_costs(spell);
+    raise_event("finalize_cast");
+}
+
+function cast_spell(card) {
+    substack.push('raise_event finalize_cast card');
+    substack.push('determine_and_pay_cost card');
+    substack.push('choose_modes card');
+    substack.push('set_zone card TheStack');
+    substack.push('clone card.spell_stub');
+    substack.push('clone card.spell_stub');
+}
+
+a) declare_cast
+
+in reaction to this event:
+b) spawn a copy on the stack
+
+in reaction to something appearing on the stack, multiple things must happen:
+c) choose_all_modes
+d) choose_all_targets
+e) check_legality (fun note: this is the first/only time Flash is checked!)
+f) pay_costs
+g) complete_cast
+*but* if any of those things fail, we must roll back
+this is ok to do in sequence. because events can fail like Prolog.
+
+thus each spell could have:
+ - modes
+ - targeting queries
+ - costs
+ - resolution
+
+1) event: declare_cast
+2) on declare_cast: spawn a copy of the Spell Stub, on the stack (this is a single action because fuck it, we can separate them later when we figure out how)
+3) *whenever an object is moved to the stack, this triggers some actions*. This triggers begin_cast
+4) on begin_cast, for an object with modes: resolve one of the modes. A mode will always self-destruct (and make other changes to the object) as part of resolution. Then begin_cast is triggered again.
+5) on begin_cast, for an object with no modes: choose targets. ("number of targets" was one of the modal choices. So is "dividing or distributing damage."). This runs all the targeting queries. There might be 0.
+6) 
+
+
+{
+    name: "Joraga Warcaller",
+    card: "card272",
+    color: ["green"],
+    resolution: ["summon", "+1", "+1"],
+    controller: "player1",
+    costs: {
+        mana_cost: "G",
+        additional_mana: "2GG"
+    }
+}
+]

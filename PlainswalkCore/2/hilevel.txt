@@ -1,0 +1,135 @@
+
+declare_cast: {
+    - react to this _after_ it happens
+    - move the object to the stack
+}
+
+arrive_at_stack: {
+    - query all "mode" abilities and execute them
+    - query all "target" abilities and "execute" them
+    - verify validity
+    - query all 
+}
+
+const cryptic_command = {
+    'name': 'Cryptic Command',
+    'colors': ['blue'],
+    'costs': [
+        { 'mana': '1UUU' }
+    ],
+    'types': ['instant'],
+    'modes': [
+        {
+            'action': 'immediate',
+            'resolution': [
+                {
+                    'action': 'modify_object_append',
+                    'subject': '$source_object',
+                    'input': {
+                        'query': 'player_choose_subject',
+                        'min_choice_count': 2,
+                        'max_choice_count': 2,
+                        'options': [
+                            {
+                                'resolutions': [
+                                    { 
+                                        'action': 'raise_event',
+                                        'targets': [{ 'zone': 'stack', 'types': ['||', 'instant', 'sorcery'] }],
+                                        'resolutions': [
+                                            { 'action': 'counter', 'subject': '$targets[0]' }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                'action': 'tap_all_enemy_creatures',
+                                'resolutions': [
+                                    {
+                                        'action': 'tap',
+                                        'subject': { 'zone': 'battlefield', 'types': 'creature', 'controller': '!$source_player' }
+                                    }
+                                ]
+                            },
+                            {
+                                'action': 'draw',
+                                'resolutions': [
+                                    {
+                                        'action': 'move',
+                                        'subject': { 'query': 'first', 'amount': 1, 'params': { 'zone': 'library', 'owner': '$source_player' }, 'destination': 'hand' }
+                                    }
+                                ]
+                            },
+                            {
+                                'action': 'bounce',
+                                'targets': [{ 'query': 'player_choose_object', 'params': { 'zone': 'battlefield', 'types': 'creature' } }],
+                                'resolutions': [
+                                    {
+                                        'action': 'move',
+                                        'subject': '$targets[0]',
+                                        'destination': 'hand'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+            ]
+        }
+    ],
+    'resolutions': [
+    ]
+};
+
+const abbreviated_cryptic_command = {
+    'name': 'Cryptic Command',
+    'colors': ['blue'],
+    'mana_cost': '1UUU',
+    'types': ['instant'],
+    'modes': {
+        'action': 'mode_augment_this_object',
+        'min_choices': 2,
+        'max_choices': 2,
+        'options': [
+            'counter_target_spell',
+            'bounce_target_creature',
+            'draw',
+            { 'action': 'tap', 'subject': queries.all_creatures.extend({ 'controller': '!$source_controller' }) }
+        ]
+    }
+};
+
+const abbreviated_joraga_warcaller = {
+    'name': 'Joraga Warcaller',
+    'colors': ['green'],
+    'types': ['creature'],
+    'subtypes': ['elf', 'warrior'],
+    'resolutions': ['summon'],
+    'mana_cost': 'G',
+    'modes': [
+        {
+            'cost': '1G',
+            'multi': true, // need to express Essential, Optional, or Multi (and maybe "between 3 and 5 times" -- there are some drakes and stuff like this)
+            'repeat': { 'min': 0, 'max': 'infinite', 'distinct': false }
+            'resolutions': [ etb_with_counter(plus_one_counter) ]
+        }
+    ],
+    'modes': [
+        multikicker('1G', [ etb_with_counter(plus_one_counter) ])
+    ],
+    'power': 1,
+    'toughness': 1
+};
+
+const abbreviated_pestilence = {
+    'name': 'Pestilence',
+    'colors': ['black'],
+    'types': ['enchantment'],
+    'resolutions': ['summon'],
+    'mana_cost': '2BB',
+    'triggers': [
+        {
+            'event': end_step,
+            'conditions': [ function() { return query({'zone': 'battlefield', 'types': 'creature' }).length > 0; } ],
+            'resolutions': [function () { return destroy('$this'); }]
+        }
+    ]
+}

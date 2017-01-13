@@ -1,0 +1,40 @@
+
+
+2)
+ - whenever an event is raised, it goes to the *event stack*
+
+the game flow is thus:
+ - anything in the trigger pool? apnap and process this
+ - anything in the event stack? process the top thing
+ - otherwise, do what you'd normally do
+
+
+3)
+ - whenever an event is raised, it goes on the *event stack*
+ - when something resolves from the event stack, pre-triggers (replacement effects) are triggered
+    - if one triggers, then:
+      - the new replacement events (it's an array) will be added to the event stack in predefined order
+      - each will have the trigger that fired added to their "fired_triggers" array -- to prevent that trigger from firing on this event again
+    - if none trigger, the event moves to the event log
+ - when an event hits the event log, post-triggers are triggered and moved to the event stack
+
+
+destroy all creatures
+event_stack = [{ "action": "destroy", "subject": { "types": ["creature"] }}]
+ -> 
+event_stack = [{ "action": "move", "subject": "permanent1" }, { "action": "move", "subject": "permanent2" }]
+
+ -> triggers!
+
+
+
+
+so it looks like we have the following trigger priorities:
+ - state-based effect
+ - self-replacement effect
+ - modify whose control under which a permanent enters the battlefield effect (!)
+ - some permanent enters the battlefield as a clone of another object effect (!)
+ - replacement effect
+ - pre-trigger effect (eg Deathgrunter)
+ - the actual event
+ - post-trigger effect

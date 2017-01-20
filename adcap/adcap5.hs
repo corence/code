@@ -1,5 +1,5 @@
 
-import GHC.Exts
+import Data.List
 
 type Milestone = (String, String, Double, String, Double) -- name, prerequisite_property_name, prerequisite_property_quantity, target_property_name, multiplier
 type Property = (String, Double, Double, Double, Double) -- name, quantity, unit_price, coefficient, unit_dps
@@ -17,6 +17,9 @@ property_price (name, quantity, unit_price, coefficient, unit_dps) = unit_price 
 
 create_purchase_plan :: Double -> Double -> PurchaseOrder -> PurchasePlan
 create_purchase_plan current_funds global_dps purchase_order = (purchase_order, find_breakeven_time purchase_order current_funds global_dps)
+
+compare_purchase_plan :: PurchasePlan -> PurchasePlan -> Ordering
+compare_purchase_plan (_, time1) (_, time2) = compare time1 time2
 
 find_breakeven_time :: PurchaseOrder -> Double -> Double -> Double
 find_breakeven_time purchase_order current_funds global_dps = delay_before_purchase + time_to_recover_price
@@ -144,5 +147,6 @@ xx1 = do
     let purchase_orders = upgrade_purchase_orders ++ milestone_purchase_orders ++ unit_purchase_orders
     putStrLn $ "all POs " ++ show purchase_orders
 
-    let purchase_plans = sortWith (\(_, ttbe) -> ttbe) $ map (create_purchase_plan 8000 100) purchase_orders
+    --let purchase_plans = sortWith (\(_, ttbe) -> ttbe) $ map (create_purchase_plan 8000 100) purchase_orders
+    let purchase_plans = sortBy compare_purchase_plan $ map (create_purchase_plan 8000 100) purchase_orders
     putStrLn $ "all PPs:\n" ++ pretty_list "" (map show purchase_plans)

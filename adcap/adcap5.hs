@@ -1,4 +1,6 @@
 
+import GHC.Exts
+
 type Milestone = (String, String, Double, String, Double) -- name, prerequisite_property_name, prerequisite_property_quantity, target_property_name, multiplier
 type Property = (String, Double, Double, Double, Double) -- name, quantity, unit_price, coefficient, unit_dps
 type Upgrade = (String, Double, String, Double) -- name, price, target_property_name, multiplier
@@ -142,5 +144,5 @@ xx1 = do
     let purchase_orders = upgrade_purchase_orders ++ milestone_purchase_orders ++ unit_purchase_orders
     putStrLn $ "all POs " ++ show purchase_orders
 
-    let purchase_plans = map (create_purchase_plan 8000 100) purchase_orders
+    let purchase_plans = sortWith (\(_, ttbe) -> ttbe) $ map (create_purchase_plan 8000 100) purchase_orders
     putStrLn $ "all PPs:\n" ++ pretty_list "" (map show purchase_plans)

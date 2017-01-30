@@ -95,9 +95,9 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
 
 -- insert into node:
 -- 0) does it fit into any of the childs? then insert into the one with least children. tiebreaker: arbitrary
--- 1) can this node take another child? add it as a new child, and insert into that
 -- 1) does this node have a leaf? if not, add it here
--- 3) otherwise: find the child with the rect nearest to the new point, and extend it
+-- 2) can this node take another child? add it as a new child, and insert into that
+-- 3) otherwise: find the child with the rect nearest to the new point, and extend it (actual implementation: insert into the first child)
 r_insert :: Int -> RLeaf v -> RTree v -> RTree v
 r_insert capacity leaf node
   | length n_childs_containing_new_pos > 0 = r_insert_into_first_child capacity leaf node -- there's a child node who matches the zone -- pass it down there

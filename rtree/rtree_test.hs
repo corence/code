@@ -31,7 +31,7 @@ assertEqual present test_id expected actual
 assert0 = assertEqual $ r_print 0
 
 main = do
-  mapM_ putStrLn $ map (r_print 0) (tail ctrees)
+  mapM_ putStrLn $ map (r_print 0) ctrees
   --putStrLn $ map (\t -> r_print 0) (tail ctrees)
   assert0 "insert_into_child" (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 0)) [RNode 1 (Zone [9,4] [9,4]) (Just (cleaves !! 1)) []]) (r_insert 3 (cleaves !! 1) (uncompiled_nodes !! 0))
   assert0 "insert_into_child 1 time" 
@@ -58,9 +58,11 @@ main = do
             (ctrees !! 1)
   assert0 "insert_into_child 5 time" 
             (RNode 5 (Zone [0,0] [9,5]) (Just (cleaves !! 4)) [
-                (RNode 1 (Zone [9,4] [9,4]) (Just (cleaves !! 1)) []),
                 (RNode 1 (Zone [1,5] [1,5]) (Just (cleaves !! 2)) []),
-                (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) [])
+                (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) []),
+                (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [
+                    (RNode 1 (Zone [3,5] [3,5]) (Just (cleaves !! 0)) [])
+                ])
             ])
             (ctrees !! 0)
   putStrLn $ "just showing off:\n" ++ r_print 0 (head strees)

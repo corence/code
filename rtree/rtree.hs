@@ -125,6 +125,23 @@ r_lookup_zone zone (RNode n_num_elements n_zone n_leaf n_childs) = case matching
                                                                 else Nothing
                               Nothing -> Nothing
 
+{-
+r_lookup_pos :: Pos -> RTree v -> [RLeaf v]
+r_lookup_pos pos (RNode n_num_elements n_zone n_leaf n_childs) = case matching_leaf of
+                                                                      Just leaf -> leaf : child_results
+                                                                      Nothing -> child_results
+    where child_results = if zone_contains pos n_zone
+                              then concat $ map (r_lookup_pos pos) n_childs
+                              else []
+          matching_leaf = case n_leaf of
+                               Just (RLeaf l_pos l_value) -> if pos == l_pos
+                                                                 then Just (RLeaf l_pos l_value)
+                                                                 else Nothing
+                               Nothing -> Nothing
+-}
+
+r_lookup_pos :: Pos -> RTree v -> [RLeaf v]
+r_lookup_pos pos node = r_lookup_zone (Zone pos pos) node
 
 test_this_module = do
     let leaves = [

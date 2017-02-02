@@ -209,6 +209,13 @@ r_delete_leafs :: Eq v => Bool -> RLeaf v -> RTree v -> RTree v
 r_delete_leafs delete_all leaf tree = fst $ r_supplant_nodes delete_all (pos_to_zone l_pos) (\(RNode _ _ n_leaf _) -> Just leaf == n_leaf) (\_ -> r_void) tree
     where (RLeaf l_pos _) = leaf
 
+r_delete_leaf :: Eq v => RLeaf v -> RTree v -> RTree v
+r_delete_leaf = r_delete_leafs False
+
+-- delete all leafs in the given zone
+r_delete_zone :: Eq v => Zone -> RTree v -> RTree v
+r_delete_zone zone tree = fst $ r_supplant_nodes True zone (\_ -> True) (\_ -> r_void) tree
+
 {-                                                     
 -- foreach matching child
 -- r_replace_node on it

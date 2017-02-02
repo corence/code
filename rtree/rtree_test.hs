@@ -84,18 +84,34 @@ main = do
                 ]
             (sortBy (\(RLeaf _ v1) (RLeaf _ v2) -> compare v1 v2) $ r_lookup_zone (Zone [1,1] [1,19]) (head strees))
 
-  assert0 "remove all leaves in zone [0,1] [1,19] from ctrees"
+  assert0 "remove all leaves in zone [0,1] [1,19] from ctrees, by looking up the leafs"
             (RNode 3 (Zone [0,0] [9,5]) (Just (cleaves !! 4)) [
                 (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [
                     (RNode 1 (Zone [3,5] [3,5]) (Just (cleaves !! 0)) [])
                 ])
             ])
-            (map (r_remove_leaf (head ctrees)) (r_lookup_zone (Zone [0,0] [1,19]) (head ctrees)))
+            (foldr (\leaf tree -> r_delete_leaf leaf tree) (head ctrees) (r_lookup_zone (Zone [0,0] [1,19]) (head ctrees)))
             
-  assert0 "remove all leaves in zone [2,2] [6,6] from ctrees"
+  assert0 "remove all leaves in zone [0,1] [1,19] from ctrees, by doing a zone wipe"
+            (RNode 3 (Zone [0,0] [9,5]) (Just (cleaves !! 4)) [
+                (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [
+                    (RNode 1 (Zone [3,5] [3,5]) (Just (cleaves !! 0)) [])
+                ])
+            ])
+            (r_delete_zone (Zone [0,0] [1,19]) (head ctrees))
+            
+  assert0 "remove all leaves in zone [2,2] [6,6] from ctrees, by looking up the leafs"
             (RNode 3 (Zone [0,0] [9,5]) Nothing [
                 (RNode 1 (Zone [1,5] [1,5]) (Just (cleaves !! 2)) []),
                 (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) []),
                 (RNode 1 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [])
             ])
-            (map (r_remove_leaf (head ctrees)) (r_lookup_zone (Zone [0,1] [1,19]) (head ctrees)))
+            (foldr (\leaf tree -> r_delete_leaf leaf tree) (head ctrees) (r_lookup_zone (Zone [0,1] [1,19]) (head ctrees)))
+            
+  assert0 "remove all leaves in zone [2,2] [6,6] from ctrees, by doing a zone wipe"
+            (RNode 3 (Zone [0,0] [9,5]) Nothing [
+                (RNode 1 (Zone [1,5] [1,5]) (Just (cleaves !! 2)) []),
+                (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) []),
+                (RNode 1 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [])
+            ])
+            (r_delete_zone (Zone [2,2] [6,6]) (head ctrees))

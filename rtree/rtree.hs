@@ -7,6 +7,13 @@ module RTree (
 import GHC.Exts
 import Data.Maybe
 
+-- extract_each [1,2,3] = [(1, [2,3]), (2, [1,3]), (3, [1,2])]
+-- extract_each [3] = [(3, [])]
+-- extract_each [2,3] = [(2, [3]), (3, [2])]
+extract_each :: [a] -> [(a, [a])]
+extract_each [] = []
+extract_each (key:elements) = (key, elements) : (map (\(k, es) -> (k, key : es)) $ extract_each elements)
+
 -- insert into void: create leaf
 -- insert into child that contains this rect: do that
 -- insert when no child contains this rect, and this node isnt full: add a new leaf child
@@ -20,6 +27,9 @@ import Data.Maybe
 
 type Pos = [Int]
 data Zone = ZVoid | Zone Pos Pos deriving (Show, Eq)
+
+pos_to_zone :: Pos -> Zone
+pos_to_zone pos = Zone pos pos
 
 zone_contains :: Pos -> Zone -> Bool
 zone_contains _ ZVoid = False
@@ -61,6 +71,7 @@ r_set_leaf leaf node = RNode (n_elements + 1) (zone_extend l_pos n_zone) (Just l
           (RLeaf l_pos _) = leaf
 
 r_node_add_child :: RTree v -> RTree v -> RTree v
+r_node_add_child (RNode 0 _ _ _) node = node -- if he tries to insert an empty node, just ignore him
 r_node_add_child child node = RNode (c_num_elements + n_num_elements) (zone_add c_zone n_zone) n_leaf (sorted_insert_by_num_elements child n_childs)
   where (RNode n_num_elements n_zone n_leaf n_childs) = node
         (RNode c_num_elements c_zone c_leaf c_childs) = child
@@ -142,6 +153,85 @@ r_lookup_pos pos (RNode n_num_elements n_zone n_leaf n_childs) = case matching_l
 
 r_lookup_pos :: Pos -> RTree v -> [RLeaf v]
 r_lookup_pos pos node = r_lookup_zone (Zone pos pos) node
+
+-- find one node containing this leaf, and return it with all its ancestors
+r_lookup_leaf :: Eq v => RLeaf v -> RTree v -> [RTree v]
+r_lookup_leaf leaf tree = r_lookup_node (\(RNode _ _ n_leaf _) -> n_leaf == Just leaf) tree
+  
+r_remove_leaf :: Eq v => RTree v -> RLeaf v -> RTree v
+r_remove_leaf tree leaf = r_clear_empty_nodes (new_node : ancestors)
+    where node : ancestors = r_lookup_leaf leaf tree
+          RNode n_elements n_zone n_leaf n_childs = node
+          new_node = RNode (n_elements - 1) n_zone Nothing n_childs -- TODO: this would be a great place to reduce the zone
+          r_clear_empty_nodes [] = r_void 
+          r_clear_empty_nodes (RNode 0 n_zone Nothing [] : RNode p_elements p_zone p_leaf p_childs : nodes)  = r_void
+
+-- lookup any node that matches the given node that is in the given tree; return all of its ancestors, with the tree's root as the head
+r_lookup_node :: Eq v => (RTree v -> Bool) -> RTree v -> [RTree v]
+r_lookup_node matcher tree
+  | matcher tree = [tree]
+  | length matches_from_childs > 0 = tree : head matches_from_childs -- we're using head arbitrarily; any of the child matches would work here
+  | otherwise = []
+  where matches_from_childs = filter (\results -> length results > 0) $ map (r_lookup_node matcher) t_childs
+        (RNode t_num_elements t_zone t_leaf t_childs) = tree
+
+r_replace_node :: Eq v => (RTree v -> RTree v) -> (RTree v -> Bool) -> RTree v -> Maybe (RTree v)
+r_replace_node replace match tree
+  | match tree = Just $ replace tree
+  | length matches_from_childs > 0 = Just $ head matches_from_childs
+  | otherwise = Nothing
+  where (RNode t_num_elements t_zone t_leaf t_childs) = tree
+        extracted_childs = extract_each t_childs
+        matches_from_childs = catMaybes $ map match_extracted_child extracted_childs
+        match_extracted_child (child, others) = case r_replace_node replace match child of
+                                                     Just new_child -> Just $ r_node_add_child new_child (RNode (t_num_elements - 1) t_zone t_leaf others)
+                                                     Nothing -> Nothing
+
+r_supplant_nodes :: Eq v => Zone -> (RTree v -> Bool) -> (RTree v -> RTree v) -> RTree v -> (RTree v, Bool)
+r_supplant_nodes zone match replace tree
+  | zone_overlaps zone t_zone = foldr try_supplant_child (try_supplant_leaf tree) childs_with_neighbors
+  | otherwise = (tree, False)
+    where (RNode t_num_elements t_zone t_leaf t_childs) = tree
+          --try_supplant_leaf :: Eq v => RTree v -> (RTree v, Bool)
+          try_supplant_leaf tree = if match tree then (replace tree, True) else (tree, False)
+          childs_with_neighbors = extract_each t_childs
+          --try_supplant_child :: Eq v => (RTree v, [RTree v]) -> (RTree v, Bool) -> (RTree v, Bool)
+          try_supplant_child (child, other_childs) (parent, parent_has_changed) =
+            if child_has_changed
+                then (r_node_add_child new_child (RNode (p_num_elements - c_num_elements) p_zone p_leaf other_childs), True)
+                else (parent, parent_has_changed)
+            where (new_child, child_has_changed) = r_supplant_nodes zone match replace child
+                  (RNode p_num_elements p_zone p_leaf _) = parent
+                  (RNode c_num_elements _ _ _) = child
+                  
+-- delete all instances of the given leaf
+r_delete_leafs :: Eq v => RLeaf v -> RTree v -> RTree v
+r_delete_leafs leaf tree = fst $ r_supplant_nodes (pos_to_zone l_pos) (\(RNode _ _ n_leaf _) -> Just leaf == n_leaf) (\_ -> r_void) tree
+    where (RLeaf l_pos _) = leaf
+
+{-                                                     
+-- foreach matching child
+-- r_replace_node on it
+-- if it's not Nothing, then remove and reinsert it
+r_replace_nodes :: Eq v => (RTree v -> RTree v) -> (RTree v -> Bool) -> RTree v -> Maybe (RTree v)
+r_replace_nodes replace match tree
+  | has_match = Just new_tree
+  | otherwise = Nothing
+  where (RNode t_num_elements t_zone t_leaf t_childs) = tree
+        extracted_childs_with_match = catMaybes $ map match_extracted_child (extract_each t_childs)
+        new_tree = foldr replace_extracted_child tree_with_leaf_replaced extracted_childs_with_match
+        (tree_with_leaf_replaced, has_match) = if match tree then (replace tree, True) else (tree, length extracted_childs_with_match > 0)
+        match_extracted_child (child, others) = case r_replace_node replace match child of
+                                                     Just new_child -> Just (new_child, others)
+                                                     Nothing -> Nothing
+        replace_extracted_child (new_child, others) node = r_node_add_child new_child (n_num_elements - 1) n_zone n_leaf others
+            where (RNode n_num_elements n_zone n_leaf _) = node
+
+r_delete_leaf :: Eq v => RLeaf v -> RTree v -> RTree v
+r_delete_leaf leaf tree = case r_replace_node (\_ -> r_void) (\(RNode _ _ n_leaf _) -> n_leaf == Just leaf) tree of
+                              Just result -> result
+                              Nothing -> tree
+-}
 
 test_this_module = do
     let leaves = [

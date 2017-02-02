@@ -187,8 +187,8 @@ r_replace_node replace match tree
                                                      Just new_child -> Just $ r_node_add_child new_child (RNode (t_num_elements - 1) t_zone t_leaf others)
                                                      Nothing -> Nothing
 
-r_supplant_nodes :: Eq v => Zone -> (RTree v -> Bool) -> (RTree v -> RTree v) -> RTree v -> (RTree v, Bool)
-r_supplant_nodes zone match replace tree
+r_supplant_nodes :: Eq v => Bool -> Zone -> (RTree v -> Bool) -> (RTree v -> RTree v) -> RTree v -> (RTree v, Bool)
+r_supplant_nodes supplant_all zone match replace tree
   | zone_overlaps zone t_zone = foldr try_supplant_child (try_supplant_leaf tree) childs_with_neighbors
   | otherwise = (tree, False)
     where (RNode t_num_elements t_zone t_leaf t_childs) = tree
@@ -197,16 +197,16 @@ r_supplant_nodes zone match replace tree
           childs_with_neighbors = extract_each t_childs
           --try_supplant_child :: Eq v => (RTree v, [RTree v]) -> (RTree v, Bool) -> (RTree v, Bool)
           try_supplant_child (child, other_childs) (parent, parent_has_changed) =
-            if child_has_changed
+            if (supplant_all || not parent_has_changed) && child_has_changed -- if we're supplanting all OR a change hasn't been made yet, and ALSO if this child changed, then do the replace
                 then (r_node_add_child new_child (RNode (p_num_elements - c_num_elements) p_zone p_leaf other_childs), True)
                 else (parent, parent_has_changed)
-            where (new_child, child_has_changed) = r_supplant_nodes zone match replace child
+            where (new_child, child_has_changed) = r_supplant_nodes supplant_all zone match replace child
                   (RNode p_num_elements p_zone p_leaf _) = parent
                   (RNode c_num_elements _ _ _) = child
                   
 -- delete all instances of the given leaf
-r_delete_leafs :: Eq v => RLeaf v -> RTree v -> RTree v
-r_delete_leafs leaf tree = fst $ r_supplant_nodes (pos_to_zone l_pos) (\(RNode _ _ n_leaf _) -> Just leaf == n_leaf) (\_ -> r_void) tree
+r_delete_leafs :: Eq v => Bool -> RLeaf v -> RTree v -> RTree v
+r_delete_leafs delete_all leaf tree = fst $ r_supplant_nodes delete_all (pos_to_zone l_pos) (\(RNode _ _ n_leaf _) -> Just leaf == n_leaf) (\_ -> r_void) tree
     where (RLeaf l_pos _) = leaf
 
 {-                                                     

@@ -30,6 +30,8 @@ assertEqual present test_id expected actual
   | expected == actual = return ()
   | otherwise = putStrLn $ test_id ++ ":\n[" ++ present expected ++ "]\n!=\n[" ++ present actual ++ "]"
 
+--assert0 :: (Eq t, Show t) => String -> t -> t -> IO ()
+--assert0 :: (Eq v, Show v) => String -> RTree v -> RTree v -> IO ()
 assert0 = assertEqual $ r_print 0
 
 asserts :: (Eq a, Show a) => String -> a -> a -> IO ()
@@ -39,6 +41,7 @@ main = do
   mapM_ putStrLn $ map (r_print 0) ctrees
   --putStrLn $ map (\t -> r_print 0) (tail ctrees)
   assert0 "insert_into_child" (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 0)) [RNode 1 (Zone [9,4] [9,4]) (Just (cleaves !! 1)) []]) (r_insert 3 (cleaves !! 1) (uncompiled_nodes !! 0))
+  {-
   assert0 "insert_into_child 1 time" 
             (RNode 1 (Zone [3,3] [3,3]) (Just (cleaves !! 4)) [
             ])
@@ -115,3 +118,4 @@ main = do
                 (RNode 1 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [])
             ])
             (r_delete_zone (Zone [2,2] [6,6]) (head ctrees))
+            -}

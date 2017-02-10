@@ -79,6 +79,38 @@ find_property_dps (_, quantity, _, _, unit_dps) = quantity * unit_dps
 --find_milestone_new_dps () () () = prereq_dps_increase + target_new_dps - target_old_dps
     --where prereq_dps_increase = 
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--Business	Initial Cost	Coefficient	Initial Time	Initial Profit	Initial Productivity
+--type Property = (String, Double, Double, Double, Double) -- name, quantity, unit_price, coefficient, unit_dps
+lunar_base_properties = [
+    ("Moon Shoe", 1, 5, 1.05, 0.5),
+    ("Gravity Booth", 1, 105, 1.21, 3),
+    ("Payday Clone", 1, 2929, 1.07, 71.43),
+    ("Moon Express", 1, 42525, 1.19, 188),
+    ("Oxygen Bar", 1, 493025, 1.09, 2200),
+    ("Helium-3 Farm", 1, 18753525, 1.15, 11000),
+    ("Cheese Mine", 1, 393824025, 1.13, 55000),
+    ("Amusement Park", 1, 8270000000, 1.17, 385000),
+    ("Werewolf Colony", 1, 173676000000, 1.11, 770000),
+    ("Giant Laser", 1, 1000000000000, 1.50, 3850000)
+    ]
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--Business	Initial Cost	Coefficient	Initial Time	Initial Profit	Initial Productivity
+--type Property = (String, Double, Double, Double, Double) -- name, quantity, unit_price, coefficient, unit_dps
+lunar_base_properties = [
+    ("Moon Shoe", 1, 5, 1.05, 0.5),
+    ("Gravity Booth", 1, 105, 1.21, 3),
+    ("Payday Clone", 1, 2929, 1.07, 71.43),
+    ("Moon Express", 1, 42525, 1.19, 188),
+    ("Oxygen Bar", 1, 493025, 1.09, 2200),
+    ("Helium-3 Farm", 1, 18753525, 1.15, 11000),
+    ("Cheese Mine", 1, 393824025, 1.13, 55000),
+    ("Amusement Park", 1, 8270000000, 1.17, 385000),
+    ("Werewolf Colony", 1, 173676000000, 1.11, 770000),
+    ("Giant Laser", 1, 1000000000000, 1.50, 3850000)
+    ]
+
 indent = "    "
 pretty_list :: Show a => String -> [a] -> String
 pretty_list preindent [] = ""

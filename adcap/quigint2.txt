@@ -1,0 +1,290 @@
+Name	Business	Price	Description
+"Shiny Buckles"	332.5 * 1000 ^ (thousand)	"Moon Shoe"	3
+"Soft Soulful Music"	665 * 1000 ^ (thousand)	"Gravity Booth"	3
+"Open Late"	1.33 * 1000 ^ (million)	"Payday Clone"	3
+"Dark Matter Engines"	6.65 * 1000 ^ (million)	"Moon Express"	3
+"Moon Beverages"	13.3 * 1000 ^ (million)	"Oxygen Bar"	3
+"Benevolent AIs"	33.25 * 1000 ^ (million)	"Helium-3 Farm"	3
+"Crackers"	1.665 * 1000 ^ (billion)	"Cheese Mine"	3
+"Low Gravity Mascots"	133 * 1000 ^ (billion)	"Amusement Park"	3
+"Fresh Meat"	665 * 1000 ^ (billion)	"Werewolf Colony"	3
+"Mini-Clone Assistants"	3.3 * 1000 ^ (trillion)	"Giant Laser"	3
+"Air Filters"	10 * 1000 ^ (trillion)	"All businesses"	9
+"Limited Warranties"	30 * 1000 ^ (trillion)	"Moon Shoe"	3
+"More Colors"	70 * 1000 ^ (trillion)	"Gravity Booth"	3
+"Friendly-Gene Splicing"	150 * 1000 ^ (trillion)	"Payday Clone"	3
+"Sarcastic Robot"	275 * 1000 ^ (trillion)	"Moon Express"	3
+"Cushy Barstools"	433 * 1000 ^ (trillion)	"Oxygen Bar"	3
+"Crash-Proof Harvesters"	266 * 1000 ^ (trillion)	"Helium-3 Farm"	3
+"Tea"	665 * 1000 ^ (trillion)	"Cheese Mine"	3
+"Trampoline Land"	931 * 1000 ^ (trillion)	"Amusement Park"	3
+"Brush Kiosks"	2 * 1000 ^ (quadrillion)	"Werewolf Colony"	3
+"Underground Lair"	3 * 1000 ^ (quadrillion)	"Giant Laser"	3
+"Monorail To Earth"	7 * 1000 ^ (quadrillion)	"All businesses"	9
+"Almoond Milk"	500 * 1000 ^ (quintillion)	"All businesses"	9
+"Cleat Upgrades"	26 * 1000 ^ (sextillion)	"Moon Shoe"	3
+"Mars Gravity Setting"	67 * 1000 ^ (sextillion)	"Gravity Booth"	3
+"Celebrity DNA Samples"	93 * 1000 ^ (sextillion)	"Payday Clone"	3
+"Adorable Fuel Generator"	133 * 1000 ^ (sextillion)	"Moon Express"	3
+"Memorable Jingle"	266 * 1000 ^ (sextillion)	"Oxygen Bar"	3
+"Particle Shovels"	465 * 1000 ^ (sextillion)	"Helium-3 Farm"	3
+"Biscuits"	665 * 1000 ^ (sextillion)	"Cheese Mine"	3
+"Moon Merchandise"	997 * 1000 ^ (sextillion)	"Amusement Park"	3
+"Flea Bath Spas"	2 * 1000 ^ (septillion)	"Werewolf Colony"	3
+"Abundant Henchmen"	3 * 1000 ^ (septillion)	"Giant Laser"	3
+"Lake Armstrong Install"	10 * 1000 ^ (septillion)	"All businesses"	9
+"High Heel Extensions"	5 * 1000 ^ (nonillion)	"Moon Shoe"	3
+"Fresh Air Simulator"	10 * 1000 ^ (nonillion)	"Gravity Booth"	3
+"Fancy Hats"	20 * 1000 ^ (nonillion)	"Payday Clone"	3
+"Questionable Staff Doctor"	40 * 1000 ^ (nonillion)	"Moon Express"	3
+"Moon Pretzels"	160 * 1000 ^ (nonillion)	"Oxygen Bar"	3
+"Lunar Almanac"	280 * 1000 ^ (nonillion)	"Helium-3 Farm"	3
+"Crumpets"	500 * 1000 ^ (nonillion)	"Cheese Mine"	3
+"Sassy Security Guards"	690 * 1000 ^ (nonillion)	"Amusement Park"	3
+"Basketball Team"	725 * 1000 ^ (nonillion)	"Werewolf Colony"	3
+"Hat Shurikens"	833 * 1000 ^ (nonillion)	"Giant Laser"	3
+"Anti-Radiation Pills"	975 * 1000 ^ (nonillion)	"All businesses"	9
+"Lead Toed"	9 * 1000 ^ (decillion)	"Moon Shoe"	3
+"Bigger On The Inside"	20 * 1000 ^ (decillion)	"Gravity Booth"	3
+"War-Ready Options"	100 * 1000 ^ (decillion)	"Payday Clone"	3
+"Wise Janitor"	200 * 1000 ^ (decillion)	"Moon Express"	3
+"Pub Food"	421 * 1000 ^ (decillion)	"Oxygen Bar"	3
+"Arts And Crafts"	655 * 1000 ^ (decillion)	"Helium-3 Farm"	3
+"Scones"	825 * 1000 ^ (decillion)	"Cheese Mine"	3
+"Space Food"	5 * 1000 ^ (undecillion)	"Amusement Park"	3
+"Angsty Teens"	25 * 1000 ^ (undecillion)	"Werewolf Colony"	3
+"Chubby Hitmen"	50 * 1000 ^ (undecillion)	"Giant Laser"	3
+"Objectivist Rhetoric"	100 * 1000 ^ (undecillion)	"All businesses"	9
+"Automatic Laces"	75 * 1000 ^ (duodecillion)	"Moon Shoe"	5
+"Idiot Proofing"	210 * 1000 ^ (duodecillion)	"Gravity Booth"	5
+"Over Night Delivery"	353 * 1000 ^ (duodecillion)	"Payday Clone"	5
+"Shiny Metal Assets"	635 * 1000 ^ (duodecillion)	"Moon Express"	5
+"Comfortable Stools"	900 * 1000 ^ (duodecillion)	"Oxygen Bar"	5
+"Conspiracy Deterrent"	9 * 1000 ^ (tredecillion)	"Helium-3 Farm"	5
+"Cucumber Sandwiches"	22 * 1000 ^ (tredecillion)	"Cheese Mine"	5
+"Low-G High-Cal Treats"	60 * 1000 ^ (tredecillion)	"Amusement Park"	5
+"Team Jacobi Methoc"	132 * 1000 ^ (tredecillion)	"Werewolf Colony"	5
+"Evil Laugh Track"	367 * 1000 ^ (tredecillion)	"Giant Laser"	5
+"Trademarked"	1 * 1000 ^ (quattuordecillion)	"All businesses"	9
+"New Moon"	1 * 1000 ^ (sexdecillion)	"All businesses"	9
+"Racing Stripes"	18 * 1000 ^ (septendecillion)	"Moon Shoe"	3
+"Ocean Sounds"	6 * 1000 ^ (septendecillion)	"Gravity Booth"	3
+"Regenerating Limbs"	79 * 1000 ^ (septendecillion)	"Payday Clone"	3
+"Dark Matter Litterbox"	110 * 1000 ^ (septendecillion)	"Moon Express"	3
+"Happy Hour"	220 * 1000 ^ (septendecillion)	"Oxygen Bar"	3
+"Comm Jammers"	399 * 1000 ^ (septendecillion)	"Helium-3 Farm"	3
+"Novelty Slicers"	666 * 1000 ^ (septendecillion)	"Cheese Mine"	3
+"Security Drones"	911 * 1000 ^ (septendecillion)	"Amusement Park"	3
+"Howl Festival"	4 * 1000 ^ (novemdecillion)	"Werewolf Colony"	3
+"ZAP!"	25 * 1000 ^ (novemdecillion)	"Giant Laser"	3
+"Blue Filter"	112 * 1000 ^ (novemdecillion)	"All businesses"	9
+"Wifi Upgrade"	200 * 1000 ^ (novemdecillion)	"Moon Shoe"	3
+"Double Wide Edition"	356 * 1000 ^ (novemdecillion)	"Gravity Booth"	3
+"Fancy Suits"	518 * 1000 ^ (novemdecillion)	"Payday Clone"	3
+"Deflector Dishes"	766 * 1000 ^ (novemdecillion)	"Moon Express"	3
+"Snarky Shrink"	3 * 1000 ^ (duovigintillion)	"Oxygen Bar"	3
+"Buggalo Fences"	6 * 1000 ^ (duovigintillion)	"Helium-3 Farm"	3
+"Comfy Blanket"	12 * 1000 ^ (duovigintillion)	"Cheese Mine"	3
+"Staff Indoctrination"	50 * 1000 ^ (duovigintillion)	"Amusement Park"	3
+"Bacon Treats"	212 * 1000 ^ (duovigintillion)	"Werewolf Colony"	3
+"Robot Voice"	367 * 1000 ^ (duovigintillion)	"Giant Laser"	3
+"Easy Mooney"	1 * 1000 ^ (tresvigintillion)	"All businesses"	9
+"Wheelie Upgrades"	25 * 1000 ^ (quattuorvigintillion)	"Moon Shoe"	3
+"Family Accommodations"	60 * 1000 ^ (quattuorvigintillion)	"Gravity Booth"	3
+"Narcissis Implants"	177 * 1000 ^ (quattuorvigintillion)	"Payday Clone"	3
+"Insurance Insurance"	239 * 1000 ^ (quattuorvigintillion)	"Moon Express"	3
+"Free Peanuts"	432 * 1000 ^ (quattuorvigintillion)	"Oxygen Bar"	3
+"Cow Catchers"	801 * 1000 ^ (quattuorvigintillion)	"Helium-3 Farm"	3
+"Assorted Jams"	2 * 1000 ^ (quinvigintillion)	"Cheese Mine"	3
+"Free Oxygen"	8 * 1000 ^ (quinvigintillion)	"Amusement Park"	3
+"Anti-Flea Collars"	22 * 1000 ^ (quinvigintillion)	"Werewolf Colony"	3
+"Multi-coloured Death"	59 * 1000 ^ (quinvigintillion)	"Giant Laser"	3
+"Crescent Hats"	444 * 1000 ^ (quinvigintillion)	"All businesses"	9
+"Hush Doggies"	12 * 1000 ^ (septenvigintillion)	"Moon Shoe"	3
+"Sun Simulator"	24 * 1000 ^ (septenvigintillion)	"Gravity Booth"	3
+"Perma-smiles"	48 * 1000 ^ (septenvigintillion)	"Payday Clone"	3
+"Refreshing Zlurm!"	96 * 1000 ^ (septenvigintillion)	"Moon Express"	3
+"Air Fresheners"	192 * 1000 ^ (septenvigintillion)	"Oxygen Bar"	3
+"Robot Roosters"	384 * 1000 ^ (septenvigintillion)	"Helium-3 Farm"	3
+"Doilies"	968 * 1000 ^ (septenvigintillion)	"Cheese Mine"	3
+"2 For 1 Days"	15 * 1000 ^ (octovigintillion)	"Amusement Park"	3
+"Carbon Fiber Combs"	35 * 1000 ^ (octovigintillion)	"Werewolf Colony"	3
+"Escape Proof Ropes"	100 * 1000 ^ (octovigintillion)	"Giant Laser"	3
+"Crater Tourism"	1 * 1000 ^ (novemvigintillion)	"All businesses"	3
+"Astronaut Editions"	100 * 1000 ^ (novemvigintillion)	"Moon Shoe"	5
+"Rotating Doors"	200 * 1000 ^ (novemvigintillion)	"Gravity Booth"	5
+"Loyalty Detectors"	300 * 1000 ^ (novemvigintillion)	"Payday Clone"	5
+"Trusty Dog"	400 * 1000 ^ (novemvigintillion)	"Moon Express"	5
+"Authentic O2"	500 * 1000 ^ (novemvigintillion)	"Oxygen Bar"	5
+"Flashy Overalls"	600 * 1000 ^ (novemvigintillion)	"Helium-3 Farm"	5
+"4-Ever-Sharp Slicers"	700 * 1000 ^ (novemvigintillion)	"Cheese Mine"	5
+"Ubiquitous Travellators"	800 * 1000 ^ (novemvigintillion)	"Amusement Park"	5
+"Industrial Strength Curlers"	900 * 1000 ^ (novemvigintillion)	"Werewolf Colony"	5
+"Beeping Dial-Thingys"	999 * 1000 ^ (novemvigintillion)	"Giant Laser"	5
+"Moon Madness"	5 * 1000 ^ (trigintillion)	"All businesses"	5
+"Novelty Tongues"	10 * 1000 ^ (trigintillion)	"Moon Shoe"	3
+"Anti-Doll-Lack Devices"	20 * 1000 ^ (trigintillion)	"Gravity Booth"	3
+"Height Adjusters"	55 * 1000 ^ (trigintillion)	"Payday Clone"	3
+"Renew Canceled Contracts"	90 * 1000 ^ (trigintillion)	"Moon Express"	3
+"Pillow Lounges"	180 * 1000 ^ (trigintillion)	"Oxygen Bar"	3
+"Extra Red Barns"	400 * 1000 ^ (trigintillion)	"Helium-3 Farm"	3
+"Fancy Mining Helmets"	750 * 1000 ^ (trigintillion)	"Cheese Mine"	3
+"All The Parades"	2 * 1000 ^ (untrigintillion)	"Amusement Park"	3
+"K-9 Dentistry"	4 * 1000 ^ (untrigintillion)	"Werewolf Colony"	3
+"Even More Henchmen"	14 * 1000 ^ (untrigintillion)	"Giant Laser"	3
+"Moon The Earth Day"	50 * 1000 ^ (untrigintillion)	"All businesses"	3
+"MPS Trackers"	400 * 1000 ^ (untrigintillion)	"Moon Shoe"	3
+"Skylights"	700 * 1000 ^ (untrigintillion)	"Gravity Booth"	3
+"Cloned Cloners"	1 * 1000 ^ (duotrigintillion)	"Payday Clone"	3
+"Discounted Pizza Delivery"	3 * 1000 ^ (duotrigintillion)	"Moon Express"	3
+"Broken Jukebox"	19 * 1000 ^ (duotrigintillion)	"Oxygen Bar"	3
+"Superflous Silos"	55 * 1000 ^ (duotrigintillion)	"Helium-3 Farm"	3
+"Mice Focus Groups"	123 * 1000 ^ (duotrigintillion)	"Cheese Mine"	3
+"Low Gravity Child Care"	200 * 1000 ^ (duotrigintillion)	"Amusement Park"	3
+"PACK Meetings"	600 * 1000 ^ (duotrigintillion)	"Werewolf Colony"	3
+"Laserproof Lasers"	888 * 1000 ^ (duotrigintillion)	"Giant Laser"	3
+"Moon Hats For All"	1 * 1000 ^ (tretrigintillion)	"All businesses"	3
+"Now In Black"	5 * 1000 ^ (tretrigintillion)	"Moon Shoe"	3
+"Wheelchair Accessible"	25 * 1000 ^ (tretrigintillion)	"Gravity Booth"	3
+"Clone App"	125 * 1000 ^ (tretrigintillion)	"Payday Clone"	3
+"Captain's Boots"	625 * 1000 ^ (tretrigintillion)	"Moon Express"	3
+"Extra Bubbles"	3 * 1000 ^ (quattuortrigintillion)	"Oxygen Bar"	3
+"A Hoe"	5 * 1000 ^ (quattuortrigintillion)	"Helium-3 Farm"	3
+"Coffee Breaks"	65 * 1000 ^ (quattuortrigintillion)	"Cheese Mine"	3
+"Earth Land"	246 * 1000 ^ (quattuortrigintillion)	"Amusement Park"	3
+"Discount Aerial Discs"	500 * 1000 ^ (quattuortrigintillion)	"Werewolf Colony"	3
+"Recycled Photons"	808 * 1000 ^ (quattuortrigintillion)	"Giant Laser"	3
+"Pep Talks"	1 * 1000 ^ (quintrigintillion)	"All businesses"	9
+"Air Aldrins"	2 * 1000 ^ (quintrigintillion)	"Moon Shoe"	3
+"Free Companions"	4 * 1000 ^ (quintrigintillion)	"Gravity Booth"	3
+"Open 672 Hours"	8 * 1000 ^ (quintrigintillion)	"Payday Clone"	3
+"New Paint Job"	16 * 1000 ^ (quintrigintillion)	"Moon Express"	3
+"Conversation Bots"	32 * 1000 ^ (quintrigintillion)	"Oxygen Bar"	3
+"Totes McGoats"	64 * 1000 ^ (quintrigintillion)	"Helium-3 Farm"	3
+"Curd Refiners"	128 * 1000 ^ (quintrigintillion)	"Cheese Mine"	3
+"Loompa Uniforms"	256 * 1000 ^ (quintrigintillion)	"Amusement Park"	3
+"Fashionable Chew Toys"	512 * 1000 ^ (quintrigintillion)	"Werewolf Colony"	3
+"Shoulder Straps"	1 * 1000 ^ (sextrigintillion)	"Giant Laser"	3
+"Elevator Music"	100 * 1000 ^ (sextrigintillion)	"All businesses"	9
+"Spring-Loaded"	125 * 1000 ^ (sextrigintillion)	"Moon Shoe"	2
+"Effective Custodians"	150 * 1000 ^ (sextrigintillion)	"Gravity Booth"	2
+"Goatee-Installations"	175 * 1000 ^ (sextrigintillion)	"Payday Clone"	2
+"Crash Insurance"	200 * 1000 ^ (sextrigintillion)	"Moon Express"	2
+"Ultimate Pingball"	225 * 1000 ^ (sextrigintillion)	"Oxygen Bar"	2
+"Rustic Lessons"	250 * 1000 ^ (sextrigintillion)	"Helium-3 Farm"	2
+"Saltine Supplements"	275 * 1000 ^ (sextrigintillion)	"Cheese Mine"	2
+"Unamusement Expansion"	300 * 1000 ^ (sextrigintillion)	"Amusement Park"	2
+"Tail Warmers"	350 * 1000 ^ (sextrigintillion)	"Werewolf Colony"	2
+"The Clap-Turner-On-er"	400 * 1000 ^ (sextrigintillion)	"Giant Laser"	2
+"Free Crepe Thursdays"	500 * 1000 ^ (sextrigintillion)	"All businesses"	2
+"Rocket Boots"	1 * 1000 ^ (septentrigintillion)	"Moon Shoe"	11
+"Causality Disruptors"	10 * 1000 ^ (septentrigintillion)	"Gravity Booth"	11
+"Rapid Evolution"	100 * 1000 ^ (septentrigintillion)	"Payday Clone"	11
+"Teeny Tiny Aliens"	1 * 1000 ^ (octotrigintillion)	"Moon Express"	11
+"Napkins"	10 * 1000 ^ (octotrigintillion)	"Oxygen Bar"	11
+"Beard Implants"	100 * 1000 ^ (octotrigintillion)	"Helium-3 Farm"	11
+"Nose-Friendly Clothes-pegs"	1 * 1000 ^ (novemtrigintillion)	"Cheese Mine"	11
+"Amusement Protocols"	10 * 1000 ^ (novemtrigintillion)	"Amusement Park"	11
+"Bacon Air-Infusers"	100 * 1000 ^ (novemtrigintillion)	"Werewolf Colony"	11
+"Out-Of-place Puppies"	1 * 1000 ^ (quadragintillion)	"Giant Laser"	11
+"The Mega Upgrade"	10 * 1000 ^ (quadragintillion)	"All businesses"	11
+"Flashy Toes"	1 * 1000 ^ (unquadragintillion)	"Moon Shoe"	3
+"Training Mode"	7 * 1000 ^ (unquadragintillion)	"Gravity Booth"	3
+"At Home Kits"	29 * 1000 ^ (unquadragintillion)	"Payday Clone"	3
+"Extra Rockets"	66 * 1000 ^ (unquadragintillion)	"Moon Express"	3
+"Fuzzy Chairs"	129 * 1000 ^ (unquadragintillion)	"Oxygen Bar"	3
+"Reapers"	233 * 1000 ^ (unquadragintillion)	"Helium-3 Farm"	3
+"Lactose Filters"	555 * 1000 ^ (unquadragintillion)	"Cheese Mine"	3
+"Historical Wing"	900 * 1000 ^ (unquadragintillion)	"Amusement Park"	3
+"Now Accepting Were-dogs"	3 * 1000 ^ (duoquadragintillion)	"Werewolf Colony"	3
+"Dance Parties"	20 * 1000 ^ (duoquadragintillion)	"Giant Laser"	3
+"Giant Domes"	111 * 1000 ^ (duoquadragintillion)	"All businesses"	3
+"Blue Steel Toed"	1 * 1000 ^ (quinquadragintillion)	"Moon Shoe"	3
+"Trip-N-Fall Achievements"	2 * 1000 ^ (quinquadragintillion)	"Gravity Booth"	3
+"Even More Clones"	3 * 1000 ^ (quinquadragintillion)	"Payday Clone"	3
+"Free Limbo Lessons"	4 * 1000 ^ (quinquadragintillion)	"Moon Express"	3
+"Exciting And New Snacks"	5 * 1000 ^ (quinquadragintillion)	"Oxygen Bar"	3
+"Luna Forming"	6 * 1000 ^ (quinquadragintillion)	"Helium-3 Farm"	3
+"Deep Delvers"	7 * 1000 ^ (quinquadragintillion)	"Cheese Mine"	3
+"Happy TM"	8 * 1000 ^ (quinquadragintillion)	"Amusement Park"	3
+"Sheep Clothing"	9 * 1000 ^ (quinquadragintillion)	"Werewolf Colony"	3
+"Warning Shots"	10 * 1000 ^ (quinquadragintillion)	"Giant Laser"	3
+"Thneed Sales"	100 * 1000 ^ (quinquadragintillion)	"All businesses"	3
+"No-Knot Laces"	1 * 1000 ^ (sexquadragintillion)	"Moon Shoe"	3
+"Booth-Shaped Booths"	3 * 1000 ^ (sexquadragintillion)	"Gravity Booth"	3
+"Rent-a-Clones"	7 * 1000 ^ (sexquadragintillion)	"Payday Clone"	3
+"Pay Off Authorities"	25 * 1000 ^ (sexquadragintillion)	"Moon Express"	3
+"EZ-Breathers"	75 * 1000 ^ (sexquadragintillion)	"Oxygen Bar"	3
+"Radiation-Proof Buckets"	151 * 1000 ^ (sexquadragintillion)	"Helium-3 Farm"	3
+"Cheese Scientists"	400 * 1000 ^ (sexquadragintillion)	"Cheese Mine"	3
+"Parks N Wreck"	600 * 1000 ^ (sexquadragintillion)	"Amusement Park"	3
+"Ball-Throwing Robots"	900 * 1000 ^ (sexquadragintillion)	"Werewolf Colony"	3
+"A Guy Named Jeff"	2 * 1000 ^ (septquadragintillion)	"Giant Laser"	3
+"Earth-Shaped Pinatas"	6 * 1000 ^ (septquadragintillion)	"All businesses"	3
+"Anti-Dust Coating"	19 * 1000 ^ (septquadragintillion)	"Moon Shoe"	3
+"Pocket Edition"	66 * 1000 ^ (septquadragintillion)	"Gravity Booth"	3
+"Fantastic Bedside Manner"	123 * 1000 ^ (septquadragintillion)	"Payday Clone"	3
+"Smarter Crashes"	299 * 1000 ^ (septquadragintillion)	"Moon Express"	3
+"Friendly Shores"	667 * 1000 ^ (septquadragintillion)	"Oxygen Bar"	3
+"Sapient Livestock"	901 * 1000 ^ (septquadragintillion)	"Helium-3 Farm"	3
+"Tooth-Picks"	2 * 1000 ^ (octoquadragintillion)	"Cheese Mine"	3
+"Curiously Friendly Staff"	53 * 1000 ^ (octoquadragintillion)	"Amusement Park"	3
+"No Brick Houses"	200 * 1000 ^ (octoquadragintillion)	"Werewolf Colony"	3
+"Magnitude Enhancements"	500 * 1000 ^ (octoquadragintillion)	"Giant Laser"	3
+"Alimoony"	1 * 1000 ^ (novemquadragintillion)	"All businesses"	3
+"Scratch Proofing"	1 * 1000 ^ (unquinquagintillion)	"Moon Shoe"	3
+"Attractive Decals"	2 * 1000 ^ (unquinquagintillion)	"Gravity Booth"	3
+"Bulk Discounts"	4 * 1000 ^ (unquinquagintillion)	"Payday Clone"	3
+"More Sass"	8 * 1000 ^ (unquinquagintillion)	"Moon Express"	3
+"Romantic Course Set"	16 * 1000 ^ (unquinquagintillion)	"Oxygen Bar"	3
+"Manure Containment Field"	32 * 1000 ^ (unquinquagintillion)	"Helium-3 Farm"	3
+"Garnish"	64 * 1000 ^ (unquinquagintillion)	"Cheese Mine"	3
+"Wiley Villains"	128 * 1000 ^ (unquinquagintillion)	"Amusement Park"	3
+"Foxes Welcome"	256 * 1000 ^ (unquinquagintillion)	"Werewolf Colony"	3
+"Evil Injections"	512 * 1000 ^ (unquinquagintillion)	"Giant Laser"	3
+"Mandated Siestas"	1 * 1000 ^ (duoquinquagintillion)	"All businesses"	3
+"Earth Scented"	2 * 1000 ^ (trequinquagintillion)	"Moon Shoe"	5
+"Gold Memberships"	5 * 1000 ^ (trequinquagintillion)	"Gravity Booth"	5
+"Low Interest Financing"	11 * 1000 ^ (trequinquagintillion)	"Payday Clone"	5
+"Sports Physicists"	23 * 1000 ^ (trequinquagintillion)	"Moon Express"	5
+"Low-grav Peanuts"	47 * 1000 ^ (trequinquagintillion)	"Oxygen Bar"	5
+"Novelty Weathervane"	95 * 1000 ^ (trequinquagintillion)	"Helium-3 Farm"	5
+"Little Tomatoes"	191 * 1000 ^ (trequinquagintillion)	"Cheese Mine"	5
+"Overnight Accomodations"	383 * 1000 ^ (trequinquagintillion)	"Amusement Park"	5
+"Fur-Free Beaches"	767 * 1000 ^ (trequinquagintillion)	"Werewolf Colony"	5
+"Number 2"	5 * 1000 ^ (quattuorquinquagintillion)	"Giant Laser"	5
+"Lunatics Anonymous"	125 * 1000 ^ (quattuorquinquagintillion)	"All businesses"	5
+"Shoe-Horns"	1 * 1000 ^ (sexquinquagintillion)	"Moon Shoe"	3
+"Low Carb Gravity"	14 * 1000 ^ (sexquinquagintillion)	"Gravity Booth"	3
+"Protocol 67"	114 * 1000 ^ (sexquinquagintillion)	"Payday Clone"	3
+"Philosphical Burritos"	234 * 1000 ^ (sexquinquagintillion)	"Moon Express"	3
+"Gluten Free O2"	444 * 1000 ^ (sexquinquagintillion)	"Oxygen Bar"	3
+"Trusty Wheelbarrows"	888 * 1000 ^ (sexquinquagintillion)	"Helium-3 Farm"	3
+"Cubed Meat"	23 * 1000 ^ (septquinquagintillion)	"Cheese Mine"	3
+"Seriously Catchy Music"	99 * 1000 ^ (septquinquagintillion)	"Amusement Park"	3
+"Riding Hood-Free Zone"	423 * 1000 ^ (septquinquagintillion)	"Werewolf Colony"	3
+"Epic Sound Effects"	567 * 1000 ^ (septquinquagintillion)	"Giant Laser"	3
+"Celestial Body"	899 * 1000 ^ (septquinquagintillion)	"All businesses"	3
+"Lil' Booties"	1 * 1000 ^ (novemquinquagintillion)	"Moon Shoe"	3
+"Digital Booths"	3 * 1000 ^ (novemquinquagintillion)	"Gravity Booth"	3
+"Water-Resistant"	9 * 1000 ^ (novemquinquagintillion)	"Payday Clone"	3
+"Seasonal Renewal"	27 * 1000 ^ (novemquinquagintillion)	"Moon Express"	3
+"Darts"	81 * 1000 ^ (novemquinquagintillion)	"Oxygen Bar"	3
+"Space Hamsters"	234 * 1000 ^ (novemquinquagintillion)	"Helium-3 Farm"	3
+"Balrogg-Free Installations"	356 * 1000 ^ (novemquinquagintillion)	"Cheese Mine"	3
+"Actual Space Mnt."	432 * 1000 ^ (novemquinquagintillion)	"Amusement Park"	3
+"Blue Moon Steaks"	567 * 1000 ^ (novemquinquagintillion)	"Werewolf Colony"	3
+"Earth Homing System"	836 * 1000 ^ (novemquinquagintillion)	"Giant Laser"	3
+"Cookies"	1 * 1000 ^ (sexagintillion)	"All businesses"	3
+"Grants Wishes"	10 * 1000 ^ (unsexagintillion)	"Moon Shoe"	15
+"Cleans Your Teeth"	100 * 1000 ^ (unsexagintillion)	"Gravity Booth"	15
+"Do Your Taxes"	1 * 1000 ^ (duosexagintillion)	"Payday Clone"	15
+"OP Deliveries"	10 * 1000 ^ (duosexagintillion)	"Moon Express"	15
+"Self-Breathing Air"	100 * 1000 ^ (duosexagintillion)	"Oxygen Bar"	15
+"Ambition Crops"	1 * 1000 ^ (tresexagintillion)	"Helium-3 Farm"	15
+"The Cheese Stands Alone"	10 * 1000 ^ (tresexagintillion)	"Cheese Mine"	15
+"Cryo-Frozen Host"	100 * 1000 ^ (tresexagintillion)	"Amusement Park"	15
+"Romantic Subplot"	1 * 1000 ^ (quattuorsexagintillion)	"Werewolf Colony"	15
+"Big Red Button"	10 * 1000 ^ (quattuorsexagintillion)	"Giant Laser"	15
+"The Very Large Upgrade"	100 * 1000 ^ (quattuorsexagintillion)	"All businesses"	999
+

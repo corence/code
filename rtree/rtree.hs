@@ -77,9 +77,11 @@ r_node_add_child child node = RNode (c_num_elements + n_num_elements) (zone_add 
         (RNode c_num_elements c_zone c_leaf c_childs) = child
 
 r_node_remove_first_child :: RTree v -> (RTree v, RTree v)
-r_node_remove_first_child node = (n_child, RNode (n_num_elements - c_num_elements) n_zone n_leaf n_childs) -- we don't *have* to reduce the zone here, but it would be nice
+r_node_remove_first_child (RNode _ _ _ []) = error "you can't really remove any more children from this node"
+r_node_remove_first_child node = (n_child, new_node)
   where (RNode n_num_elements n_zone n_leaf (n_child:n_childs)) = node
         (RNode c_num_elements c_zone c_leaf c_childs) = n_child
+        new_node = RNode (n_num_elements - c_num_elements) n_zone n_leaf n_childs -- we don't *have* to reduce the zone here, but it would be nice
         
 sorted_insert_by_num_elements :: RTree v -> [RTree v] -> [RTree v]
 sorted_insert_by_num_elements element [] = [element]

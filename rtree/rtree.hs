@@ -52,6 +52,9 @@ zone_add ZVoid zone = zone
 zone_add zone ZVoid = zone
 zone_add zone (Zone nw se) = zone_extend se (zone_extend nw zone)
 
+zone_amalgamate :: [Zone] -> Zone
+zone_amalgamate = foldr (\zone1 zone2 -> zone_add zone1 zone2) ZVoid
+
 -- RNode num_elements zone childs | RLeaf pos value
 data RTree v = RNode Int Zone (Maybe (RLeaf v)) [RTree v] deriving (Show, Eq)
 data RLeaf v = RLeaf Pos v deriving (Show, Eq)
@@ -123,6 +126,48 @@ r_insert capacity leaf node
           (RLeaf l_pos _) = leaf
           n_childs_containing_new_pos = filter (\c -> zone_contains l_pos (r_node_zone c)) n_childs
           r_node_zone (RNode _ zone _ _) = zone
+
+type RTreeIteratorNode v = [RTree v]
+
+-- this is intended to be the ultimate Lookup function that will be the basis for all operations except Add.
+-- It will return every match, "butterflied":
+-- suppose A is the root RTree; one of its children is B, which has a child C, which has another child D.
+-- D has the leaf we're searching for, and it also has children.
+-- We'd return this as one of the list elements in the result:
+-- ([D, C without D, B without C, A without B])
+r_nodes_in_zone :: Zone -> RTree v -> RTreeIteratorNode v -> [RTreeIteratorNode v]
+r_nodes_in_zone zone node butterflied_parents
+  | zone_overlaps zone n_zone = match_from_this_node ++ (concat matches_from_childs)
+  | otherwise = []
+  where match_from_this_node = if _r_node_leaf_is_in_zone zone node then [butterflied_parents] else []
+        (RNode n_num_elements n_zone n_leaf n_childs) = node
+        node_without_child (child, other_childs) = RNode (n_num_elements - (num_elements child)) (combine_node_zones other_childs) n_leaf other_childs
+        num_elements (RNode n _ _ _) = n
+        combine_node_zones nodes = zone_amalgamate (node_zones nodes)
+        node_zones = map (\(RNode _ zone _ _) -> zone)
+        childs_and_butterflies = map (\(child, other_childs) -> (child, (node_without_child (child, other_childs) : butterflied_parents))) (extract_each n_childs)
+        matches_from_childs = map (\(child, butterflies) -> r_nodes_in_zone zone child butterflies) childs_and_butterflies
+
+_r_node_leaf_is_in_zone :: Zone -> RTree v -> Bool
+_r_node_leaf_is_in_zone zone node = case n_leaf of
+                                        Just (RLeaf l_pos _) -> zone_contains l_pos zone
+                                        Nothing -> False
+                                    where (RNode _ _ n_leaf _) = node
+
+r_remove :: RTreeIteratorNode v -> RTree v
+r_remove [] = error "can't remove empty iterator"
+r_remove (node : parents) = r_merge parents
+
+r_merge :: RTreeIteratorNode v -> RTree v
+r_merge [] = r_void
+r_merge (node : []) = node
+r_merge (node : parent : parents) = r_merge $ (r_node_add_child node parent) : parents
+
+r_value :: RTreeIteratorNode v -> v
+r_value [] = error "no value on empty iterator"
+r_value ((RNode _ _ n_leaf _) : _) = case n_leaf of
+                                                    Just (RLeaf _ value) -> value
+                                                    Nothing -> error "no value in an empty leaf"
 
 -- return all leaves in a zone
 r_lookup_zone :: Zone -> RTree v -> [RLeaf v]

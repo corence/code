@@ -2,17 +2,13 @@
 import java.util.*;
 
 public class RTree<T> {
-    public static class Pos implements Cloneable {
-        public int x;
-        public int y;
+    public static class Pos {
+        public final int x;
+        public final int y;
 
         public Pos(int x, int y) {
             this.x = x;
             this.y = y;
-        }
-
-        public Pos clone() {
-            return new Pos(x, y);
         }
 
         public String toString() {
@@ -25,8 +21,8 @@ public class RTree<T> {
             return new Zone(null, null);
         }
         
-        public Pos nw;
-        public Pos se;
+        public final Pos nw;
+        public final Pos se;
 
         public Zone(int w, int n, int e, int s) {
             this.nw = new Pos(w, n);
@@ -50,25 +46,46 @@ public class RTree<T> {
             return true;
         }
 
-        public void extendTo(Pos pos) {
+        public boolean overlaps(Zone zone) {
+            if(this.nw == null || this.se == null) {
+                return false;
+            }
+            
+            if(zone.nw == null || zone.se == null) {
+                return false;
+            }
+            
+            if(this.nw.x > zone.se.x) return false;
+            if(this.nw.y > zone.se.y) return false;
+            if(this.se.x < zone.nw.x) return false;
+            if(this.se.y < zone.nw.y) return false;
+            return true;
+        }
+
+        public Zone extendTo(Pos pos) {
+            Pos nw, se;
+            
             if(this.nw == null) {
-                this.nw = pos.clone();
+                nw = pos;
             } else {
-                this.nw.x = Math.min(this.nw.x, pos.x);
-                this.se.x = Math.max(this.se.x, pos.x);
+                int x = Math.min(this.nw.x, pos.x);
+                int y = Math.min(this.nw.y, pos.y);
+                nw = new Pos(x, y);
             }
             
             if(this.se == null) {
-                this.se = pos.clone();
+                se = pos;
             } else {
-                this.nw.y = Math.min(this.nw.y, pos.y);
-                this.se.y = Math.max(this.se.y, pos.y);
+                int x = Math.max(this.se.x, pos.x);
+                int y = Math.max(this.se.y, pos.y);
+                se = new Pos(x, y);
             }
+
+            return new Zone(nw, se);
         }
 
-        public void extendTo(Zone zone) {
-            extendTo(zone.nw);
-            extendTo(zone.se);
+        public Zone extendTo(Zone zone) {
+            return this.extendTo(zone.nw).extendTo(zone.se);
         }
 
         public String toString() {
@@ -125,6 +142,7 @@ public class RTree<T> {
         public final Iterator<RTree<T>> childrenIterator;
         public RTreeIterator<T> childIterator;
         public boolean hasDoneLeaf;
+        public RTree<T> predecessor;
         public RTree<T> successor;
         public final RTree<T> target;
 
@@ -138,6 +156,8 @@ public class RTree<T> {
         }
 
         private void seek() {
+            predecessor = successor;
+            
             if(!hasDoneLeaf) {
                 hasDoneLeaf = true;
                 if(target.leaf != null) {
@@ -147,11 +167,21 @@ public class RTree<T> {
             }
 
             while(true) {
-                if(childIterator.hasNext()) {
-                    successor = childIterator.next();
-                    break;
+                if(childIterator != null && childIterator.hasNext()) {
+                    RTree<T> nextNode = childIterator.next();
+                    if(nextNode.leaf != null & query.contains(nextNode.leaf.pos)) {
+                        successor = nextNode;
+                        break;
+                    } else {
+                        continue;
+                    }
                 } else if(childrenIterator.hasNext()) {
-                    childIterator = new RTreeIterator<T>(childrenIterator.next(), query);
+                    RTree<T> nextNode = childrenIterator.next();
+                    if(nextNode.zone.overlaps(query)) {
+                        childIterator = new RTreeIterator<T>(nextNode, query);
+                    } else {
+                        childIterator = null;
+                    }
                     continue;
                 } else {
                     successor = null;
@@ -169,8 +199,13 @@ public class RTree<T> {
             seek();
             return result;
         }
+
+        public void remove() {
+            predecessor.removeLeaf();
+        }
     }
     
+    public final RTree<T> parent;
     public final int maxChildCount;
     public int numLeafs;
     public Zone zone;
@@ -180,7 +215,8 @@ public class RTree<T> {
 
     public static int nextId = 0;
 
-    public RTree(int maxChildCount) {
+    public RTree(RTree<T> parent, int maxChildCount) {
+        this.parent = parent;
         this.maxChildCount = maxChildCount;
         this.numLeafs = 0;
         this.zone = Zone.none();
@@ -206,7 +242,7 @@ public class RTree<T> {
         // 2) if this node can take it, put it in
         if(this.leaf == null) {
             this.leaf = leaf;
-            this.zone.extendTo(leaf.pos);
+            this.zone = this.zone.extendTo(leaf.pos);
             ++this.numLeafs;
             System.out.println("taking it. #" + this);
             return;
@@ -215,7 +251,7 @@ public class RTree<T> {
         // 3) if this node can handle another child, let's do that
         if(this.childs.size() < this.maxChildCount) {
             System.out.println("adding child for " + leaf + "... #" + this);
-            RTree<T> child = new RTree<T>(maxChildCount);
+            RTree<T> child = new RTree<T>(this, maxChildCount);
             this.childs.add(child);
             addLeafToChild(child, leaf);
             System.out.println("added  child for it. #" + this);
@@ -227,9 +263,33 @@ public class RTree<T> {
         addLeafToChild(this.childs.first(), leaf);
     }
 
+    public void removeLeaf() {
+        if(this.leaf == null) return;
+
+        this.leaf = null;
+        if(this.parent != null) {
+            parent.decrementLeafCount(this);
+        } else {
+            --numLeafs;
+        }
+    }
+
+    public void decrementLeafCount(RTree<T> child) {
+        this.childs.remove(child);
+        --child.numLeafs;
+
+        if(child.numLeafs > 0) {
+            this.childs.add(child);
+        }
+        
+        if(this.parent != null) {
+            parent.decrementLeafCount(this);
+        }
+    }
+
     private void addLeafToChild(RTree<T> child, RLeaf<T> leaf) {
         child.add(leaf);
-        this.zone.extendTo(child.zone);
+        this.zone = this.zone.extendTo(child.zone);
         ++this.numLeafs;
     }
 
@@ -242,7 +302,7 @@ public class RTree<T> {
     }
 
     public String toString() {
-        return zone.toString() + " " + leaf.toString();
+        return zone + " " + leaf;
     }
 
     public String print() {
@@ -259,7 +319,7 @@ public class RTree<T> {
     }
 
     public static void main(String[] args) {
-        RTree<Integer> tree1 = new RTree<Integer>(3);
+        RTree<Integer> tree1 = new RTree<Integer>(null, 3);
         System.out.println("***********");
         System.out.println("===========");
         tree1.add(new Pos(3, 3), 33);
@@ -295,5 +355,16 @@ public class RTree<T> {
                 System.out.println("    " + value);
             }
         }
+        for(Zone z : new Zone[] {new Zone(3, 3, 6, 5)}) {
+            System.out.println("REMOVING all values in zone " + z + ". shouldn't remove 96: ");
+            Iterator<RTree<Integer>> it = tree1.nodeIterator(z);
+            while(it.hasNext()) {
+                RTree<Integer> node = it.next();
+                System.out.println("    removed " + node);
+                it.remove();
+            }
+        }
+        System.out.println(tree1.print());
+        System.out.println("***********");
     }
 }

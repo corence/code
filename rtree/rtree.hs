@@ -6,6 +6,11 @@ module RTree (
 --import Data.List.Ordered
 import GHC.Exts
 import Data.Maybe
+import Debug.Trace
+
+trase :: String -> a -> a
+trase string value = value
+--trase = trace
 
 -- extract_each [1,2,3] = [(1, [2,3]), (2, [1,3]), (3, [1,2])]
 -- extract_each [3] = [(3, [])]
@@ -74,13 +79,22 @@ r_set_leaf leaf node = RNode (n_elements + 1) (zone_extend l_pos n_zone) (Just l
           (RLeaf l_pos _) = leaf
 
 r_node_add_child :: RTree v -> RTree v -> RTree v
-r_node_add_child (RNode 0 _ _ _) node = node -- if he tries to insert an empty node, just ignore him
-r_node_add_child child node = RNode (c_num_elements + n_num_elements) (zone_add c_zone n_zone) n_leaf (sorted_insert_by_num_elements child n_childs)
+r_node_add_child (RNode 0 _ _ _) node = trase "r_node_add_child 1" $ node -- if he tries to insert an empty node, just ignore him
+r_node_add_child child node = trase "r_node_add_child 2" $ RNode (c_num_elements + n_num_elements) (zone_add c_zone n_zone) n_leaf (sorted_insert_by_num_elements child n_childs)
   where (RNode n_num_elements n_zone n_leaf n_childs) = node
         (RNode c_num_elements c_zone c_leaf c_childs) = child
-
+                        
 r_node_remove_first_child :: RTree v -> (RTree v, RTree v)
-r_node_remove_first_child (RNode _ _ _ []) = error "you can't really remove any more children from this node"
+r_node_remove_first_child (RNode n_num_elements n_zone n_leaf []) = 
+    error 
+        $ "you can't really remove any more children from this node: (RNode "
+        ++ show n_num_elements ++ " "
+        ++ show n_zone ++ " "
+        ++ show pos ++ " "
+        ++ "[])"
+    where pos = case n_leaf of
+                            Just (RLeaf l_pos _) -> show l_pos
+                            Nothing -> "nothing"
 r_node_remove_first_child node = (n_child, new_node)
   where (RNode n_num_elements n_zone n_leaf (n_child:n_childs)) = node
         (RNode c_num_elements c_zone c_leaf c_childs) = n_child
@@ -116,16 +130,18 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
 -- 3) otherwise: find the child with the rect nearest to the new point, and extend it (actual implementation: insert into the first child)
 r_insert :: Int -> RLeaf v -> RTree v -> RTree v
 r_insert capacity leaf node
-  | length n_childs_containing_new_pos > 0 = r_insert_into_first_child capacity leaf node -- there's a child node who matches the zone -- pass it down there
-  | isNothing n_leaf = r_set_leaf leaf node -- add it to this node
-  | length n_childs < capacity = r_insert_into_first_child capacity leaf (r_node_add_child r_void node) -- make a new child and pass it in there
-  | otherwise = r_insert_into_first_child capacity leaf node -- pass it down the line for someone else to deal with
+  | length n_childs_containing_new_pos > 0 = trase "r_insert 1" $ r_insert_into_first_child capacity leaf node -- there's a child node who matches the zone -- pass it down there
+  | isNothing n_leaf = trase "r_insert 2" $ r_set_leaf leaf node -- add it to this node
+  -- | length n_childs < capacity = trase "r_insert 3" $ r_insert_into_first_child capacity leaf (r_node_add_child r_void node) -- make a new child and pass it in there
+  | length n_childs < capacity = trase "r_insert 3" $ r_node_add_child (RNode 1 (zone_from_leaf leaf) (Just leaf) []) node -- make a new child and pass it in there
+  | otherwise = trase "r_insert 4" $ r_insert_into_first_child capacity leaf node -- pass it down the line for someone else to deal with
   -- | otherwise = error "what"
   -- | otherwise = node
     where (RNode n_elements n_zone n_leaf n_childs) = node
           (RLeaf l_pos _) = leaf
           n_childs_containing_new_pos = filter (\c -> zone_contains l_pos (r_node_zone c)) n_childs
           r_node_zone (RNode _ zone _ _) = zone
+          zone_from_leaf (RLeaf l_pos _) = Zone l_pos l_pos
 
 type RTreeIteratorNode v = [RTree v]
 

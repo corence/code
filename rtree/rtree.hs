@@ -7,6 +7,7 @@ module RTree (
 import GHC.Exts
 import Data.Maybe
 import Debug.Trace
+import Data.List
 
 trase :: String -> a -> a
 trase string value = value
@@ -18,6 +19,9 @@ trase string value = value
 extract_each :: [a] -> [(a, [a])]
 extract_each [] = []
 extract_each (key:elements) = (key, elements) : (map (\(k, es) -> (k, key : es)) $ extract_each elements)
+
+r_iterate_childs :: [RTree v] -> [RTreeChildIterator v]
+r_iterate_childs = extract_each
 
 -- insert into void: create leaf
 -- insert into child that contains this rect: do that
@@ -33,8 +37,8 @@ extract_each (key:elements) = (key, elements) : (map (\(k, es) -> (k, key : es))
 type Pos = [Int]
 data Zone = ZVoid | Zone Pos Pos deriving (Show, Eq)
 
-pos_to_zone :: Pos -> Zone
-pos_to_zone pos = Zone pos pos
+zone_from_pos :: Pos -> Zone
+zone_from_pos pos = Zone pos pos
 
 zone_contains :: Pos -> Zone -> Bool
 zone_contains _ ZVoid = False
@@ -121,7 +125,39 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
         --(RLeaf l_pos _) = leaf
         --new_child = r_insert capacity n_child leaf
 
--- insertBagBy (a -> a -> Ordering) -> a -> [a] -> [a]
+r_insert_2 :: Int -> RLeaf v -> RTree v -> RTree v
+r_insert_2 capacity leaf node
+  | length childs_containing_new_pos > 0 = r_insert_into_extracted capacity n_leaf leaf (head sorted_childs_containing_new_pos)
+  | isNothing n_leaf = r_set_leaf leaf node
+  | length n_childs < capacity = r_node_add_child (node_from_leaf leaf) node -- make a new child and pass it in there
+  | otherwise = r_insert_into_nearest_child capacity n_leaf leaf extracted_childs
+    where RNode n_num_elements n_zone n_leaf n_childs = node
+          RLeaf l_pos _ = leaf
+          extracted_childs = extract_each n_childs
+          childs_containing_new_pos = filter (\(c, _) -> zone_contains l_pos (zone_from_node c)) extracted_childs
+          sorted_childs_containing_new_pos = sortBy (\(c1, _) (c2, _) -> compare (node_num_elements c1) (node_num_elements c2)) childs_containing_new_pos
+
+r_insert_into_extracted :: Int -> Maybe (RLeaf v) -> RLeaf v -> RTreeChildIterator v -> RTree v
+r_insert_into_extracted capacity my_leaf leaf (child, other_childs) = r_node_add_child new_child other_node
+    where other_node = r_node_from_childs my_leaf other_childs
+          new_child = node_from_leaf leaf
+
+nearest_extracted_child :: Pos -> [RTreeChildIterator v] -> RTreeChildIterator v
+nearest_extracted_child pos extracted_childs = head $ sortBy comparator extracted_childs
+    where comparator = (\(c1, _) (c2, _) -> compare (distance_to_zone pos (zone_from_node c1)) (distance_to_zone pos (zone_from_node c2))) 
+
+distance_to_zone :: Pos -> Zone -> Int
+distance_to_zone pos zone
+    = max 0 (x1 - x)
+    + max 0 (y1 - y)
+    + max 0 (x - x2)
+    + max 0 (y - y2)
+    where [x, y] = pos
+          Zone [x1, y1] [x2, y2] = zone
+
+r_insert_into_nearest_child :: Int -> Maybe (RLeaf v) -> RLeaf v -> [RTreeChildIterator v] -> RTree v
+r_insert_into_nearest_child capacity my_leaf leaf extracted_childs = r_insert_into_extracted capacity my_leaf leaf (nearest_extracted_child l_pos extracted_childs)
+    where RLeaf l_pos _ = leaf
 
 -- insert a leaf into node:
 -- 0) does it fit into any of the childs? then insert into the one with least children. tiebreaker: arbitrary
@@ -133,17 +169,23 @@ r_insert capacity leaf node
   | length n_childs_containing_new_pos > 0 = trase "r_insert 1" $ r_insert_into_first_child capacity leaf node -- there's a child node who matches the zone -- pass it down there
   | isNothing n_leaf = trase "r_insert 2" $ r_set_leaf leaf node -- add it to this node
   -- | length n_childs < capacity = trase "r_insert 3" $ r_insert_into_first_child capacity leaf (r_node_add_child r_void node) -- make a new child and pass it in there
-  | length n_childs < capacity = trase "r_insert 3" $ r_node_add_child (RNode 1 (zone_from_leaf leaf) (Just leaf) []) node -- make a new child and pass it in there
+  | length n_childs < capacity = trase "r_insert 3" $ r_node_add_child (node_from_leaf leaf) node -- make a new child and pass it in there
   | otherwise = trase "r_insert 4" $ r_insert_into_first_child capacity leaf node -- pass it down the line for someone else to deal with
   -- | otherwise = error "what"
   -- | otherwise = node
     where (RNode n_elements n_zone n_leaf n_childs) = node
           (RLeaf l_pos _) = leaf
-          n_childs_containing_new_pos = filter (\c -> zone_contains l_pos (r_node_zone c)) n_childs
-          r_node_zone (RNode _ zone _ _) = zone
-          zone_from_leaf (RLeaf l_pos _) = Zone l_pos l_pos
+          n_childs_containing_new_pos = filter (\c -> zone_contains l_pos (zone_from_node c)) n_childs
+
+zone_from_leaf (RLeaf l_pos _) = Zone l_pos l_pos
+zone_from_node (RNode _ zone _ _) = zone
+
+node_from_leaf leaf = RNode 1 (zone_from_leaf leaf) (Just leaf) []
+
+node_num_elements (RNode num _ _ _) = num
 
 type RTreeIterator v = [RTree v]
+type RTreeChildIterator v = (RTree v, [RTree v])
 
 -- this is intended to be the ultimate Lookup function that will be the basis for all operations except Add.
 -- It will return every match, "butterflied":
@@ -159,7 +201,7 @@ r_nodes_in_zone zone node parent_iterators
         iterators_from_this_node = if r_node_leaf_is_in_zone zone node then [node : parent_iterators] else []
         iterators_from_each_child = map iterators_from_child (extract_each n_childs)
         iterators_from_child (child, other_childs) = r_nodes_in_zone zone child ((make_iterator_step other_childs) : parent_iterators)
-        make_iterator_step childs = r_node_with_childs n_leaf childs
+        make_iterator_step childs = r_node_from_childs n_leaf childs
 
 r_node_leaf_is_in_zone :: Zone -> RTree v -> Bool
 r_node_leaf_is_in_zone zone node = case n_leaf of
@@ -169,7 +211,8 @@ r_node_leaf_is_in_zone zone node = case n_leaf of
                                     
 r_node_num_elements (RNode n _ _ _) = n
 
-r_node_with_childs leaf childs = RNode (num_leaf_elements + num_child_elements) new_zone leaf childs
+r_node_from_childs :: Maybe (RLeaf v) -> [RTree v] -> RTree v
+r_node_from_childs leaf childs = RNode (num_leaf_elements + num_child_elements) new_zone leaf childs
     where num_leaf_elements = if isJust leaf then 1 else 0
           num_child_elements = sum $ map (\(RNode n _ _ _) -> n) childs
           node_zones = map (\(RNode _ zone _ _) -> zone)
@@ -277,7 +320,7 @@ r_supplant_nodes supplant_all zone match replace tree
                   
 -- delete all instances of the given leaf
 r_delete_leafs :: Eq v => Bool -> RLeaf v -> RTree v -> RTree v
-r_delete_leafs delete_all leaf tree = fst $ r_supplant_nodes delete_all (pos_to_zone l_pos) (\(RNode _ _ n_leaf _) -> Just leaf == n_leaf) (\_ -> r_void) tree
+r_delete_leafs delete_all leaf tree = fst $ r_supplant_nodes delete_all (zone_from_pos l_pos) (\(RNode _ _ n_leaf _) -> Just leaf == n_leaf) (\_ -> r_void) tree
     where (RLeaf l_pos _) = leaf
 
 r_delete_leaf :: Eq v => RLeaf v -> RTree v -> RTree v

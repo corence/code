@@ -28,11 +28,21 @@ uncompiled_nodes = map (\leaf -> r_set_leaf leaf r_void) cleaves
 assertEqual :: (Eq t, Show t) => (t -> String) -> String -> t -> t -> IO ()
 assertEqual present test_id expected actual
   | expected == actual = return ()
-  | otherwise = putStrLn $ "**fail**\n" ++ test_id ++ ":\n[" ++ present expected ++ "]\n!=\n[" ++ present actual ++ "]"
+  | otherwise = putStrLn $ "**fail**\n" ++ test_id ++ ":\n[\n" ++ present expected ++ "]\n!=\n[\n" ++ present actual ++ "]\n"
 
 --assert0 :: (Eq t, Show t) => String -> t -> t -> IO ()
 --assert0 :: (Eq v, Show v) => String -> RTree v -> RTree v -> IO ()
 assert0 = assertEqual $ r_print 0
+
+assert1 :: String -> [[RTree String]] -> [[RTree String]] -> IO ()
+assert1 test_id expected actual = assertEqual print_iterators test_id expected actual
+
+print_iterators :: (Show v) => [[RTree v]] -> String
+print_iterators iterators = "****************************************\n" ++ concat (map print_iterator iterators) ++ "****************************************\n"
+
+print_iterator :: (Show v) => [RTree v] -> String
+print_iterator iterator = "========================================\n" ++ concat (map print_iterator_step iterator) ++ "========================================\n"
+    where print_iterator_step node = "----------------------------------------\n" ++ r_print 0 node ++ "----------------------------------------\n"
 
 asserts :: (Eq a, Show a) => String -> a -> a -> IO ()
 asserts = assertEqual $ show
@@ -118,10 +128,16 @@ main = do
             ])
             (r_delete_zone (Zone [2,2] [6,6]) (head ctrees))
 
-  assert0 "r_nodes_in_zone [2,2] [6,6]"
-            (RNode 3 (Zone [0,0] [9,5]) Nothing [
-                (RNode 1 (Zone [1,5] [1,5]) (Just (cleaves !! 2)) []),
-                (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) []),
-                (RNode 1 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [])
-            ])
-            (r_delete_zone (Zone [2,2] [6,6]) (head ctrees))
+  assert1 "r_nodes_in_zone [3,3] [3,8]"
+            [
+                [(head ctrees)],
+                [
+                    (RNode 1 (Zone [3,5] [3,5]) (Just $ RLeaf [3,5] "garbage") []),
+                    (RNode 1 (Zone [9,4] [9,4]) (Just $ RLeaf [9,4] "mental") []),
+                    (RNode 3 (Zone [0,0] [3,5]) (Just $ RLeaf [3,3] "third") [
+                        (RNode 1 (Zone [1,5] [1,5]) (Just $ RLeaf [1,5] "fifteen") []),
+                        (RNode 1 (Zone [0,0] [0,0]) (Just $ RLeaf [0,0] "origin") [])
+                        ])
+                    ]
+            ]
+            (r_nodes_in_zone (Zone [2,2] [6,6]) (head ctrees) [])

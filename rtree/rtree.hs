@@ -68,7 +68,7 @@ r_void = RNode 0 ZVoid Nothing []
 r_print :: (Show v) => Int -> RTree v -> String
 r_print depth node = concat (replicate depth "  ")
                         ++ "[" ++ show n_num_elements ++ "] "
-                        ++ show n_zone ++ " "
+                        ++ "<" ++ show n_zone ++ "> "
                         ++ show n_leaf ++ "\n"
                         ++ concat (map (r_print (depth+1)) n_childs)
                         where (RNode n_num_elements n_zone n_leaf n_childs) = node
@@ -123,7 +123,7 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
 
 -- insertBagBy (a -> a -> Ordering) -> a -> [a] -> [a]
 
--- insert into node:
+-- insert a leaf into node:
 -- 0) does it fit into any of the childs? then insert into the one with least children. tiebreaker: arbitrary
 -- 1) does this node have a leaf? if not, add it here
 -- 2) can this node take another child? add it as a new child, and insert into that
@@ -169,11 +169,14 @@ r_node_leaf_is_in_zone zone node = case n_leaf of
                                     
 r_node_num_elements (RNode n _ _ _) = n
 
-r_node_with_childs leaf childs = RNode (num_leaf_elements + num_child_elements) (combine_node_zones childs) leaf childs
+r_node_with_childs leaf childs = RNode (num_leaf_elements + num_child_elements) new_zone leaf childs
     where num_leaf_elements = if isJust leaf then 1 else 0
           num_child_elements = sum $ map (\(RNode n _ _ _) -> n) childs
-          combine_node_zones nodes = zone_amalgamate (node_zones nodes)
           node_zones = map (\(RNode _ zone _ _) -> zone)
+          combine_node_zones nodes = zone_amalgamate (node_zones nodes)
+          new_zone = case leaf of
+                                    Just (RLeaf pos _) -> zone_extend pos (combine_node_zones childs)
+                                    Nothing -> combine_node_zones childs
 
 r_remove :: RTreeIterator v -> RTree v
 r_remove [] = error "can't remove empty iterator"

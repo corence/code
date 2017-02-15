@@ -143,7 +143,7 @@ r_insert capacity leaf node
           r_node_zone (RNode _ zone _ _) = zone
           zone_from_leaf (RLeaf l_pos _) = Zone l_pos l_pos
 
-type RTreeIteratorNode v = [RTree v]
+type RTreeIterator v = [RTree v]
 
 -- this is intended to be the ultimate Lookup function that will be the basis for all operations except Add.
 -- It will return every match, "butterflied":
@@ -151,35 +151,40 @@ type RTreeIteratorNode v = [RTree v]
 -- D has the leaf we're searching for, and it also has children.
 -- We'd return this as one of the list elements in the result:
 -- ([D, C without D, B without C, A without B])
-r_nodes_in_zone :: Zone -> RTree v -> RTreeIteratorNode v -> [RTreeIteratorNode v]
-r_nodes_in_zone zone node butterflied_parents
-  | zone_overlaps zone n_zone = match_from_this_node ++ (concat matches_from_childs)
+r_nodes_in_zone :: Zone -> RTree v -> RTreeIterator v -> [RTreeIterator v]
+r_nodes_in_zone zone node parent_iterators
+  | zone_overlaps zone n_zone = iterators_from_this_node ++ (concat iterators_from_each_child)
   | otherwise = []
-  where match_from_this_node = if _r_node_leaf_is_in_zone zone node then [butterflied_parents] else []
-        (RNode n_num_elements n_zone n_leaf n_childs) = node
-        node_without_child (child, other_childs) = RNode (n_num_elements - (num_elements child)) (combine_node_zones other_childs) n_leaf other_childs
-        num_elements (RNode n _ _ _) = n
-        combine_node_zones nodes = zone_amalgamate (node_zones nodes)
-        node_zones = map (\(RNode _ zone _ _) -> zone)
-        childs_and_butterflies = map (\(child, other_childs) -> (child, (node_without_child (child, other_childs) : butterflied_parents))) (extract_each n_childs)
-        matches_from_childs = map (\(child, butterflies) -> r_nodes_in_zone zone child butterflies) childs_and_butterflies
+  where (RNode n_num_elements n_zone n_leaf n_childs) = node
+        iterators_from_this_node = if r_node_leaf_is_in_zone zone node then [node : parent_iterators] else []
+        iterators_from_each_child = map iterators_from_child (extract_each n_childs)
+        iterators_from_child (child, other_childs) = r_nodes_in_zone zone child ((make_iterator_step other_childs) : parent_iterators)
+        make_iterator_step childs = r_node_with_childs n_leaf childs
 
-_r_node_leaf_is_in_zone :: Zone -> RTree v -> Bool
-_r_node_leaf_is_in_zone zone node = case n_leaf of
+r_node_leaf_is_in_zone :: Zone -> RTree v -> Bool
+r_node_leaf_is_in_zone zone node = case n_leaf of
                                         Just (RLeaf l_pos _) -> zone_contains l_pos zone
                                         Nothing -> False
                                     where (RNode _ _ n_leaf _) = node
+                                    
+r_node_num_elements (RNode n _ _ _) = n
 
-r_remove :: RTreeIteratorNode v -> RTree v
+r_node_with_childs leaf childs = RNode (num_leaf_elements + num_child_elements) (combine_node_zones childs) leaf childs
+    where num_leaf_elements = if isJust leaf then 1 else 0
+          num_child_elements = sum $ map (\(RNode n _ _ _) -> n) childs
+          combine_node_zones nodes = zone_amalgamate (node_zones nodes)
+          node_zones = map (\(RNode _ zone _ _) -> zone)
+
+r_remove :: RTreeIterator v -> RTree v
 r_remove [] = error "can't remove empty iterator"
 r_remove (node : parents) = r_merge parents
 
-r_merge :: RTreeIteratorNode v -> RTree v
+r_merge :: RTreeIterator v -> RTree v
 r_merge [] = r_void
 r_merge (node : []) = node
 r_merge (node : parent : parents) = r_merge $ (r_node_add_child node parent) : parents
 
-r_value :: RTreeIteratorNode v -> v
+r_value :: RTreeIterator v -> v
 r_value [] = error "no value on empty iterator"
 r_value ((RNode _ _ n_leaf _) : _) = case n_leaf of
                                                     Just (RLeaf _ value) -> value

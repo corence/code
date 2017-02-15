@@ -28,7 +28,7 @@ uncompiled_nodes = map (\leaf -> r_set_leaf leaf r_void) cleaves
 assertEqual :: (Eq t, Show t) => (t -> String) -> String -> t -> t -> IO ()
 assertEqual present test_id expected actual
   | expected == actual = return ()
-  | otherwise = putStrLn $ test_id ++ ":\n[" ++ present expected ++ "]\n!=\n[" ++ present actual ++ "]"
+  | otherwise = putStrLn $ "**fail**\n" ++ test_id ++ ":\n[" ++ present expected ++ "]\n!=\n[" ++ present actual ++ "]"
 
 --assert0 :: (Eq t, Show t) => String -> t -> t -> IO ()
 --assert0 :: (Eq v, Show v) => String -> RTree v -> RTree v -> IO ()
@@ -39,9 +39,9 @@ asserts = assertEqual $ show
 
 main = do
   mapM_ putStrLn $ map (r_print 0) ctrees
+  putStrLn $ "just showing off:\n" ++ r_print 0 (head strees)
   --putStrLn $ map (\t -> r_print 0) (tail ctrees)
   assert0 "insert_into_child" (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 0)) [RNode 1 (Zone [9,4] [9,4]) (Just (cleaves !! 1)) []]) (r_insert 3 (cleaves !! 1) (uncompiled_nodes !! 0))
-  {-
   assert0 "insert_into_child 1 time" 
             (RNode 1 (Zone [3,3] [3,3]) (Just (cleaves !! 4)) [
             ])
@@ -73,7 +73,6 @@ main = do
                 ])
             ])
             (ctrees !! 0)
-  putStrLn $ "just showing off:\n" ++ r_print 0 (head strees)
   asserts "lookup all [2,1] leaves"
             [(RLeaf [2,1] 37), (RLeaf [2,1] 7), (RLeaf [2,1] 17)]
             (r_lookup_pos [2,1] (head strees))
@@ -118,4 +117,11 @@ main = do
                 (RNode 1 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [])
             ])
             (r_delete_zone (Zone [2,2] [6,6]) (head ctrees))
-            -}
+
+  assert0 "r_nodes_in_zone [2,2] [6,6]"
+            (RNode 3 (Zone [0,0] [9,5]) Nothing [
+                (RNode 1 (Zone [1,5] [1,5]) (Just (cleaves !! 2)) []),
+                (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) []),
+                (RNode 1 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [])
+            ])
+            (r_delete_zone (Zone [2,2] [6,6]) (head ctrees))

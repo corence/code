@@ -10,8 +10,8 @@ import Debug.Trace
 import Data.List
 
 trase :: String -> a -> a
-trase string value = value
---trase = trace
+--trase string value = value
+trase = trace
 
 -- extract_each [1,2,3] = [(1, [2,3]), (2, [1,3]), (3, [1,2])]
 -- extract_each [3] = [(3, [])]
@@ -127,20 +127,21 @@ r_insert_into_first_child capacity leaf node = r_node_add_child child_after node
 
 r_insert_2 :: Int -> RLeaf v -> RTree v -> RTree v
 r_insert_2 capacity leaf node
-  | length childs_containing_new_pos > 0 = r_insert_into_extracted capacity n_leaf leaf (head sorted_childs_containing_new_pos)
-  | isNothing n_leaf = r_set_leaf leaf node
-  | length n_childs < capacity = r_node_add_child (node_from_leaf leaf) node -- make a new child and pass it in there
-  | otherwise = r_insert_into_nearest_child capacity n_leaf leaf extracted_childs
+  | length childs_containing_new_pos > 0 = trase "r_insert_2 1" $ r_insert_into_extracted capacity n_leaf leaf (head sorted_childs_containing_new_pos)
+  | isNothing n_leaf = trase "r_insert_2 2" $ r_set_leaf leaf node
+  | length n_childs < capacity = trase "r_insert_2 3" $ r_node_add_child (node_from_leaf leaf) node -- make a new child and pass it in there
+  | otherwise = trase "r_insert_2 4" $ r_insert_into_nearest_child capacity n_leaf leaf extracted_childs
     where RNode n_num_elements n_zone n_leaf n_childs = node
           RLeaf l_pos _ = leaf
           extracted_childs = extract_each n_childs
           childs_containing_new_pos = filter (\(c, _) -> zone_contains l_pos (zone_from_node c)) extracted_childs
           sorted_childs_containing_new_pos = sortBy (\(c1, _) (c2, _) -> compare (node_num_elements c1) (node_num_elements c2)) childs_containing_new_pos
 
+-- it's been extracted. insert into it, then assemble a new node around it.
 r_insert_into_extracted :: Int -> Maybe (RLeaf v) -> RLeaf v -> RTreeChildIterator v -> RTree v
-r_insert_into_extracted capacity my_leaf leaf (child, other_childs) = r_node_add_child new_child other_node
-    where other_node = r_node_from_childs my_leaf other_childs
-          new_child = node_from_leaf leaf
+r_insert_into_extracted capacity parent_leaf baby_leaf (child, other_childs) = r_node_add_child new_child parent_node
+    where parent_node = r_node_from_childs parent_leaf other_childs
+          new_child = r_node_add_child (node_from_leaf baby_leaf) child
 
 nearest_extracted_child :: Pos -> [RTreeChildIterator v] -> RTreeChildIterator v
 nearest_extracted_child pos extracted_childs = head $ sortBy comparator extracted_childs
@@ -156,8 +157,8 @@ distance_to_zone pos zone
           Zone [x1, y1] [x2, y2] = zone
 
 r_insert_into_nearest_child :: Int -> Maybe (RLeaf v) -> RLeaf v -> [RTreeChildIterator v] -> RTree v
-r_insert_into_nearest_child capacity my_leaf leaf extracted_childs = r_insert_into_extracted capacity my_leaf leaf (nearest_extracted_child l_pos extracted_childs)
-    where RLeaf l_pos _ = leaf
+r_insert_into_nearest_child capacity parent_leaf baby_leaf extracted_childs = r_insert_into_extracted capacity parent_leaf baby_leaf (nearest_extracted_child l_pos extracted_childs)
+    where RLeaf l_pos _ = baby_leaf
 
 -- insert a leaf into node:
 -- 0) does it fit into any of the childs? then insert into the one with least children. tiebreaker: arbitrary

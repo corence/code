@@ -17,13 +17,13 @@ cleaves = leaves crazy_data
 sleaves = leaves simpler_data
 
 trees :: [RLeaf v] -> [RTree v]
-trees = foldr (\leaf trees -> r_insert 3 leaf (head trees) : trees) [r_void]
+trees = foldr (\leaf trees -> r_insert_2 3 leaf (head trees) : trees) [r_void]
 ctrees = trees cleaves
 strees = trees sleaves
 
 uncompiled_nodes = map (\leaf -> r_set_leaf leaf r_void) cleaves
 
---sequenced_nodes = map (\leaf -> r_insert 3 leaf (last sequenced_nodes)) cleaves
+--sequenced_nodes = map (\leaf -> r_insert_2 3 leaf (last sequenced_nodes)) cleaves
 
 assertEqual :: (Eq t, Show t) => (t -> String) -> String -> t -> t -> IO ()
 assertEqual present test_id expected actual
@@ -51,7 +51,7 @@ main = do
   mapM_ putStrLn $ map (r_print 0) ctrees
   putStrLn $ "just showing off:\n" ++ r_print 0 (head strees)
   --putStrLn $ map (\t -> r_print 0) (tail ctrees)
-  assert0 "insert_into_child" (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 0)) [RNode 1 (Zone [9,4] [9,4]) (Just (cleaves !! 1)) []]) (r_insert 3 (cleaves !! 1) (uncompiled_nodes !! 0))
+  assert0 "insert_into_child" (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 0)) [RNode 1 (Zone [9,4] [9,4]) (Just (cleaves !! 1)) []]) (r_insert_2 3 (cleaves !! 1) (uncompiled_nodes !! 0))
   assert0 "insert_into_child 1 time" 
             (RNode 1 (Zone [3,3] [3,3]) (Just (cleaves !! 4)) [
             ])
@@ -75,11 +75,11 @@ main = do
             ])
             (ctrees !! 1)
   assert0 "insert_into_child 5 time" 
-            (RNode 5 (Zone [0,0] [9,5]) (Just (cleaves !! 4)) [
-                (RNode 1 (Zone [1,5] [1,5]) (Just (cleaves !! 2)) []),
-                (RNode 1 (Zone [0,0] [0,0]) (Just (cleaves !! 3)) []),
-                (RNode 2 (Zone [3,4] [9,5]) (Just (cleaves !! 1)) [
-                    (RNode 1 (Zone [3,5] [3,5]) (Just (cleaves !! 0)) [])
+            (RNode 5 (Zone [0,0] [9,5]) (Just $ RLeaf [3,3] "third") [
+                (RNode 1 (Zone [9,4] [9,4]) (Just $ RLeaf [9,4] "mental") []),
+                (RNode 1 (Zone [0,0] [0,0]) (Just $ RLeaf [0,0] "origin") []),
+                (RNode 2 (Zone [1,5] [3,5]) (Just $ RLeaf [1,5] "fifteen") [
+                    (RNode 1 (Zone [3,5] [3,5]) (Just $ RLeaf [3,5] "garbage") [])
                 ])
             ])
             (ctrees !! 0)
@@ -133,11 +133,11 @@ main = do
                 [(head ctrees)],
                 [
                     (RNode 1 (Zone [3,5] [3,5]) (Just $ RLeaf [3,5] "garbage") []),
-                    (RNode 1 (Zone [9,4] [9,4]) (Just $ RLeaf [9,4] "mental") []),
-                    (RNode 3 (Zone [0,0] [3,5]) (Just $ RLeaf [3,3] "third") [
-                        (RNode 1 (Zone [1,5] [1,5]) (Just $ RLeaf [1,5] "fifteen") []),
+                    (RNode 1 (Zone [1,5] [1,5]) (Just $ RLeaf [1,5] "fifteen") []),
+                    (RNode 3 (Zone [0,0] [9,4]) (Just $ RLeaf [3,3] "third") [
+                        (RNode 1 (Zone [9,4] [9,4]) (Just $ RLeaf [9,4] "mental") []),
                         (RNode 1 (Zone [0,0] [0,0]) (Just $ RLeaf [0,0] "origin") [])
-                        ])
-                    ]
+                    ])
+                ]
             ]
             (r_nodes_in_zone (Zone [2,2] [6,6]) (head ctrees) [])

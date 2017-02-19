@@ -30,6 +30,16 @@ extract_each :: [a] -> [(a, [a])]
 extract_each [] = []
 extract_each (key:elements) = (key, elements) : (map (\(k, es) -> (k, key : es)) $ extract_each elements)
 
+indexed_elements :: Int -> [a] -> [(Int, a)]
+indexed_elements _ [] = []
+indexed_elements index (x:xs) = (index, x) : (indexed_elements (index + 1) xs)
+
+remove_element :: Int -> [a] -> (a, [a])
+remove_element _ [] = error "remove_element: index too big"
+remove_element 0 (x:xs) = (x, xs)
+remove_element n (x:xs) = (y, x : ys)
+    where (y, ys) = remove_element (n - 1) xs
+
 iterate_childs :: [RTree v] -> [RTreeChildIterator v]
 iterate_childs = extract_each
 
@@ -110,12 +120,64 @@ node_num_elements (RNode num _ _ _) = num
 type RTreeIterator v = [RTree v]
 type RTreeChildIterator v = (RTree v, [RTree v])
 
+-- (Target node, [(parent, index of next child)
+-- eg suppose Q has the target leaf node
+-- tree is A [B C D] -> C [F G H] -> F [L M N] -> N [P Q R]
+-- this iterator is: (Q, [(N, 1), (F, 2), (C, 0), (A, 1)])
+type RTreePath v = (Maybe (RTree v), RTreeAncestry v)
+type RTreeAncestry v = [(RTree v, Int)]
+
+-- this is intended to be the arch-ultimate lookup function.
+-- in addition to the things nodes_in_zone can do, it also:
+--  -- allows iteration to resume after deleting an element
+--  -- is way less confusing
+
+paths_in_zone :: Zone -> RTree v -> RTreeAncestry v -> [RTreePath v]
+paths_in_zone zone node ancestry
+  | Zone.overlaps zone n_zone = paths_from_this_leaf ++ (concat paths_from_each_child)
+  | otherwise = []
+  where (RNode n_num_elements n_zone n_leaf n_childs) = node
+        paths_from_this_leaf = if node_leaf_is_in_zone zone node then [(Just node, ancestry)] else []
+        paths_from_each_child = map paths_from_child (indexed_elements 0 n_childs)
+        paths_from_child (index, child) = paths_in_zone zone child ((node, index) : ancestry)
+        
+path_remove :: RTreePath v -> RTreePath v
+path_remove (Nothing, ancestors) = (Nothing, ancestors)
+path_remove (Just element, (parent, index) : ancestors) = (Nothing, (new_parent, index) : new_ancestors)
+  where RNode p_num_elements p_zone p_leaf p_child = parent
+        RNode e_num_elements e_zone e_leaf e_child = element
+        new_parent = node_remove_index index parent
+        new_ancestors = path_adjust parent ancestors 
+
+path_adjust :: RTree v -> RTreeAncestry v -> RTreeAncestry v
+path_adjust _ [] = []
+path_adjust node ((parent, index) : ancestors) = (new_parent, index) : path_adjust new_parent ancestors
+    where new_parent = node_add_child node (node_remove_index index parent)
+ 
+ -- element becomes Nothing
+ -- parent loses it
+ -- parent rebuilds
+ -- grandparent realigns
+ 
+node_remove_index :: Int -> RTree v -> RTree v
+node_remove_index index node = node_from_childs n_leaf new_childs
+    where RNode _ _ n_leaf n_childs = node
+          (_, new_childs) = remove_element index n_childs
+
 -- this is intended to be the ultimate Lookup function that will be the basis for all operations except Add.
 -- It will return every match, "butterflied":
 -- suppose A is the root RTree; one of its children is B, which has a child C, which has another child D.
 -- D has the leaf we're searching for, and it also has children.
 -- We'd return this as one of the list elements in the result:
 -- ([D, C without D, B without C, A without B])
+
+-- todo: the following structure would also allow iteration to continue after deletion, so it would be superior:
+-- (RTree v, [(Maybe RLeaf, [RTree v], [RTree v])])
+-- so, instead of representing each ancestor as a full node but without the selected child, it would show them as:
+--  * a value
+--  * nodes that have already been iterated
+--  * nodes that have not yet been iterated
+-- advantage: we would no longer be tied to the internal representation of RTree
 nodes_in_zone :: Zone -> RTree v -> RTreeIterator v -> [RTreeIterator v]
 nodes_in_zone zone node parent_iterators
   | Zone.overlaps zone n_zone = iterators_from_this_node ++ (concat iterators_from_each_child)

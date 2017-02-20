@@ -117,9 +117,6 @@ node_from_leaf leaf = RNode 1 (zone_from_leaf leaf) (Just leaf) []
 
 node_num_elements (RNode num _ _ _) = num
 
-type RTreeIterator v = [RTree v]
-type RTreeChildIterator v = (RTree v, [RTree v])
-
 -- (Target node, [(parent, index of next child)
 -- eg suppose Q has the target leaf node
 -- tree is A [B C D] -> C [F G H] -> F [L M N] -> N [P Q R]
@@ -164,6 +161,143 @@ node_remove_index index node = node_from_childs n_leaf new_childs
     where RNode _ _ n_leaf n_childs = node
           (_, new_childs) = remove_element index n_childs
 
+-- RTreeModifier v = (zone, [(leaf_is_scanned, leaf, unscanned childs, modified childs)])
+type RTreeModifier v = (Zone, [(Bool, Maybe (RLeaf v), [RTree v], [RTree v])])
+
+r_modifier :: Zone -> RTree v -> RTreeModifier v
+r_modifier zone (RNode _ _ n_leaf n_childs) = r_modifier_advance (zone, [(False, n_leaf, n_childs, [])])
+
+r_modifier_is_finished :: RTreeModifier v -> Bool
+r_modifier_is_finished (_, ((True, _, [], _) : [])) = True
+r_modifier_is_finished _ = False
+
+r_modifier_to_node :: RTreeModifier v -> RTree v
+r_modifier_to_node (_, []) = error "r_modifier_to_node needs entries"
+r_modifier_to_node (zone, entry : entries)
+  | null entries = entry_to_node entry
+  | otherwise = r_modifier_to_node (zone, new_parent : ancestors)
+    where (_, leaf, childs1, childs2) = entry
+          (p_leaf_is_scanned, p_leaf, p_childs1, p_childs2) = parent
+          parent : ancestors = entries
+          new_parent = (p_leaf_is_scanned, p_leaf, [], (entry_to_node entry) : (p_childs1 ++ p_childs2))
+          entry_to_node (_, leaf, childs1, childs2) = node_from_childs leaf (childs1 ++ childs2)
+
+r_delete_zone_contents_via_modifier :: Zone -> RTree v -> RTree v
+r_delete_zone_contents_via_modifier zone tree = r_modifier_delete_all (r_modifier zone tree)
+
+r_modifier_delete_all :: RTreeModifier v -> RTree v
+r_modifier_delete_all modifier
+  | r_modifier_is_finished modifier = r_modifier_to_node modifier
+  | otherwise = r_modifier_delete_all $ r_modifier_advance $ r_modifier_delete modifier -- delete the thing, advance it, and continue deleting
+
+r_modifier_delete :: RTreeModifier v -> RTreeModifier v
+r_modifier_delete (zone, (True, leaf, [], scanned) : entries) = (zone, (True, Nothing, [], scanned) : entries)
+r_modifier_delete _ = error "r_modifier_delete is struggling to grasp how you got to be here"
+          
+-- 1) if there's an unscanned child, and it zone-checks, scan it
+-- 2) if there's an unscanned child, and it doesn't zone-check, skip it
+-- 3) if there's no more unscanned childs, and the leaf is not done, and the leaf zone-checks, use it
+-- 4) if there's no more unscanned childs, and the leaf is not done, and the leaf doesn't zone-check, skip it
+-- 5) if there's no more unscanned childs, and the leaf is already done, and it has a parent, fold it into its parent
+-- 6) if there's no more unscanned childs, and the leaf is already done, and it has no parent, then terminate
+
+r_modifier_advance :: RTreeModifier v -> RTreeModifier v
+r_modifier_advance (zone, []) = error "this thing is empty -- that cannot happen ever"
+r_modifier_advance (zone, (entry : entries))
+  | length unscanned_childs > 0 = 
+      let child:childs = unscanned_childs
+          (RNode _ _ child_leaf child_childs) = child
+      in
+          if node_leaf_is_in_zone zone child
+              then r_modifier_advance $ (zone, (False, child_leaf, child_childs, []) : (leaf_is_scanned, n_leaf, childs, modified_childs) : entries)
+              else r_modifier_advance $ (zone, (leaf_is_scanned, n_leaf, childs, child : modified_childs) : entries)
+  | not leaf_is_scanned =
+      let advanced = (zone, (True, n_leaf, unscanned_childs, modified_childs) : entries) in
+          if leafish_is_in_zone zone n_leaf
+              then advanced
+              else r_modifier_advance advanced
+  | length entries > 0 =
+      let parent : ancestors = entries
+          (p_leaf_scanned, p_leaf, p_unscanned_childs, p_modified_childs) = parent
+          new_node = node_from_childs n_leaf modified_childs
+      in
+          r_modifier_advance $ (zone, (p_leaf_scanned, p_leaf, p_unscanned_childs, new_node : p_modified_childs) : ancestors)
+  | otherwise = (zone, [entry])
+  where (leaf_is_scanned, n_leaf, unscanned_childs, modified_childs) = entry
+
+-- todo: the following structure would also allow iteration to continue after deletion, so it would be superior:
+-- (RTree v, [(Maybe RLeaf, [RTree v], [RTree v])])
+-- so, instead of representing each ancestor as a full node but without the selected child, it would show them as:
+--  * a value
+--  * nodes that have already been iterated
+--  * nodes that have not yet been iterated
+-- advantage: we would no longer be tied to the internal representation of RTree
+-- steps:
+--  * tree is A [Aw [Awk, AWS], An [Any, Ant [Anti]], Ae [Aether, Aeon]]
+--  * iterate for a zone and we get these nodes: [An Ant Anti Aeon]
+--  * possibilities:
+--  * 1) we iterate through the nodes, run a given Modify function _as we iterate_, and the mod function returns a result of type "v"
+--  * 2) we iterate through the nodes, creating a structure that allows us to modify it later
+--  * iterating through the result we could maybe have to walk through everything then collapse it. Thus the leaf:
+--  (RTree v)
+--  and the path:
+--  RTreePath v = (Maybe (RLeaf v) this_node_value, [RTree v] unscanned_childs, [RTree v] unmatched_childs, [RTree v] matched_childs, RTreePath v modified_childs
+
+type RTreePath2 v = [RTreeAncestry v]
+type RTreeAncestry2 v = ([RTree v], Maybe (RLeaf v), [RTree v])
+type RTreeChildIterator2 v = ([RTree v], RTree v, [RTree v]) -- childs before, this child, childs after
+
+-- another trans-ultimate iteration function. This one doesn't return a structure; all modifications must be done during iteration.
+r_iterate_nomodify :: Zone -> RTree v -> [v]
+r_iterate_nomodify zone node
+  | Zone.overlaps zone n_zone = all_values
+  | otherwise = []
+  where RNode n_num_elements n_zone n_leaf n_childs = node
+        results_from_each_child = map (r_iterate_nomodify zone) n_childs
+        leaf_value = if node_leaf_is_in_zone zone node
+                         then let (RLeaf _ l_value) = (fromJust n_leaf) in
+                            [l_value]
+                         else []
+        all_values = leaf_value ++ concat results_from_each_child
+
+-- another trans-ultimate iteration function. This one doesn't return a structure; all modifications must be done during iteration.
+r_iterate_modify_null2 :: (RLeaf v -> Maybe (RLeaf v)) -> Zone -> RTree v -> RTree v
+r_iterate_modify_null2 transmogrify zone node = fst $ r_iterate_modify transmog2 zone node
+    where transmog2 leaf = let RLeaf pos value = leaf in (transmogrify leaf, value)
+
+--r_iterate_modify_withval :: (RLeaf v -> (Maybe (RLeaf v), v)) -> Zone -> RTree v -> (RTree v, [v])
+--r_iterate_modify_withval transmog zone tree =dd
+
+r_iterate_modify_null :: (RLeaf v -> Maybe (RLeaf v)) -> Zone -> RTree v -> RTree v
+r_iterate_modify_null transmogrify zone node
+  | Zone.overlaps zone n_zone = new_node
+  | otherwise = node
+  where RNode n_num_elements n_zone n_leaf n_childs = node
+        results_from_each_child = map (r_iterate_modify_null transmogrify zone) n_childs
+        new_leaf = if node_leaf_is_in_zone zone node
+                                     then transmogrify (fromJust n_leaf)
+                                     else n_leaf
+        new_node = node_from_childs new_leaf results_from_each_child
+
+r_iterate_modify :: (RLeaf v -> (Maybe (RLeaf v), v)) -> Zone -> RTree v -> (RTree v, [v])
+r_iterate_modify transmogrify zone node
+  | Zone.overlaps zone n_zone = (new_node, new_values)
+  | otherwise = (node, [])
+  where RNode n_num_elements n_zone n_leaf n_childs = node
+        results_from_each_child = map (r_iterate_modify transmogrify zone) n_childs
+        (new_leaf, leaf_value) = if node_leaf_is_in_zone zone node
+                                     then let (new_leaf, leaf_value) = transmogrify (fromJust n_leaf) in
+                                        (new_leaf, [leaf_value])
+                                     else (n_leaf, [])
+        new_childs = map (\(new_child, _) -> new_child) results_from_each_child
+        new_values = leaf_value ++ concat (map (\(_, value) -> value) results_from_each_child)
+        new_node = node_from_childs new_leaf new_childs
+
+r_iter_delete_all_in_zone :: Zone -> RTree v -> RTree v
+r_iter_delete_all_in_zone zone tree = new_tree
+    where delete (RLeaf pos value) = (Nothing, value)
+          (new_tree, deleted_values) =  r_iterate_modify delete zone tree
+
 -- this is intended to be the ultimate Lookup function that will be the basis for all operations except Add.
 -- It will return every match, "butterflied":
 -- suppose A is the root RTree; one of its children is B, which has a child C, which has another child D.
@@ -178,6 +312,10 @@ node_remove_index index node = node_from_childs n_leaf new_childs
 --  * nodes that have already been iterated
 --  * nodes that have not yet been iterated
 -- advantage: we would no longer be tied to the internal representation of RTree
+
+type RTreeIterator v = [RTree v]
+type RTreeChildIterator v = (RTree v, [RTree v])
+
 nodes_in_zone :: Zone -> RTree v -> RTreeIterator v -> [RTreeIterator v]
 nodes_in_zone zone node parent_iterators
   | Zone.overlaps zone n_zone = iterators_from_this_node ++ (concat iterators_from_each_child)
@@ -188,11 +326,12 @@ nodes_in_zone zone node parent_iterators
         iterators_from_child (child, other_childs) = nodes_in_zone zone child ((make_iterator_step other_childs) : parent_iterators)
         make_iterator_step childs = node_from_childs n_leaf childs
 
+leafish_is_in_zone :: Zone -> Maybe (RLeaf v) -> Bool
+leafish_is_in_zone zone (Just (RLeaf pos value)) = Zone.contains pos zone
+leafish_is_in_zone zone Nothing = False
+
 node_leaf_is_in_zone :: Zone -> RTree v -> Bool
-node_leaf_is_in_zone zone node = case n_leaf of
-                                        Just (RLeaf l_pos _) -> Zone.contains l_pos zone
-                                        Nothing -> False
-                                    where (RNode _ _ n_leaf _) = node
+node_leaf_is_in_zone zone (RNode _ _ n_leaf _) = leafish_is_in_zone zone n_leaf
                                     
 node_from_childs :: Maybe (RLeaf v) -> [RTree v] -> RTree v
 node_from_childs leaf childs = RNode (num_leaf_elements + num_child_elements) new_zone leaf childs

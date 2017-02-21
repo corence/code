@@ -3,6 +3,7 @@ module Zone
 ( Zone (..)
 , Pos (..)
 , from_pos
+, pos_distance
 , contains
 , overlaps
 , extend
@@ -17,6 +18,9 @@ void = ZVoid
 
 from_pos :: Pos -> Zone
 from_pos pos = Zone pos pos
+
+pos_distance :: Pos -> Pos -> Int
+pos_distance [x1, y1] [x2, y2] = abs(x1 - x2) + abs(y1 - y2)
 
 contains :: Pos -> Zone -> Bool
 contains _ ZVoid = False

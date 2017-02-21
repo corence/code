@@ -9,6 +9,7 @@ module RTree
 , set_leaf
 , RTree.print
 , nodes_in_zone
+, node_is_empty
 ) where
 
 import GHC.Exts
@@ -116,6 +117,9 @@ zone_from_node (RNode _ zone _ _) = zone
 node_from_leaf leaf = RNode 1 (zone_from_leaf leaf) (Just leaf) []
 
 node_num_elements (RNode num _ _ _) = num
+
+node_is_empty (RNode 0 _ _ _) = True
+node_is_empty _ = False
 
 -- (Target node, [(parent, index of next child)
 -- eg suppose Q has the target leaf node
@@ -247,16 +251,15 @@ type RTreePath2 v = [RTreeAncestry v]
 type RTreeAncestry2 v = ([RTree v], Maybe (RLeaf v), [RTree v])
 type RTreeChildIterator2 v = ([RTree v], RTree v, [RTree v]) -- childs before, this child, childs after
 
--- another trans-ultimate iteration function. This one doesn't return a structure; all modifications must be done during iteration.
-r_iterate_nomodify :: Zone -> RTree v -> [v]
+-- another trans-ultimate iteration function. This one returns all the relevant leafs.
+r_iterate_nomodify :: Zone -> RTree v -> [RLeaf v]
 r_iterate_nomodify zone node
   | Zone.overlaps zone n_zone = all_values
   | otherwise = []
   where RNode n_num_elements n_zone n_leaf n_childs = node
         results_from_each_child = map (r_iterate_nomodify zone) n_childs
         leaf_value = if node_leaf_is_in_zone zone node
-                         then let (RLeaf _ l_value) = (fromJust n_leaf) in
-                            [l_value]
+                         then [(fromJust n_leaf)]
                          else []
         all_values = leaf_value ++ concat results_from_each_child
 
@@ -296,7 +299,11 @@ r_iterate_modify transmogrify zone node
 r_iter_delete_all_in_zone :: Zone -> RTree v -> RTree v
 r_iter_delete_all_in_zone zone tree = new_tree
     where delete (RLeaf pos value) = (Nothing, value)
-          (new_tree, deleted_values) =  r_iterate_modify delete zone tree
+          (new_tree, deleted_values) = r_iterate_modify delete zone tree
+
+r_iter_delete_all_in_zone_null :: Zone -> RTree v -> RTree v
+r_iter_delete_all_in_zone_null zone tree = r_iterate_modify_null delete zone tree
+    where delete _ = Nothing
 
 -- this is intended to be the ultimate Lookup function that will be the basis for all operations except Add.
 -- It will return every match, "butterflied":

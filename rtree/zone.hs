@@ -6,8 +6,10 @@ module Zone
 , amalgamate
 , contains
 , create_container
+, create_square
 , extend
 , from_pos
+, intersection
 , overlaps
 , pos_distance
 ) where
@@ -51,3 +53,30 @@ amalgamate = foldr (\zone1 zone2 -> add zone1 zone2) ZVoid
 create_container :: [Pos] -> Zone
 create_container [] = void
 create_container (p:ps) = extend p (create_container ps)
+
+-- creates a square
+create_square :: Pos -> Int -> Zone
+create_square center radius = Zone nw se
+    where [cx, cy] = center
+          nw = [cx - radius, cy - radius]
+          se = [cx + radius, cy + radius]
+
+intersection :: Zone -> Zone -> Zone
+intersection (Zone [x1, y1] [x2, y2]) (Zone [x3, y3] [x4, y4])
+    = Zone (map maximum [[x1, x3], [y1, y3]])
+           (map minimum [[x2, x4], [y2, y4]])
+
+intersection2 :: [Zone] -> Zone
+intersection2 zones = Zone [maximum ws, maximum ns] [minimum es, minimum ss]
+    where ws = map (\(Zone [w, _] [_, _]) -> w) zones
+          ns = map (\(Zone [_, n] [_, _]) -> n) zones
+          es = map (\(Zone [_, _] [e, _]) -> e) zones
+          ss = map (\(Zone [_, _] [_, s]) -> s) zones
+
+intersection3 :: [Zone] -> Zone
+intersection3 zones = Zone [maximum ws, maximum ns] [minimum es, minimum ss]
+    where (ws, ns, es, ss)
+            = foldr
+              (\(Zone [w, n] [e, s]) (ws, ns, es, ss) -> (w : ws, n : ns, e : es, s : ss))
+              ([], [], [], [])
+              zones

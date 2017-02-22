@@ -4,6 +4,7 @@ import Zone (Zone(..), Pos)
 import qualified RTree
 import RTree (RTree(..), RLeaf(..))
 import Data.List
+import System.Random
 
 crazy_data = [
                 ([3,5], "garbage"),
@@ -100,3 +101,21 @@ main = do
                 ]
             ]
             (RTree.nodes_in_zone (Zone [2,2] [6,6]) (head ctrees) [])
+
+  g <- newStdGen
+  putStrLn $ "000000"
+  putStrLn $ RTree.print 0 mecha_tree
+
+mecha_poses :: [(Int, Int)]
+mecha_poses = zip (take 100 $ randomRs (10, 99) (mkStdGen 42)) (take 100 $ randomRs (10, 99) (mkStdGen 88))
+
+range step min max
+  | max < min = error "can't range if max is less than min"
+  | max == min = [min]
+  | otherwise = min : range step (min + step) max
+mecha_data = map (\(x, y) -> RLeaf [x, y] (show x ++ "," ++ show y)) mecha_poses
+mecha_tree = foldr (\leaf tree -> RTree.insert 3 leaf tree) RTree.void mecha_data
+mecha_tree :: RTree String
+
+  --assertEqual show "nearest neighbour" -> [
+--assertEqual :: (Eq t, Show t) => (t -> String) -> String -> t -> t -> IO ()

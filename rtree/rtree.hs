@@ -79,20 +79,28 @@ sorted_insert_by_num_elements element  (n:ns) = if e_num_elements <= n_num_eleme
 insert :: Int -> RLeaf v -> RTree v -> RTree v
 insert capacity leaf node
   | length childs_containing_new_pos > 0 = trase "insert 1" $ insert_into_extracted capacity n_leaf leaf (head sorted_childs_containing_new_pos)
-  | isNothing n_leaf = trase "insert 2" $ set_leaf leaf node
-  | length n_childs < capacity = trase "insert 3" $ node_add_child (node_from_leaf leaf) node -- make a new child and pass it in there
-  | otherwise = trase "insert 4" $ insert_into_nearest_child capacity n_leaf leaf extracted_childs
+  | isNothing n_leaf = trase "insert 2 Nothing" $ set_leaf leaf node
+  | length n_childs < capacity = trase ("insert 3 " ++ (show $ leaf_pos $ fromJust n_leaf)) $ node_add_child (node_from_leaf leaf) node -- make a new child and pass it in there
+  | otherwise = trase ("insert 4 " ++ (show $ leaf_pos $ fromJust n_leaf)) $ insert_into_nearest_child capacity n_leaf leaf extracted_childs
     where RNode n_num_elements n_zone n_leaf n_childs = node
           RLeaf l_pos _ = leaf
           extracted_childs = extract_each n_childs
           childs_containing_new_pos = filter (\(c, _) -> Zone.contains l_pos (zone_from_node c)) extracted_childs
           sorted_childs_containing_new_pos = sortBy (\(c1, _) (c2, _) -> compare (node_num_elements c1) (node_num_elements c2)) childs_containing_new_pos
 
+{-
 -- it's been extracted. insert into it, then assemble a new node around it.
 insert_into_extracted :: Int -> Maybe (RLeaf v) -> RLeaf v -> RTreeChildIterator v -> RTree v
 insert_into_extracted capacity parent_leaf baby_leaf (child, other_childs) = node_add_child new_child parent_node
     where parent_node = node_from_childs parent_leaf other_childs
           new_child = node_add_child (node_from_leaf baby_leaf) child
+-}
+
+-- it's been extracted. insert into it, then assemble a new node around it.
+insert_into_extracted :: Int -> Maybe (RLeaf v) -> RLeaf v -> RTreeChildIterator v -> RTree v
+insert_into_extracted capacity parent_leaf baby_leaf (child, other_childs) = node_add_child new_child parent_node
+    where parent_node = node_from_childs parent_leaf other_childs
+          new_child = RTree.insert capacity baby_leaf child
 
 nearest_extracted_child :: Pos -> [RTreeChildIterator v] -> RTreeChildIterator v
 nearest_extracted_child pos extracted_childs = head $ sortBy comparator extracted_childs
@@ -263,16 +271,23 @@ type RTreeChildIterator2 v = ([RTree v], RTree v, [RTree v]) -- childs before, t
 --    *                     drop a result
 --    *                     shrink the query zone(!!) <- this is the key to performance
 --    *         foldr (run this against each child, updating results and zone)
+-- so basically:
+--  - suppose you've been requested to find the 3 nearest neighbours to a given Pos. You may be given a Zone to narrow your search, or you may be given the Zone of the whole RTree. Either works.
+--  - for each node:
+--    - if it has a leaf in the current Zone, add it for consideration
+--    - if we have found 3 or more poses in that Zone, shrink the zone to fit the ones we've found so far
+--    - check inside each of the children, but only the ones that overlap the search zone
 r_nearest_neighbours_2 :: Int -> Pos -> RTree v -> Zone -> [RLeaf v] -> (Zone, [RLeaf v])
 r_nearest_neighbours_2 num_requested pos node zone results
-  | Zone.contains pos n_zone = foldr (\child (zone, results) -> r_nearest_neighbours_2 num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
+  | Zone.overlaps zone n_zone = foldr (\child (zone, results) -> r_nearest_neighbours_2 num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
   | otherwise = (zone, results)
   where RNode n_num_elements n_zone n_leaf n_childs = node
         (adjusted_zone, adjusted_results) = if node_leaf_is_in_zone zone node
                                                 then (new_zone, new_results)
                                                 else (zone, results)
-            where new_results = set_tail_length num_requested (sorted_insert (leaf_dist_to_pos pos) (fromJust n_leaf) results)
-                  new_zone = if length new_results >= num_requested then Zone.create_container (map leaf_pos new_results) else zone
+            where new_results = set_tail_length num_requested (sorted_insert (\leaf -> negate (leaf_dist_to_pos pos leaf)) (fromJust n_leaf) results)
+                  new_zone = if length new_results >= num_requested then Zone.intersection zone (Zone.create_square pos radius) else zone
+                  radius = maximum (leaf_pos (head new_results))
        
 set_tail_length :: Int -> [a] -> [a]
 set_tail_length 0 xs = xs
@@ -291,15 +306,15 @@ leaf_pos :: RLeaf v -> Pos
 leaf_pos (RLeaf pos _) = pos
 
 -- finds leafs: (number of results requested) -> (they must be near this pos) -> the tree
-r_nearest_neighbours :: Int -> Pos -> RTree v -> [RLeaf v]
-r_nearest_neighbours num_requested pos node
+r_nearest_neighbours_1 :: Int -> Pos -> RTree v -> [RLeaf v]
+r_nearest_neighbours_1 num_requested pos node
  | Zone.contains pos n_zone = filter_num num_requested (sorted_merge (leaf_dist_to_pos pos) result_groups)
  | otherwise = [] 
  where RNode n_num_elements n_zone n_leaf n_childs = node
        result_groups = case n_leaf of
                             Just leaf -> [leaf] : child_results
                             Nothing -> child_results
-       child_results = map (\child -> r_nearest_neighbours num_requested pos child) n_childs
+       child_results = map (\child -> r_nearest_neighbours_1 num_requested pos child) n_childs
        filter_num 0 _ = []
        filter_num num (x:xs) = x : (filter_num (num - 1) xs)
        

@@ -8,6 +8,8 @@ module RTree
 , void
 , set_leaf
 , RTree.print
+, nearest_neighbour_scan
+, nearest_neighbours
 , nodes_in_zone
 , node_is_empty
 ) where
@@ -88,14 +90,6 @@ insert capacity leaf node
           childs_containing_new_pos = filter (\(c, _) -> Zone.contains l_pos (zone_from_node c)) extracted_childs
           sorted_childs_containing_new_pos = sortBy (\(c1, _) (c2, _) -> compare (node_num_elements c1) (node_num_elements c2)) childs_containing_new_pos
 
-{-
--- it's been extracted. insert into it, then assemble a new node around it.
-insert_into_extracted :: Int -> Maybe (RLeaf v) -> RLeaf v -> RTreeChildIterator v -> RTree v
-insert_into_extracted capacity parent_leaf baby_leaf (child, other_childs) = node_add_child new_child parent_node
-    where parent_node = node_from_childs parent_leaf other_childs
-          new_child = node_add_child (node_from_leaf baby_leaf) child
--}
-
 -- it's been extracted. insert into it, then assemble a new node around it.
 insert_into_extracted :: Int -> Maybe (RLeaf v) -> RLeaf v -> RTreeChildIterator v -> RTree v
 insert_into_extracted capacity parent_leaf baby_leaf (child, other_childs) = node_add_child new_child parent_node
@@ -125,6 +119,7 @@ zone_from_node (RNode _ zone _ _) = zone
 node_from_leaf leaf = RNode 1 (zone_from_leaf leaf) (Just leaf) []
 
 node_num_elements (RNode num _ _ _) = num
+node_zone (RNode _ zone _ _) = zone
 
 node_is_empty (RNode 0 _ _ _) = True
 node_is_empty _ = False
@@ -277,9 +272,13 @@ type RTreeChildIterator2 v = ([RTree v], RTree v, [RTree v]) -- childs before, t
 --    - if it has a leaf in the current Zone, add it for consideration
 --    - if we have found 3 or more poses in that Zone, shrink the zone to fit the ones we've found so far
 --    - check inside each of the children, but only the ones that overlap the search zone
-r_nearest_neighbours_2 :: Int -> Pos -> RTree v -> Zone -> [RLeaf v] -> (Zone, [RLeaf v])
-r_nearest_neighbours_2 num_requested pos node zone results
-  | Zone.overlaps zone n_zone = foldr (\child (zone, results) -> r_nearest_neighbours_2 num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
+nearest_neighbours :: Int -> Pos -> RTree v -> [RLeaf v]
+nearest_neighbours num_requested pos node = results
+    where (_, results) = nearest_neighbour_scan num_requested pos node (node_zone node) []
+
+nearest_neighbour_scan :: Int -> Pos -> RTree v -> Zone -> [RLeaf v] -> (Zone, [RLeaf v])
+nearest_neighbour_scan num_requested pos node zone results
+  | Zone.overlaps zone n_zone = foldr (\child (zone, results) -> nearest_neighbour_scan num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
   | otherwise = (zone, results)
   where RNode n_num_elements n_zone n_leaf n_childs = node
         (adjusted_zone, adjusted_results) = if node_leaf_is_in_zone zone node
@@ -290,6 +289,7 @@ r_nearest_neighbours_2 num_requested pos node zone results
                   radius = maximum (leaf_pos (head new_results))
        
 set_tail_length :: Int -> [a] -> [a]
+set_tail_length _ [] = []
 set_tail_length 0 xs = xs
 set_tail_length num (_:xs) = set_tail_length (num - 1) xs
 

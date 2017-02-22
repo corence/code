@@ -32,7 +32,7 @@ uncompiled_nodes = map (\leaf -> RTree.set_leaf leaf RTree.void) cleaves
 assertEqual :: (Eq t, Show t) => (t -> String) -> String -> t -> t -> IO ()
 assertEqual present test_id expected actual
   | expected == actual = return ()
-  | otherwise = putStrLn $ "**fail**\n" ++ test_id ++ ":\n[\n" ++ present expected ++ "]\n!=\n[\n" ++ present actual ++ "]\n"
+  | otherwise = putStrLn $ "**fail**\n" ++ test_id ++ ":\n[\n" ++ present expected ++ "\n]\n!=\n[\n" ++ present actual ++ "\n]\n"
 
 --assert0 :: (Eq t, Show t) => String -> t -> t -> IO ()
 --assert0 :: (Eq v, Show v) => String -> RTree v -> RTree v -> IO ()
@@ -103,8 +103,11 @@ main = do
             (RTree.nodes_in_zone (Zone [2,2] [6,6]) (head ctrees) [])
 
   g <- newStdGen
-  putStrLn $ "000000"
-  putStrLn $ RTree.print 0 mecha_tree
+  --putStrLn $ "000000"
+  --putStrLn $ RTree.print 0 mecha_tree
+
+  assertEqual show "nearest neighbour" ["50,50"] $ map leaf_value $ RTree.nearest_neighbours 4 [50, 50] mecha_tree
+    where leaf_value (RLeaf _ value) = value
 
 mecha_poses :: [(Int, Int)]
 mecha_poses = zip (take 100 $ randomRs (10, 99) (mkStdGen 42)) (take 100 $ randomRs (10, 99) (mkStdGen 88))
@@ -117,5 +120,6 @@ mecha_data = map (\(x, y) -> RLeaf [x, y] (show x ++ "," ++ show y)) mecha_poses
 mecha_tree = foldr (\leaf tree -> RTree.insert 3 leaf tree) RTree.void mecha_data
 mecha_tree :: RTree String
 
-  --assertEqual show "nearest neighbour" -> [
+--assertEqual show "nearest neighbour" -> [
 --assertEqual :: (Eq t, Show t) => (t -> String) -> String -> t -> t -> IO ()
+

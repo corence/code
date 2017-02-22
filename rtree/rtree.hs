@@ -245,12 +245,73 @@ r_modifier_advance (zone, (entry : entries))
 --  * iterating through the result we could maybe have to walk through everything then collapse it. Thus the leaf:
 --  (RTree v)
 --  and the path:
---  RTreePath v = (Maybe (RLeaf v) this_node_value, [RTree v] unscanned_childs, [RTree v] unmatched_childs, [RTree v] matched_childs, RTreePath v modified_childs
+--  RTreePath v = (Maybe (RLeaf v) this_node_value, [RTree v] unscanned_childs, [RTree v] unmatched_childs, [RTree v] matched_childs, RTreePath v modified_childs)
 
 type RTreePath2 v = [RTreeAncestry v]
 type RTreeAncestry2 v = ([RTree v], Maybe (RLeaf v), [RTree v])
 type RTreeChildIterator2 v = ([RTree v], RTree v, [RTree v]) -- childs before, this child, childs after
 
+-- finds leafs: (number of results requested) -> (they must be near this pos) -> (they must be in this zone) -> the tree -> results so far
+--   for a given node:
+--    * if the pos is not in this node's zone
+--    *     then skip this node
+--    *     else
+--    *         if n_leaf is in the zone
+--    *             then
+--    *                 sorted_insert the new leaf into the other leafs
+--    *                 if (length results) > num_requested
+--    *                     drop a result
+--    *                     shrink the query zone(!!) <- this is the key to performance
+--    *         foldr (run this against each child, updating results and zone)
+r_nearest_neighbours_2 :: Int -> Pos -> RTree v -> Zone -> [RLeaf v] -> (Zone, [RLeaf v])
+r_nearest_neighbours_2 num_requested pos node zone results
+  | Zone.contains pos n_zone = foldr (\child (zone, results) -> r_nearest_neighbours_2 num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
+  | otherwise = (zone, results)
+  where RNode n_num_elements n_zone n_leaf n_childs = node
+        (adjusted_zone, adjusted_results) = if node_leaf_is_in_zone zone node
+                                                then (new_zone, new_results)
+                                                else (zone, results)
+            where new_results = set_tail_length num_requested (sorted_insert (leaf_dist_to_pos pos) (fromJust n_leaf) results)
+                  new_zone = if length new_results >= num_requested then Zone.create_container (map leaf_pos new_results) else zone
+       
+set_tail_length :: Int -> [a] -> [a]
+set_tail_length 0 xs = xs
+set_tail_length num (_:xs) = set_tail_length (num - 1) xs
+
+sorted_insert :: Ord b => (a -> b) -> a -> [a] -> [a]
+sorted_insert _ x [] = [x]
+sorted_insert evaluate x (e:es)
+  | evaluate x <= evaluate e = x : e : es
+  | otherwise = e : (sorted_insert evaluate x es)
+
+leaf_dist_to_pos :: Pos -> RLeaf v -> Int
+leaf_dist_to_pos pos (RLeaf l_pos _) = Zone.pos_distance pos l_pos
+
+leaf_pos :: RLeaf v -> Pos
+leaf_pos (RLeaf pos _) = pos
+
+-- finds leafs: (number of results requested) -> (they must be near this pos) -> the tree
+r_nearest_neighbours :: Int -> Pos -> RTree v -> [RLeaf v]
+r_nearest_neighbours num_requested pos node
+ | Zone.contains pos n_zone = filter_num num_requested (sorted_merge (leaf_dist_to_pos pos) result_groups)
+ | otherwise = [] 
+ where RNode n_num_elements n_zone n_leaf n_childs = node
+       result_groups = case n_leaf of
+                            Just leaf -> [leaf] : child_results
+                            Nothing -> child_results
+       child_results = map (\child -> r_nearest_neighbours num_requested pos child) n_childs
+       filter_num 0 _ = []
+       filter_num num (x:xs) = x : (filter_num (num - 1) xs)
+       
+-- given a list of lists -- assuming those are already sorted! -- it merges all of them into one giant sorted monster list, using the given "evaluate" function to compare elements
+sorted_merge :: Ord b => (a -> b) -> [[a]] -> [a]
+sorted_merge _ [] = []
+sorted_merge evaluate ([]:lists) = sorted_merge evaluate lists
+sorted_merge _ (list:[]) = list
+sorted_merge evaluate (list:[]:lists) = sorted_merge evaluate (list:lists)
+sorted_merge evaluate (list1:list2:lists) = (head lower_list) : sorted_merge evaluate ((tail lower_list) : higher_list : lists)
+    where (lower_list, higher_list) = if evaluate (head list1) <= evaluate (head list2) then (list1, list2) else (list2, list1)
+        
 -- another trans-ultimate iteration function. This one returns all the relevant leafs.
 r_iterate_nomodify :: Zone -> RTree v -> [RLeaf v]
 r_iterate_nomodify zone node

@@ -2,13 +2,14 @@
 module Zone
 ( Zone (..)
 , Pos (..)
-, from_pos
-, pos_distance
-, contains
-, overlaps
-, extend
 , add
 , amalgamate
+, contains
+, create_container
+, extend
+, from_pos
+, overlaps
+, pos_distance
 ) where
 
 type Pos = [Int]
@@ -46,3 +47,7 @@ add zone (Zone nw se) = extend se (extend nw zone)
 amalgamate :: [Zone] -> Zone
 amalgamate = foldr (\zone1 zone2 -> add zone1 zone2) ZVoid
 
+-- creates a zone big enough for all of these Pos
+create_container :: [Pos] -> Zone
+create_container [] = void
+create_container (p:ps) = extend p (create_container ps)

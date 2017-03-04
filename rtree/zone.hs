@@ -7,6 +7,7 @@ module Zone
 , contains
 , create_container
 , create_square
+, expansion_required
 , extend
 , from_pos
 , intersection
@@ -80,3 +81,12 @@ intersection3 zones = Zone [maximum ws, maximum ns] [minimum es, minimum ss]
               (\(Zone [w, n] [e, s]) (ws, ns, es, ss) -> (w : ws, n : ns, e : es, s : ss))
               ([], [], [], [])
               zones
+
+-- how much expansion would happen if you added these together
+expansion_required :: Zone -> Zone -> Int
+expansion_required (Zone [x1, y1] [x2, y2]) (Zone [x3, y3] [x4, y4])
+    = max 0 (x3 - x2)
+    + max 0 (x1 - x4)
+    + max 0 (y3 - y2)
+    + max 0 (y1 - y4)
+    -- = sum $ map (max 0) [x3 - x2, x1 - x4, y3 - y2, y1 - y4]

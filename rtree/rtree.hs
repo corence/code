@@ -278,8 +278,8 @@ nearest_neighbours num_requested pos node = results
 
 nearest_neighbour_scan :: Int -> Pos -> RTree v -> Zone -> [RLeaf v] -> (Zone, [RLeaf v])
 nearest_neighbour_scan num_requested pos node zone results
-  | Zone.overlaps zone n_zone = foldr (\child (zone, results) -> nearest_neighbour_scan num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
-  | otherwise = (zone, results)
+  | Zone.overlaps zone n_zone = trase ("nearest_neighbour_scan " ++ show num_requested ++ " " ++ show pos ++ " " ++ if (isJust n_leaf) then (\(Just (RLeaf pos _)) -> show pos) n_leaf else "" ++ show zone ++ " " ++ (show $ length results)) $ foldr (\child (zone, results) -> nearest_neighbour_scan num_requested pos child zone results) (adjusted_zone, adjusted_results) n_childs
+  | otherwise = trase ("nearest_neighbour_scan end") $ (zone, results)
   where RNode n_num_elements n_zone n_leaf n_childs = node
         (adjusted_zone, adjusted_results) = if node_leaf_is_in_zone zone node
                                                 then (new_zone, new_results)

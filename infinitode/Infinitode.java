@@ -172,6 +172,52 @@ public class Infinitode {
         result.add(new Enchantment(20, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 1, 12.0f)));
         result.add(new Enchantment(18, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 1, 0.5f)));
 
+
+
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 0, 0.69)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 0, 3.4)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 0, 1.91)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 0, 65)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 3, 0.984)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 4, 1.07)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 5, 1.16)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 6, 1.25)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 7, 1.34)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 8, 1.43)));
+        result.add(new Enchantment(0, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 9, 1.52)));
+        result.add(new Enchantment(1081, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 7, 34.5)));
+        result.add(new Enchantment(124, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 4, 120)));
+        result.add(new Enchantment(125, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 5, 1.5)));
+        result.add(new Enchantment(125, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 3, 14.1)));
+        result.add(new Enchantment(153, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 4, 3.02)));
+        result.add(new Enchantment(190, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 5, 137)));
+        result.add(new Enchantment(204, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 4, 18.3)));
+        result.add(new Enchantment(205, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 6, 1.68)));
+        result.add(new Enchantment(23, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 1, 0.842)));
+        result.add(new Enchantment(249, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 5, 3.32)));
+        result.add(new Enchantment(307, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 6, 154)));
+        result.add(new Enchantment(334, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 7, 1.88)));
+        result.add(new Enchantment(345, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 5, 23.3)));
+        result.add(new Enchantment(35, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 2, 0.994)));
+        result.add(new Enchantment(38, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 1, 76.7)));
+        result.add(new Enchantment(41, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 1, 2.16)));
+        result.add(new Enchantment(414, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 6, 3.64)));
+        result.add(new Enchantment(51, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 1, 6.39)));
+        result.add(new Enchantment(511, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 7, 173)));
+        result.add(new Enchantment(52, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 3, 1.15)));
+        result.add(new Enchantment(55, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 2, 90.2)));
+        result.add(new Enchantment(60, Tower.Type.Cannon, new Attribute(Attribute.Type.Splash, 2, 0.894)));
+        result.add(new Enchantment(602, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 6, 28.6)));
+        result.add(new Enchantment(62, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 2, 2.45)));
+        result.add(new Enchantment(702, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 7, 3.96)));
+        result.add(new Enchantment(79, Tower.Type.Cannon, new Attribute(Attribute.Type.Damage, 2, 10)));
+        result.add(new Enchantment(80, Tower.Type.Cannon, new Attribute(Attribute.Type.APS, 4, 1.32)));
+        result.add(new Enchantment(82, Tower.Type.Cannon, new Attribute(Attribute.Type.Rotation, 3, 105)));
+        result.add(new Enchantment(97, Tower.Type.Cannon, new Attribute(Attribute.Type.Range, 3, 2.73)));
+        
+
         return result;
     }
+    
+    
 }

@@ -80,7 +80,7 @@ eat aid = Mission Nothing [have_food aid] consume_food
           consume_food state = act aid (actor_sub "hunger" 10) $ act aid (actor_sub "food" 1) state
 
 have_food :: ActorID -> Goal
-have_food aid = Goal i_has_food (Just no_food_exists) (seek_item "food" aid [aid])
+have_food aid = Goal i_has_food (Just no_food_exists) (seek_item "food" aid [aid]) -- TODO: add cooking mission
     where i_has_food = query_actor aid (\actor -> actor_inv "food" actor > 0)
           no_food_exists state = not $ any (\a -> actor_inv "food" a > 0) (Map.elems state)
 

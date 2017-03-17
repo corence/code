@@ -120,10 +120,29 @@ update_intents state (intent : intents)
         unsatisfied_prereqs = filter (\goal -> not $ goal_is_succeeding goal state) (mission_prereqs mission)
         prereq_solutions = catMaybes $ map (\goal -> create_intent state goal) unsatisfied_prereqs
 
+update_actor_intents :: State -> Actor -> Actor
+update_actor_intents state (Actor aid pos intents inventory) = Actor aid pos (update_intents state intents) inventory
+
 create_intent :: State -> Goal -> Maybe Intent
-create_intent state goal = error "generate one of your sub-missions if you can"
+create_intent state goal = if null missions
+                               then Nothing
+                               else Just (goal, head missions) -- FIXME: make a better choice of missions than just "head". SUPER IMPORTANT
+    where Goal _ _ missions_generator = goal
+          missions = missions_generator state
   
-actor_run_intent :: ActorID -> State -> State
-actor_run_intent aid state = mission_action state
-  where Actor _ _ (intent : intents) _ = find_actor aid state
+-- we're assuming this is run immediately after update_intents was applied to this Actor
+actor_run_intent :: Actor -> State -> State
+actor_run_intent actor state = mission_action state
+  where Actor _ _ (intent : intents) _ = actor
         (Goal goal_success goal_failure _, Mission mission_failure mission_prereqs mission_action) = intent
+
+-- steps:
+-- 1) lookup the actor
+-- 2) make sure the actor's Intents are up-to-date and making sense
+-- 3) update the state
+-- 4) execute the actor's top Intent
+run_actor_step :: ActorID -> State -> State
+run_actor_step aid state = actor_run_intent new_actor new_state
+    where new_state = update_actor new_actor state
+          new_actor = update_actor_intents state actor
+          actor = find_actor aid state

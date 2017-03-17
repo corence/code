@@ -107,26 +107,37 @@ generate a = (\_ -> a)
 -- thus: this function needs to be ready to: pick a new mission, update state. Too complex.
 -- splitting it into two instead
 
-update_intents :: State -> [Intent] -> [Intent]
-update_intents state [] = error "new intent generation not implemented yet"
-update_intents state (intent : intents)
+pop_completed_intents :: State -> [Intent] -> [Intent]
+pop_completed_intents _ [] = []
+pop_completed_intents state (intent : intents)
   | goal_is_succeeding goal state = update_intents state intents -- pop
   | goal_is_failing goal state = update_intents state intents -- pop
   | mission_is_failing mission state = update_intents state intents -- pop
-  | null unsatisfied_prereqs = intent : intents -- no change here -- this intent pile is ready to run (most common case)
+  | otherwise = intent : intents -- no change here -- this intent pile is unresolved and ready to run
+  where (goal, mission) = intent
+
+create_sub_intents :: State -> [Intent] -> [Intent]
+create_sub_intents state [] = error "new intent generation not implemented yet"
+create_sub_intents state (intent : intents)
+  | null unsatisfied_prereqs = intent : intents -- no change here -- this intent pile is ready to run
   | null prereq_solutions = update_intents state intents -- pop because one of the subgoals is failing and there's no way to fix it
-  | otherwise = update_intents state (head prereq_solutions : intent : intents) -- complete a subgoal before completing the main one
+  | otherwise = update_intents state (head prereq_solutions : intent : intents) -- complete a subgoal before completing the main one. FIXME: "head" is the dumbest possible solution here. Needs a strong decision!!
   where (goal, mission) = intent
         unsatisfied_prereqs = filter (\goal -> not $ goal_is_succeeding goal state) (mission_prereqs mission)
-        prereq_solutions = catMaybes $ map (\goal -> create_intent state goal) unsatisfied_prereqs
+        prereq_solutions = concat $ map (\goal -> create_intent state goal) unsatisfied_prereqs
+
+update_intents :: State -> [Intent] -> [Intent]
+update_intents state [] = update_intents state [generate_fresh_intent state]
+update_intents state intents = create_sub_intents state (pop_completed_intents state intents)
 
 update_actor_intents :: State -> Actor -> Actor
 update_actor_intents state (Actor aid pos intents inventory) = Actor aid pos (update_intents state intents) inventory
 
-create_intent :: State -> Goal -> Maybe Intent
-create_intent state goal = if null missions
-                               then Nothing
-                               else Just (goal, head missions) -- FIXME: make a better choice of missions than just "head". SUPER IMPORTANT
+generate_fresh_intent :: State -> Intent
+generate_fresh_intent state = error "generating fresh intents is beyond me at this stage"
+
+create_intent :: State -> Goal -> [Intent]
+create_intent state goal = map (\mission -> (goal, mission)) missions
     where Goal _ _ missions_generator = goal
           missions = missions_generator state
   

@@ -19,6 +19,7 @@ module Goals
 , find_actors_with_inv
 , generate
 , query_actor
+, run_actor_step
 , update_actor
 , update_actors
 ) where
@@ -26,6 +27,7 @@ module Goals
 import qualified Data.Map as Map
 import Data.Map(Map(..))
 import Data.Maybe
+import Debug.Trace
 
 type ActorID = Int
 type ThingID = String
@@ -36,6 +38,9 @@ data Actor = Actor ActorID Pos [(Goal, Mission)] (Map ThingID Int) -- ID, positi
 data Goal = Goal (State -> Bool) (Maybe (State -> Bool)) (State -> [Mission]) -- success, failure, missions_generator
 data Mission = Mission (Maybe (State -> Bool)) [Goal] (State -> State) -- failure, prerequisites, action
 type Intent = (Goal, Mission)
+
+instance Show Actor where
+    show (Actor aid pos intents inventory) = "Actor #" ++ show aid ++ " @" ++ show pos ++ " intents " ++ show (length intents) ++ " inv " ++ show inventory
 
 goal_is_succeeding :: Goal -> State -> Bool
 goal_is_succeeding (Goal success _ _) state = success state
@@ -122,20 +127,20 @@ generate a = (\_ -> a)
 -- splitting it into two instead
 
 pop_completed_intents :: State -> [Intent] -> [Intent]
-pop_completed_intents _ [] = []
+pop_completed_intents _ [] = trace "pop_c 0" $ []
 pop_completed_intents state (intent : intents)
-  | goal_is_succeeding goal state = update_intents state intents -- pop
-  | goal_is_failing goal state = update_intents state intents -- pop
-  | mission_is_failing mission state = update_intents state intents -- pop
-  | otherwise = intent : intents -- no change here -- this intent pile is unresolved and ready to run
+  | goal_is_succeeding goal state = trace "pop_c 1" $ update_intents state intents -- pop
+  | goal_is_failing goal state = trace "pop_c 2" $ update_intents state intents -- pop
+  | mission_is_failing mission state = trace "pop_c 3" $ update_intents state intents -- pop
+  | otherwise = trace "pop_c 4" $ intent : intents -- no change here -- this intent pile is unresolved and ready to run
   where (goal, mission) = intent
 
 create_sub_intents :: State -> [Intent] -> [Intent]
 create_sub_intents state [] = error "new intent generation not implemented yet"
 create_sub_intents state (intent : intents)
-  | null unsatisfied_prereqs = intent : intents -- no change here -- this intent pile is ready to run
-  | null prereq_solutions = update_intents state intents -- pop because one of the subgoals is failing and there's no way to fix it
-  | otherwise = update_intents state (head prereq_solutions : intent : intents) -- complete a subgoal before completing the main one. FIXME: "head" is the dumbest possible solution here. Needs a strong decision!!
+  | null unsatisfied_prereqs = trace "create_si 1" $ intent : intents -- no change here -- this intent pile is ready to run
+  | null prereq_solutions = trace "create_si 2" $ update_intents state intents -- pop because one of the subgoals is failing and there's no way to fix it
+  | otherwise = trace "create_si 3" $ update_intents state (head prereq_solutions : intent : intents) -- complete a subgoal before completing the main one. FIXME: "head" is the dumbest possible solution here. Needs a strong decision!!
   where (goal, mission) = intent
         unsatisfied_prereqs = filter (\goal -> not $ goal_is_succeeding goal state) (mission_prereqs mission)
         prereq_solutions = concat $ map (\goal -> create_intent state goal) unsatisfied_prereqs
@@ -167,7 +172,7 @@ actor_run_intent actor state = mission_action state
 -- 3) update the state
 -- 4) execute the actor's top Intent
 run_actor_step :: ActorID -> State -> State
-run_actor_step aid state = actor_run_intent new_actor new_state
+run_actor_step aid state = trace "run_actor_step" actor_run_intent new_actor new_state
     where new_state = update_actor new_actor state
           new_actor = update_actor_intents state actor
           actor = find_actor aid state

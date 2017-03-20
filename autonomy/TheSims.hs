@@ -1,6 +1,7 @@
 
 module TheSims
-(
+( be_unhungry
+, eat
 ) where
 
 import Goals

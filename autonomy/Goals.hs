@@ -15,9 +15,12 @@ module Goals
 , actor_pos
 , actor_sub
 , find_actor
+, find_actors_with
+, find_actors_with_inv
 , generate
 , query_actor
 , update_actor
+, update_actors
 ) where
 
 import qualified Data.Map as Map
@@ -75,6 +78,10 @@ update_actor :: Actor -> State -> State
 update_actor actor actors = Map.insert aid actor actors
     where Actor aid _ _ _ = actor
 
+update_actors :: [Actor] -> State -> State
+update_actors [] state = state
+update_actors (actor : actors) state = update_actors actors (update_actor actor state)
+
 -- converts an (Actor -> Bool) function to a (State -> Bool) function
 query_actor :: ActorID -> (Actor -> a) -> (State -> a)
 query_actor aid function = state_query
@@ -89,6 +96,13 @@ find_actor :: ActorID -> State -> Actor
 find_actor aid state = case Map.lookup aid state of
                            Just actor -> actor
                            Nothing -> error $ "couldn't find actor " ++ show aid
+
+find_actors_with :: (Actor -> Bool) -> State -> [Actor]
+find_actors_with predicate state = filter predicate (Map.elems state)
+
+find_actors_with_inv :: ThingID -> Int -> State -> [Actor]
+find_actors_with_inv tid amount state = find_actors_with predicate state
+    where predicate actor = actor_inv tid actor >= amount
 
 -- you have an unconditional value but they're asking for a function? use this to generate a stupid function to satisfy their stupid requirement
 generate :: a -> (b -> a)

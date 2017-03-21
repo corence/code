@@ -1,6 +1,8 @@
 
 module IntentSims
-( be_unhungry
+( Command(..)
+, State(..)
+, be_unhungry
 , eat
 ) where
 

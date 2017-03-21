@@ -2,7 +2,9 @@
 module Intents
 ( Goal(..)
 , Intent
+, IntentStacks
 , Task(..)
+, step
 ) where
 
 import qualified Data.Map as Map
@@ -23,12 +25,12 @@ data Task command state = Task String [Goal command state] [command] -- name, pr
 
 type ActorID = Int
 
-type Actors command state = Map ActorID ([Intent command state])
+type IntentStacks command state = Map ActorID ([Intent command state])
 
-step :: ActorID -> Actors command state -> state -> (Actors command state, [command])
-step actor_id actors state = (Map.insert actor_id new_intents actors, commands)
+step :: ActorID -> IntentStacks command state -> state -> (IntentStacks command state, [command])
+step actor_id stacks state = (Map.insert actor_id new_intents stacks, commands)
     where (new_intents, commands) = step_intents intents state
-          intents = case Map.lookup actor_id actors of
+          intents = case Map.lookup actor_id stacks of
                         Just intents -> intents
                         Nothing -> error $ "actor_id not found: " ++ show actor_id
 

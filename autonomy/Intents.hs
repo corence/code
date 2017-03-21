@@ -2,9 +2,8 @@
 module Intents
 ( Goal(..)
 , Intent(..)
-, IntentStacks
 , Task(..)
-, step
+, step_intents
 ) where
 
 import qualified Data.Map as Map
@@ -18,20 +17,17 @@ import Debug.Trace
 ---- is there [] for the task_options? if so, CLEAR the whole intent stack (we've reached a failure state and we're at risk of endless looping now)
 ---- is there (x:[]) for the task_options? perfect; this stack is ready to execute
 ---- otherwise there are too many task_options; we need to filter some out
-data Intent command state = Intent (Goal command state) (Maybe [Task command state])
+data Intent command state = Intent (Goal command state) (Maybe [Task command state]) deriving Show
 data Goal command state = Goal String [state -> [Task command state]] [state -> Bool] -- name, task_generators, win conditions (need all for success)
 data Task command state = Task String [Goal command state] [command] -- name, prerequisites, actions
 
+instance Show (Task command state) where
+    show (Task name _ _) = "Task " ++ name
+
+instance Show (Goal command state) where
+    show (Goal name _ _) = "Goal " ++ name
+
 type ActorID = Int
-
-type IntentStacks command state = Map ActorID ([Intent command state])
-
-step :: ActorID -> IntentStacks command state -> state -> (IntentStacks command state, [command])
-step actor_id stacks state = (Map.insert actor_id new_intents stacks, commands)
-    where (new_intents, commands) = step_intents intents state
-          intents = case Map.lookup actor_id stacks of
-                        Just intents -> intents
-                        Nothing -> error $ "actor_id not found: " ++ show actor_id
 
 step_intents :: [Intent command state] -> state -> ([Intent command state], [command])
 step_intents intents state

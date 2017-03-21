@@ -13,8 +13,7 @@ import qualified Data.Map as Map
 import Data.Map(Map(..))
 
 type State = Map ActorID Actor
---type Command = State -> State
-type Command = State -> String
+type Command = State -> State
 
 find_actor :: ActorID -> State -> Actor
 find_actor actor_id state = case Map.lookup actor_id state of
@@ -27,12 +26,12 @@ find_actors_with predicate state = filter predicate (Map.elems state)
 query_actor :: ActorID -> (Actor -> a) -> State -> a
 query_actor actor_id query state = query (find_actor actor_id state)
 
-adjust_actor :: ActorID -> (Actor -> Actor) -> State -> String
-adjust_actor actor_id adjust state = show $ Map.insert actor_id (adjust (find_actor actor_id state)) state
+adjust_actor :: ActorID -> (Actor -> Actor) -> State -> State
+adjust_actor actor_id adjust state = Map.insert actor_id (adjust (find_actor actor_id state)) state
 
-adjust_actors :: [(ActorID, (Actor -> Actor))] -> State -> String
-adjust_actors [] state = show state
-adjust_actors ((actor_id, adjust) : adjusters) state = show (adjust_actors adjusters state) ++ new_state
+adjust_actors :: [(ActorID, (Actor -> Actor))] -> State -> State
+adjust_actors [] state = state
+adjust_actors ((actor_id, adjust) : adjusters) state = adjust_actors adjusters new_state
     where new_state = adjust_actor actor_id adjust state
 
 --replace_actor :: Actor -> State -> State

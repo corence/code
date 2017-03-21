@@ -13,7 +13,8 @@ import qualified Data.Map as Map
 import Data.Map(Map(..))
 
 type State = Map ActorID Actor
-type Command = State -> State
+--type Command = State -> State
+type Command = State -> String
 
 find_actor :: ActorID -> State -> Actor
 find_actor actor_id state = case Map.lookup actor_id state of
@@ -26,12 +27,12 @@ find_actors_with predicate state = filter predicate (Map.elems state)
 query_actor :: ActorID -> (Actor -> a) -> State -> a
 query_actor actor_id query state = query (find_actor actor_id state)
 
-adjust_actor :: ActorID -> (Actor -> Actor) -> State -> State
-adjust_actor actor_id adjust state = Map.insert actor_id (adjust (find_actor actor_id state)) state
+adjust_actor :: ActorID -> (Actor -> Actor) -> State -> String
+adjust_actor actor_id adjust state = show $ Map.insert actor_id (adjust (find_actor actor_id state)) state
 
-adjust_actors :: [(ActorID, (Actor -> Actor))] -> State -> State
-adjust_actors [] state = state
-adjust_actors ((actor_id, adjust) : adjusters) state = adjust_actors adjusters new_state
+adjust_actors :: [(ActorID, (Actor -> Actor))] -> State -> String
+adjust_actors [] state = show state
+adjust_actors ((actor_id, adjust) : adjusters) state = show (adjust_actors adjusters state) ++ new_state
     where new_state = adjust_actor actor_id adjust state
 
 --replace_actor :: Actor -> State -> State
@@ -48,7 +49,7 @@ be_unhungry actor_id = Goal "be_unhungry" [\_ -> [eat actor_id]] [query_actor ac
 
 eat :: ActorID -> Task Command State
 eat actor_id = Task "eat" [have_food 1 actor_id] [consume_food]
-    where consume_food state = adjust_actor actor_id (Actor.sub_item "hunger" 10) $ adjust_actor actor_id (Actor.sub_item "food" 1) state
+    where consume_food state = adjust_actors [(actor_id, Actor.sub_item "hunger" 10), (actor_id, Actor.sub_item "food" 1)] state
 
 have_food :: Int -> ActorID -> Goal Command State
 have_food amount actor_id = have_item "food" amount [generate_cook_tasks actor_id] actor_id

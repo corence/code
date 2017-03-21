@@ -1,7 +1,7 @@
 
 module Intents
 ( Goal(..)
-, Intent
+, Intent(..)
 , IntentStacks
 , Task(..)
 , step
@@ -18,8 +18,7 @@ import Debug.Trace
 ---- is there [] for the task_options? if so, CLEAR the whole intent stack (we've reached a failure state and we're at risk of endless looping now)
 ---- is there (x:[]) for the task_options? perfect; this stack is ready to execute
 ---- otherwise there are too many task_options; we need to filter some out
-type Intent command state = (Goal command state, Maybe [Task command state])
-
+data Intent command state = Intent (Goal command state) (Maybe [Task command state])
 data Goal command state = Goal String [state -> [Task command state]] [state -> Bool] -- name, task_generators, win conditions (need all for success)
 data Task command state = Task String [Goal command state] [command] -- name, prerequisites, actions
 
@@ -44,19 +43,19 @@ step_intents intents state
 
 -- many assumptions are made here. Be prepared before calling this!
 execute_intent :: Intent command state -> [command]
-execute_intent (_, Just (task : _)) = actions
+execute_intent (Intent _ (Just (task : _))) = actions
     where Task _ _ actions = task
 
 prepare_intents :: [Intent command state] -> state -> (Bool, [Intent command state])
 prepare_intents [] _ = error "time to generate a fresh new intent"
-prepare_intents (intent : intents) state = let (goal, tasks) = intent in
+prepare_intents (intent : intents) state = let Intent goal tasks = intent in
         if goal_succeeds goal state
             then trace "prepare_intents 1 -- popping successful intent" $ (True, intents)
             else case tasks of
-                   Nothing -> trace "prepare_intents 2 -- generating options" $ (True, (goal, Just (goal_generate_tasks goal state)) : intents)
+                   Nothing -> trace "prepare_intents 2 -- generating options" $ (True, (Intent goal (Just (goal_generate_tasks goal state))) : intents)
                    Just [] -> trace "prepare_intents 3 -- dead end! clearing the whole damn stack" $ (True, [])
                    Just (task : []) -> trace "prepare_intents 4 -- all good, ready to execute" $ (False, intent : intents)
-                   Just many_tasks -> trace "prepare_intents 5 -- generating options" $ (True, (goal, Just [select_task many_tasks]) : intents)
+                   Just many_tasks -> trace "prepare_intents 5 -- generating options" $ (True, (Intent goal (Just [select_task many_tasks])) : intents)
 
 goal_succeeds :: Goal command state -> state -> Bool
 goal_succeeds (Goal _ _ win_conditions) state = all (\condition -> condition state) win_conditions

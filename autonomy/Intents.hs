@@ -19,7 +19,7 @@ import Debug.Trace
 type Intent command state = (Goal command state, Maybe [Task command state])
 
 data Goal command state = Goal String [state -> [Task command state]] [state -> Bool] -- name, task_generators, win conditions (need all for success)
-data Task command state = Task String [Goal command state] (state -> [command]) -- name, prerequisites, action
+data Task command state = Task String [Goal command state] [command] -- name, prerequisites, actions
 
 type ActorID = Int
 
@@ -37,13 +37,13 @@ step_intents intents state
     = case prepare_intents intents state of
           (True, new_intents) -> step_intents new_intents state
           otherwise -> let (i : is) = intents in
-                          (is, execute_intent i state)
+                          (is, execute_intent i)
           
 
 -- many assumptions are made here. Be prepared before calling this!
-execute_intent :: Intent command state -> state -> ([command])
-execute_intent (_, Just (task : _)) state = action state
-    where Task _ _ action = task
+execute_intent :: Intent command state -> [command]
+execute_intent (_, Just (task : _)) = actions
+    where Task _ _ actions = task
 
 prepare_intents :: [Intent command state] -> state -> (Bool, [Intent command state])
 prepare_intents [] _ = error "time to generate a fresh new intent"

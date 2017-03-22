@@ -4,6 +4,8 @@ module IntentSims
 , State(..)
 , be_unhungry
 , eat
+, have_food
+, have_item
 ) where
 
 import Intents

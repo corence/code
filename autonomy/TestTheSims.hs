@@ -14,10 +14,14 @@ assert_preparation (expected, initial, state) = assert_equal expected (run_prepa
 
 assert_preparations :: [([(String, [String])], [Intent Command State], State)] -> IO ()
 --assert_preparations tests = fmap assert_preparation tests
+{-
 assert_preparations [] = return ()
 assert_preparations (test : tests) = do
     assert_preparation test
     assert_preparations tests
+    -}
+--assert_preparations tests = map assert_preparation tests
+assert_preparations tests = sequence_ $ map assert_preparation tests
 
 devolve :: Intent Command State -> (String, [String])
 devolve (Intent goal tasks) = (goal_name goal, tasks_string)
@@ -42,7 +46,7 @@ shower (intents, commands) state = "(" ++ show intents ++ ", " ++ show new_state
 
 assert_equal :: (Show a, Eq a) => a -> a -> IO ()
 assert_equal x y = if x == y
-                       then return ()
+                       then putStrLn $ show x ++ " is good"
                        else putStrLn $ show x ++ " /= " ++ show y
 
 main :: IO ()

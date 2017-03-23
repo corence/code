@@ -6,6 +6,7 @@ module IntentSims
 , eat
 , have_food
 , have_item
+, seek_item
 ) where
 
 import Intents
@@ -54,9 +55,9 @@ eat actor_id = Task "eat" [have_food 1 actor_id] [consume_food]
 
 have_food :: Int -> ActorID -> Goal Command State
 have_food amount actor_id = have_item "food" amount [generate_cook_tasks actor_id] actor_id
-          
+
 have_item :: ItemID -> Int -> [State -> [Task Command State]] -> ActorID -> Goal Command State
-have_item item_id amount task_generators actor_id = Goal "have_item" [seek_item item_id actor_id [actor_id]] [already_has_item] -- TODO: generators!
+have_item item_id amount task_generators actor_id = Goal "have_item" (seek_item item_id actor_id [actor_id] : task_generators) [already_has_item] -- TODO: generators!
     where already_has_item = (query_actor actor_id (\actor -> Actor.get_item item_id actor >= amount))
 
 -- 2 ways we can do this:
@@ -74,14 +75,14 @@ generate_cook_tasks actor_id state = map make_task oven_ids
                                                   ] state
 
 seek_item :: ItemID -> ActorID -> [ActorID] -> State -> [Task Command State]
-seek_item item_id actor_id blacklist state = take_item_missions
+seek_item item_id actor_id blacklist state = take_item_tasks
     where actors_with_item = filter (\target -> Actor.get_item item_id target > 0) (Map.elems state)
           aids_with_item = map Actor.get_id actors_with_item
-          take_item_missions = map (\target -> take_item item_id target actor_id) aids_with_item
+          take_item_tasks = map (\target -> take_item item_id target actor_id) aids_with_item
 
 take_item :: ItemID -> ActorID -> ActorID -> Task Command State
 take_item item_id target_id actor_id = Task name [be_at target_id actor_id] [exchange]
-    where name = ("take_item " ++ show item_id ++ " from " ++ show target_id)
+    where name = ("take_item '" ++ item_id ++ "' from " ++ show target_id)
           exchange state = adjust_actors [(actor_id, (Actor.add_item item_id 1)), (target_id, (Actor.sub_item item_id 1))] state
 
 be_at :: ActorID -> ActorID -> Goal Command State

@@ -52,10 +52,10 @@ prepare_intents (intent : intents) state = let Intent goal tasks = intent in
         if goal_succeeds goal state
             then trace ("prepare_intents 1 -- popping successful intent because goal " ++ show goal ++ " succeeds") $ (True, intents)
             else case tasks of
-                   Nothing -> trace "prepare_intents 2 -- generating options" $ (True, (Intent goal (Just (goal_generate_tasks goal state))) : intents)
+                   Nothing -> let new_tasks = goal_generate_tasks goal state in trace ("prepare_intents 2 -- generating " ++ show (length new_tasks) ++ " task options") $ (True, (Intent goal (Just new_tasks)) : intents)
                    Just [] -> trace "prepare_intents 3 -- dead end! clearing the whole damn stack" $ (True, [])
                    Just (task : []) -> prepare_task task
-                   Just many_tasks -> trace "prepare_intents 5 -- generating options" $ (True, (Intent goal (Just [select_task many_tasks])) : intents)
+                   Just many_tasks -> trace "prepare_intents 5 -- winnowing task options" $ (True, (Intent goal (Just [select_task many_tasks])) : intents)
                    where prepare_task task = let subgoals = filter (\goal -> not (goal_succeeds goal state)) (task_prerequisites task) in
                                                  if null subgoals
                                                  then trace "prepare_intents 4a -- all good, ready to execute" $ (False, intent : intents)

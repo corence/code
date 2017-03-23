@@ -18,7 +18,7 @@ import qualified Data.Map as Map
 import Data.Map(Map(..))
 
 type ActorID = Int -- identifies a specific actor instance
-data Actor = Actor ActorID Pos (Map ItemID Int) deriving Show -- id, pos, inventory
+data Actor = Actor ActorID Pos (Map ItemID Int) deriving (Eq, Show) -- id, pos, inventory
 type Pos = Int
 type ItemID = String -- identifies a class of items. items are anything that can be owned in multiples, like "food" or "x_position" or "hunger" or "reputation"
 

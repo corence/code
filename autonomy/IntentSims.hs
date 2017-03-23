@@ -6,7 +6,9 @@ module IntentSims
 , eat
 , have_food
 , have_item
+, query_actor
 , seek_item
+, unhungry
 ) where
 
 import Intents

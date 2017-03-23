@@ -3,9 +3,11 @@ module Intents
 ( Goal(..)
 , Intent(..)
 , Task(..)
+, intents_extract_actions
 , goal_name
 , prepare_intents
 , step_intents
+, task_actions
 , task_name
 ) where
 
@@ -35,31 +37,38 @@ type ActorID = Int
 step_intents :: [Intent command state] -> state -> ([Intent command state], [command])
 step_intents intents state
     = case prepare_intents intents state of
+    -- TODO: add a case where new_intents is []
           (True, new_intents) -> step_intents new_intents state
-          (False, (new_intent : new_intents)) -> (new_intents, execute_intent new_intent)
-          otherwise -> trace "this line is a hack that will be removed later -- intents was empty" $ ([], [])
+          (False, new_intents) -> intents_extract_actions new_intents
           
+intent_actions :: Intent command state -> [command]
+intent_actions (Intent goal tasks) = actions
+    where actions = case tasks of
+                        Just ((Task _ _ actions) : _) -> actions
+                        Nothing -> []
 
--- many assumptions are made here. Be prepared before calling this!
-execute_intent :: Intent command state -> [command]
-execute_intent (Intent _ (Just (task : _))) = actions
-    where Task _ _ actions = task
+intents_extract_actions :: [Intent command state] -> ([Intent command state], [command])
+intents_extract_actions [] = ([], [])
+intents_extract_actions (Intent goal tasks : other_intents) = (Intent goal Nothing : other_intents, actions)
+    where actions = case tasks of
+                        Just (task : _) -> task_actions task
+                        Nothing -> []
 
 -- if it returns True, then we'll need to run it again (because something changed)
 prepare_intents :: [Intent command state] -> state -> (Bool, [Intent command state])
-prepare_intents [] _ = trace "time to generate a fresh new intent" $ (False, []) -- FIXME: this should be True but i've set it to False for convenience
+prepare_intents [] _ = trace "    time to generate a fresh new intent" $ (False, []) -- FIXME: this should be True but i've set it to False for convenience
 prepare_intents (intent : intents) state = let Intent goal tasks = intent in
         if goal_succeeds goal state
-            then trace ("prepare_intents 1 -- popping successful intent because goal " ++ show goal ++ " succeeds") $ (True, intents)
+            then trace ("    prepare_intents 1 -- popping successful intent because goal " ++ show goal ++ " succeeds") $ (True, intents)
             else case tasks of
-                   Nothing -> let new_tasks = goal_generate_tasks goal state in trace ("prepare_intents 2 -- generating " ++ show (length new_tasks) ++ " task options") $ (True, (Intent goal (Just new_tasks)) : intents)
-                   Just [] -> trace "prepare_intents 3 -- dead end! clearing the whole damn stack" $ (True, [])
+                   Nothing -> let new_tasks = goal_generate_tasks goal state in trace ("    prepare_intents 2 -- generating " ++ show (length new_tasks) ++ " task options") $ (True, (Intent goal (Just new_tasks)) : intents)
+                   Just [] -> trace "    prepare_intents 3 -- dead end! clearing the whole damn stack" $ (True, [])
                    Just (task : []) -> prepare_task task
-                   Just many_tasks -> trace "prepare_intents 5 -- winnowing task options" $ (True, (Intent goal (Just [select_task many_tasks])) : intents)
+                   Just many_tasks -> trace "    prepare_intents 5 -- winnowing task options" $ (True, (Intent goal (Just [select_task many_tasks])) : intents)
                    where prepare_task task = let subgoals = filter (\goal -> not (goal_succeeds goal state)) (task_prerequisites task) in
                                                  if null subgoals
-                                                 then trace "prepare_intents 4a -- all good, ready to execute" $ (False, intent : intents)
-                                                 else trace "prepare_intents 4b -- pushing a subgoal on the stack" $ (True, Intent (head subgoals) Nothing : intent : intents)
+                                                 then trace "    prepare_intents 4a -- all good, ready to execute" $ (False, intent : intents)
+                                                 else trace "    prepare_intents 4b -- pushing a subgoal on the stack" $ (True, Intent (head subgoals) Nothing : intent : intents)
 
 goal_succeeds :: Goal command state -> state -> Bool
 goal_succeeds (Goal _ _ win_conditions) state = all (\condition -> condition state) win_conditions
@@ -75,6 +84,9 @@ task_name (Task name _ _) = name
 
 task_prerequisites :: Task command state -> [Goal command state]
 task_prerequisites (Task _ prerequisites _) = prerequisites
+
+task_actions :: Task command state -> [command]
+task_actions (Task _ _ actions) = actions
 
 select_task :: [Task command state] -> Task command state
 select_task [] = error "can't select_task, empty list"

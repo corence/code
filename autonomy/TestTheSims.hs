@@ -23,6 +23,24 @@ assert_preparations (test : tests) = do
 --assert_preparations tests = map assert_preparation tests
 assert_preparations tests = sequence_ $ map assert_preparation tests
 
+assert_someday_match :: State -> Int -> [Intent Command State] -> State -> IO ()
+assert_someday_match expected_state = assert_someday (== expected_state)
+
+-- given intents and an initial state, assert that eventually the state will match the given predicate
+assert_someday :: (State -> Bool) -> Int -> [Intent Command State] -> State -> IO ()
+assert_someday predicate iterations intents state
+  | predicate state = putStrLn $ "√ assert_someday succeeds"
+  | iterations == 0 = putStrLn $ "† assert_someday exhausted. final intents " ++ show (map devolve intents) ++ ", final state " ++ show state
+  | prepare_changed = assert_someday predicate (iterations - 1) prepared_intents new_state
+  where (prepare_changed, prepared_intents) = prepare_intents intents state
+        new_state = foldr (\action state -> action state) state actions 
+        (new_intents, actions) = intents_extract_actions prepared_intents
+
+assert_equal :: (Show a, Eq a) => a -> a -> IO ()
+assert_equal x y = if x == y
+                       then putStrLn $ "√ " ++ show x ++ " is good"
+                       else putStrLn $ "† " ++ show x ++ " /= " ++ show y
+
 devolve :: Intent Command State -> (String, [String])
 devolve (Intent goal tasks) = (goal_name goal, tasks_string)
     where tasks_string = case tasks of
@@ -73,20 +91,13 @@ prep_tests = [
                 ], bountiful_state
             )
         ]
-        
-shower :: ([Intent Command State], [Command]) -> State -> String
-shower (intents, commands) state = "(" ++ show intents ++ ", " ++ show new_state ++ ")\n"
-    where new_state = foldr (\command state -> command state) state commands
 
-assert_equal :: (Show a, Eq a) => a -> a -> IO ()
-assert_equal x y = if x == y
-                       then putStrLn $ show x ++ " is good"
-                       else putStrLn $ show x ++ " /= " ++ show y
+someday_tests :: IO ()
+someday_tests = sequence_ [
+        assert_someday (\state -> query_actor 1 unhungry state) 100 [Intent (be_unhungry 1) Nothing] bountiful_state
+        ]
 
 main :: IO ()
 main = do
     assert_preparations prep_tests
-    --let results = map (\(_, initial, state) -> run_preparation initial state) tests
-    --fmap assert_equal results
-    --map (\(expected, initial, state) -> assert_preparation expected initial state) (return tests)
-    --foldr (\(expected, initial, state) world -> assert_preparation expected initial state) tests
+    someday_tests

@@ -37,7 +37,7 @@ step_intents intents state
     = case prepare_intents intents state of
           (True, new_intents) -> step_intents new_intents state
           (False, (new_intent : new_intents)) -> (new_intents, execute_intent new_intent)
-          otherwise -> trace "debug step -- intents was empty" $ ([], [])
+          otherwise -> trace "this line is a hack that will be removed later -- intents was empty" $ ([], [])
           
 
 -- many assumptions are made here. Be prepared before calling this!
@@ -54,8 +54,12 @@ prepare_intents (intent : intents) state = let Intent goal tasks = intent in
             else case tasks of
                    Nothing -> trace "prepare_intents 2 -- generating options" $ (True, (Intent goal (Just (goal_generate_tasks goal state))) : intents)
                    Just [] -> trace "prepare_intents 3 -- dead end! clearing the whole damn stack" $ (True, [])
-                   Just (task : []) -> trace "prepare_intents 4 -- all good, ready to execute" $ (False, intent : intents)
+                   Just (task : []) -> prepare_task task
                    Just many_tasks -> trace "prepare_intents 5 -- generating options" $ (True, (Intent goal (Just [select_task many_tasks])) : intents)
+                   where prepare_task task = let subgoals = filter (\goal -> not (goal_succeeds goal state)) (task_prerequisites task) in
+                                                 if null subgoals
+                                                 then trace "prepare_intents 4a -- all good, ready to execute" $ (False, intent : intents)
+                                                 else trace "prepare_intents 4b -- pushing a subgoal on the stack" $ (True, Intent (head subgoals) Nothing : intent : intents)
 
 goal_succeeds :: Goal command state -> state -> Bool
 goal_succeeds (Goal _ _ win_conditions) state = all (\condition -> condition state) win_conditions
@@ -68,6 +72,9 @@ goal_name (Goal name _ _) = name
 
 task_name :: Task command state -> String
 task_name (Task name _ _) = name
+
+task_prerequisites :: Task command state -> [Goal command state]
+task_prerequisites (Task _ prerequisites _) = prerequisites
 
 select_task :: [Task command state] -> Task command state
 select_task [] = error "can't select_task, empty list"

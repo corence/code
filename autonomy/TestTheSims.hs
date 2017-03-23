@@ -34,12 +34,12 @@ base_task = eat 1
 
 hungry_state = Map.fromList [(1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 52)]))]
 
-tests :: [([(String, [String])], [Intent Command State], State)]
-tests = [
+prep_tests :: [([(String, [String])], [Intent Command State], State)]
+prep_tests = [
             ([("be_unhungry", ["eat"])], [Intent (be_unhungry 1) Nothing], hungry_state),
-            ([("have_food", []), ("be_unhungry", ["eat"])], [Intent (be_unhungry 1) (Just $ [eat 1])], hungry_state)
+            ([("have_item", []), ("be_unhungry", ["eat"])], [Intent (be_unhungry 1) (Just $ [eat 1])], hungry_state)
         ]
-
+        
 shower :: ([Intent Command State], [Command]) -> State -> String
 shower (intents, commands) state = "(" ++ show intents ++ ", " ++ show new_state ++ ")\n"
     where new_state = foldr (\command state -> command state) state commands
@@ -51,7 +51,7 @@ assert_equal x y = if x == y
 
 main :: IO ()
 main = do
-    assert_preparations tests
+    assert_preparations prep_tests
     --let results = map (\(_, initial, state) -> run_preparation initial state) tests
     --fmap assert_equal results
     --map (\(expected, initial, state) -> assert_preparation expected initial state) (return tests)

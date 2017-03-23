@@ -1,7 +1,7 @@
 
 import Intents
 import Actor
-import IntentSims
+import TheSims
 import qualified Data.Map as Map
 import Data.Map(Map(..))
 

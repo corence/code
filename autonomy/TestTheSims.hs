@@ -4,6 +4,7 @@ import Actor
 import TheSims
 import qualified Data.Map as Map
 import Data.Map(Map(..))
+import Debug.Trace
 
 run_preparation :: [Intent Command State] -> State -> [(String, [String])]
 run_preparation initial state = map devolve new_intents
@@ -31,10 +32,14 @@ assert_someday :: (State -> Bool) -> Int -> [Intent Command State] -> State -> I
 assert_someday predicate iterations intents state
   | predicate state = putStrLn $ "√ assert_someday succeeds"
   | iterations == 0 = putStrLn $ "† assert_someday exhausted. final intents " ++ show (map devolve intents) ++ ", final state " ++ show state
-  | otherwise = assert_someday predicate (iterations - 1) prepared_intents new_state
+  | prepare_changed && single_task prepared_intents = trace ("     !! " ++ show (map devolve prepared_intents) ++ " == " ++ show (map devolve new_intents)) $ assert_someday predicate (iterations - 1) new_intents new_state
+  | otherwise = trace ("     == " ++ show (map devolve prepared_intents)) $ assert_someday predicate (iterations - 1) prepared_intents state
   where (prepare_changed, prepared_intents) = prepare_intents intents state
         new_state = foldr (\action state -> action state) state actions 
         (new_intents, actions) = intents_extract_actions prepared_intents
+        single_task [] = False
+        single_task (Intent _ (Just (_ : [])) : _) = True
+        single_task _ = False
 
 assert_equal :: (Show a, Eq a) => a -> a -> IO ()
 assert_equal x y = if x == y
@@ -94,9 +99,9 @@ prep_tests = [
 
 someday_tests :: IO ()
 someday_tests = sequence_ [
-        assert_someday (\state -> query_actor 1 unhungry state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state,
-        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state,
-        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state
+        assert_someday (\state -> query_actor 1 unhungry state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state, -- assert that the actor will eventually feed herself somehow
+        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state, -- assert that item 4 will have no food at some point, and the actor will have food
+        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state -- assert that item 4 will be down to 1 food at some point, and the actor will have food
         ]
 
 main :: IO ()

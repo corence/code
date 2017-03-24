@@ -81,7 +81,7 @@ have_item item_id amount task_generators actor_id = Goal "have_item" (seek_item 
 generate_cook_tasks :: ActorID -> State -> [Task Command State]
 generate_cook_tasks actor_id state = map make_task oven_ids
     where oven_ids = map Actor.get_id (find_actors_with (\actor -> Actor.get_item "oven" actor >= 1) state)
-          make_task oven_id = Task "cook in this oven" [have_item "prepped_ingredients" 1 [] actor_id, be_at oven_id actor_id] [make_food oven_id] -- TODO: mission generators
+          make_task oven_id = Task ("cook in oven " ++ show oven_id) [have_item "prepped_ingredients" 1 [] actor_id, be_at oven_id actor_id] [make_food oven_id] -- TODO: mission generators
           -- make_food: decrement the actor's prepped ingredients; increment the oven's food
           make_food oven_id state = adjust_actors [
                                                   (actor_id, Actor.sub_item "prepped_ingredients" 1),

@@ -10,6 +10,7 @@
 module TheSims
 ( Command(..)
 , State(..)
+, actor_exists
 , be_unhungry
 , eat
 , have_food
@@ -32,6 +33,9 @@ find_actor :: ActorID -> State -> Actor
 find_actor actor_id state = case Map.lookup actor_id state of
                                Just actor -> actor
                                Nothing -> error $ "find_actor: actor not found: " ++ show actor_id
+
+actor_exists :: ActorID -> State -> Bool
+actor_exists = Map.member
 
 find_actors_with :: (Actor -> Bool) -> State -> [Actor]
 find_actors_with predicate state = filter predicate (Map.elems state)

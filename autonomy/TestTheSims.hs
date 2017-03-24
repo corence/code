@@ -31,7 +31,7 @@ assert_someday :: (State -> Bool) -> Int -> [Intent Command State] -> State -> I
 assert_someday predicate iterations intents state
   | predicate state = putStrLn $ "√ assert_someday succeeds"
   | iterations == 0 = putStrLn $ "† assert_someday exhausted. final intents " ++ show (map devolve intents) ++ ", final state " ++ show state
-  | prepare_changed = assert_someday predicate (iterations - 1) prepared_intents new_state
+  | otherwise = assert_someday predicate (iterations - 1) prepared_intents new_state
   where (prepare_changed, prepared_intents) = prepare_intents intents state
         new_state = foldr (\action state -> action state) state actions 
         (new_intents, actions) = intents_extract_actions prepared_intents
@@ -94,7 +94,9 @@ prep_tests = [
 
 someday_tests :: IO ()
 someday_tests = sequence_ [
-        assert_someday (\state -> query_actor 1 unhungry state) 100 [Intent (be_unhungry 1) Nothing] bountiful_state
+        assert_someday (\state -> query_actor 1 unhungry state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state,
+        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state,
+        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state
         ]
 
 main :: IO ()

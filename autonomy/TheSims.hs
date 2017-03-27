@@ -11,12 +11,14 @@ module TheSims
 ( Command(..)
 , State(..)
 , actor_exists
+, be_at
 , be_unhungry
 , eat
 , have_food
 , have_item
 , query_actor
 , seek_item
+, take_item
 , unhungry
 ) where
 

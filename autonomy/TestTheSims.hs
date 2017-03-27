@@ -5,23 +5,15 @@ import TheSims
 import qualified Data.Map as Map
 import Data.Map(Map(..))
 import Debug.Trace
+import Data.List
 
-run_preparation :: [Intent Command State] -> State -> [(String, [String])]
-run_preparation initial state = map devolve new_intents
-    where (changed, new_intents) = prepare_intents initial state
+run_preparation :: [Intent Command State] -> State -> [String]
+run_preparation initial state = map devolve (prepare_intents initial state)
 
-assert_preparation :: ([(String, [String])], [Intent Command State], State) -> IO ()
-assert_preparation (expected, initial, state) = assert_equal expected (run_preparation initial state)
+assert_preparation :: ([Intent Command State], [Intent Command State], State) -> IO ()
+assert_preparation (initial, expected, state) = assert_equal (map devolve expected) (run_preparation initial state)
 
-assert_preparations :: [([(String, [String])], [Intent Command State], State)] -> IO ()
---assert_preparations tests = fmap assert_preparation tests
-{-
-assert_preparations [] = return ()
-assert_preparations (test : tests) = do
-    assert_preparation test
-    assert_preparations tests
-    -}
---assert_preparations tests = map assert_preparation tests
+assert_preparations :: [([Intent Command State], [Intent Command State], State)] -> IO ()
 assert_preparations tests = sequence_ $ map assert_preparation tests
 
 assert_someday_match :: State -> Int -> [Intent Command State] -> State -> IO ()
@@ -32,25 +24,22 @@ assert_someday :: (State -> Bool) -> Int -> [Intent Command State] -> State -> I
 assert_someday predicate iterations intents state
   | predicate state = putStrLn $ "√ assert_someday succeeds"
   | iterations == 0 = putStrLn $ "† assert_someday exhausted. final intents " ++ show (map devolve intents) ++ ", final state " ++ show state
-  | prepare_changed && single_task prepared_intents = trace ("     !! " ++ show (map devolve prepared_intents) ++ " == " ++ show (map devolve new_intents)) $ assert_someday predicate (iterations - 1) new_intents new_state
-  | otherwise = trace ("     == " ++ show (map devolve prepared_intents)) $ assert_someday predicate (iterations - 1) prepared_intents state
-  where (prepare_changed, prepared_intents) = prepare_intents intents state
+  | intents_ready intents = assert_someday predicate (iterations - 1) new_intents new_state
+  | otherwise = assert_someday predicate (iterations - 1) prepared_intents state
+  where prepared_intents = prepare_intents intents state
         new_state = foldr (\action state -> action state) state actions 
-        (new_intents, actions) = intents_extract_actions prepared_intents
-        single_task [] = False
-        single_task (Intent _ (Just (_ : [])) : _) = True
-        single_task _ = False
+        (new_intents, actions) = intents_extract_actions intents
 
 assert_equal :: (Show a, Eq a) => a -> a -> IO ()
 assert_equal x y = if x == y
                        then putStrLn $ "√ " ++ show x ++ " is good"
                        else putStrLn $ "† " ++ show x ++ " /= " ++ show y
 
-devolve :: Intent Command State -> (String, [String])
-devolve (Intent goal tasks) = (goal_name goal, tasks_string)
-    where tasks_string = case tasks of
-                             Just ts -> map task_name ts
-                             Nothing -> []
+-- convert an Intent into a simple String -- so it can be compared with others for testing
+devolve :: Intent Command State -> String
+devolve (HazyIntent goal) = goal_name goal
+devolve (OptionyIntent goal tasks) = goal_name goal ++ " [" ++ concat (intersperse ", " (map task_name tasks)) ++ "]"
+devolve (ClearIntent goal task) = goal_name goal ++ " " ++ task_name task
 
 base_goal = be_unhungry 1
 base_task = eat 1
@@ -64,44 +53,52 @@ bountiful_state = Map.fromList [
     (5, Actor 5 99 (Map.fromList [("food", 100)]))
     ]
 
-prep_tests :: [([(String, [String])], [Intent Command State], State)]
+prep_tests :: [([Intent Command State], [Intent Command State], State)]
 prep_tests = [
-            ([("be_unhungry", ["eat"])], [Intent (be_unhungry 1) Nothing], hungry_state),
-            ([("have_item", []), ("be_unhungry", ["eat"])], [Intent (be_unhungry 1) (Just $ [eat 1])], hungry_state),
             (
-                [
-                    ("have_item", []), -- this will come up blank because there's no food to pickup and no ovens to cook upon
-                    ("be_unhungry", ["eat"])
-                ], [
-                    Intent (have_food 1 1) Nothing,
-                    Intent (be_unhungry 1) (Just [eat 1])
-                ], hungry_state
+                [HazyIntent (be_unhungry 1)], -- from a hazy intent,
+                [OptionyIntent (be_unhungry 1) [eat 1]], -- produce options!
+                hungry_state
             ),
             (
-                [
-                    ("have_item", ["take_item 'food' from 4", "take_item 'food' from 5", "cook in this oven", "cook in this oven"]),
-                    ("be_unhungry", ["eat"])
-                ], [
-                    Intent (have_food 1 1) Nothing,
-                    Intent (be_unhungry 1) (Just [eat 1])
-                ], bountiful_state
+                [OptionyIntent (be_unhungry 1) [eat 1]], -- from options,
+                [ClearIntent (be_unhungry 1) (eat 1)], -- produce clarity!
+                hungry_state
             ),
             (
-                [
-                    ("have_item", ["take_item 'food' from 4"]),
-                    ("be_unhungry", ["eat"])
-                ], [
-                    Intent (have_food 1 1) (Just (seek_item "food" 1 [1] bountiful_state)),
-                    Intent (be_unhungry 1) (Just [eat 1])
-                ], bountiful_state
+                [ClearIntent (be_unhungry 1) (eat 1)], -- from the intent,
+                [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- choose goal "have_food"
+                hungry_state
+            ),
+            (
+                [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
+                [OptionyIntent (have_food 1 1) [], ClearIntent (be_unhungry 1) (eat 1)], -- no options will arise -- there's no food in this world
+                hungry_state
+            ),
+            (
+                [OptionyIntent (have_food 1 1) [], ClearIntent (be_unhungry 1) (eat 1)], -- with no options on the table,
+                [], -- our hero will swiftly give up
+                hungry_state
+            ),
+            (
+                [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
+                [OptionyIntent (have_food 1 1) [ -- todo: fill in these options
+                    ],
+                    ClearIntent (be_unhungry 1) (eat 1)], -- options will arise -- there's lots of food to choose from in this world
+                bountiful_state
+            ),
+            (
+                [OptionyIntent (have_food 1 1) (seek_item "food" 1 [1] bountiful_state), ClearIntent (be_unhungry 1) (eat 1)], -- with many edible options,
+                [ClearIntent (have_food 1 1) (take_item "food" 4 1)], -- we're gonna pick the closest one
+                bountiful_state
             )
         ]
 
 someday_tests :: IO ()
 someday_tests = sequence_ [
-        assert_someday (\state -> query_actor 1 unhungry state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state, -- assert that the actor will eventually feed herself somehow
-        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state, -- assert that item 4 will have no food at some point, and the actor will have food
-        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 18 [Intent (be_unhungry 1) Nothing] bountiful_state -- assert that item 4 will be down to 1 food at some point, and the actor will have food
+        assert_someday (\state -> query_actor 1 unhungry state) 18 [HazyIntent (be_unhungry 1)] bountiful_state, -- assert that the actor will eventually feed herself somehow
+        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 18 [HazyIntent (be_unhungry 1)] bountiful_state, -- assert that item 4 will have no food at some point, and the actor will have food
+        assert_someday (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 18 [HazyIntent (be_unhungry 1)] bountiful_state -- assert that item 4 will be down to 1 food at some point, and the actor will have food
         ]
 
 main :: IO ()

@@ -57,6 +57,7 @@ prepare_intents (intent : intents) state = case intent of
     HazyIntent goal -> if goal_succeeds goal state
                        then trace "    popping successful intent " $ intents
                        else trace "    generating task options " $ OptionyIntent goal (goal_generate_tasks goal state) : intents
+    OptionyIntent goal [] -> trace "    hitting a wall! " $ []
     OptionyIntent goal tasks -> trace "    winnowing tasks " $ ClearIntent goal (select_task tasks) : intents
     ClearIntent goal task -> trace "    ready to execute " $ intent : intents
 

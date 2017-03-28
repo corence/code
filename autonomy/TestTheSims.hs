@@ -7,11 +7,13 @@ import Data.Map(Map(..))
 import Debug.Trace
 import Data.List
 
-run_preparation :: [Intent Command State] -> State -> [String]
-run_preparation initial state = map devolve (prepare_intents initial state)
+run_preparation :: [Intent Command State] -> State -> String
+run_preparation initial state = devolves (prepare_intents initial state)
 
 assert_preparation :: ([Intent Command State], [Intent Command State], State) -> IO ()
-assert_preparation (initial, expected, state) = assert_equal (map devolve expected) (run_preparation initial state)
+assert_preparation (initial, expected, state) = do
+    putStrLn $ "assert_preparation: " ++ devolves initial ++ " -> " ++ devolves expected
+    assert_equal (run_preparation initial state) (devolves expected)
 
 assert_preparations :: [([Intent Command State], [Intent Command State], State)] -> IO ()
 assert_preparations tests = sequence_ $ map assert_preparation tests
@@ -41,12 +43,15 @@ devolve (HazyIntent goal) = goal_name goal
 devolve (OptionyIntent goal tasks) = goal_name goal ++ " [" ++ concat (intersperse ", " (map task_name tasks)) ++ "]"
 devolve (ClearIntent goal task) = goal_name goal ++ " " ++ task_name task
 
+devolves :: [Intent Command State] -> String
+devolves intents = show $ map devolve intents
+
 base_goal = be_unhungry 1
 base_task = eat 1
 
 hungry_state = Map.fromList [(1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 52)]))]
 bountiful_state = Map.fromList [
-    (1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 52)])),
+    (1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 52), ("prepped_ingredients", 52)])),
     (2, Actor 2 18 (Map.fromList [("oven", 1)])),
     (3, Actor 3 0 (Map.fromList [("oven", 1)])),
     (4, Actor 4 44 (Map.fromList [("food", 2)])),
@@ -67,7 +72,7 @@ prep_tests = [
             ),
             (
                 [ClearIntent (be_unhungry 1) (eat 1)], -- from the intent,
-                [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- choose goal "have_food"
+                [ClearIntent (be_unhungry 1) (eat 1)], -- you can't improve a ClearIntent, you just have to execute it
                 hungry_state
             ),
             (
@@ -82,7 +87,7 @@ prep_tests = [
             ),
             (
                 [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
-                [OptionyIntent (have_food 1 1) [ -- todo: fill in these options
+                [OptionyIntent (have_food 1 1) [ -- TODO: fill in these options
                     ],
                     ClearIntent (be_unhungry 1) (eat 1)], -- options will arise -- there's lots of food to choose from in this world
                 bountiful_state
@@ -103,5 +108,6 @@ someday_tests = sequence_ [
 
 main :: IO ()
 main = do
+    assert_equal 4 (length (seek_item "food" 1 [1] bountiful_state))
     assert_preparations prep_tests
     someday_tests

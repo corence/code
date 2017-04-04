@@ -26,8 +26,8 @@ assert_someday :: (State -> Bool) -> Int -> [Intent Command State] -> State -> I
 assert_someday predicate iterations intents state
   | predicate state = putStrLn $ "√ assert_someday succeeds"
   | iterations == 0 = putStrLn $ "† assert_someday exhausted. final intents " ++ show (map devolve intents) ++ ", final state " ++ show state
-  | intents_ready intents = assert_someday predicate (iterations - 1) new_intents new_state
-  | otherwise = assert_someday predicate (iterations - 1) prepared_intents state
+  | intents_ready intents = trace ("ready intents: " ++ show intents ++ " -> " ++ show new_intents) $ assert_someday predicate (iterations - 1) new_intents new_state
+  | otherwise = trace ("prepping intents: " ++ show intents) $ assert_someday predicate (iterations - 1) prepared_intents state
   where prepared_intents = prepare_intents intents state
         new_state = foldr (\action state -> action state) state actions 
         (new_intents, actions) = intents_extract_actions intents
@@ -88,13 +88,17 @@ prep_tests = [
             (
                 [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
                 [OptionyIntent (have_food 1 1) [ -- TODO: fill in these options
+                    take_item "food" 4 1,
+                    take_item "food" 5 1,
+                    cook 2 1,
+                    cook 3 1
                     ],
                     ClearIntent (be_unhungry 1) (eat 1)], -- options will arise -- there's lots of food to choose from in this world
                 bountiful_state
             ),
             (
                 [OptionyIntent (have_food 1 1) (seek_item "food" 1 [1] bountiful_state), ClearIntent (be_unhungry 1) (eat 1)], -- with many edible options,
-                [ClearIntent (have_food 1 1) (take_item "food" 4 1)], -- we're gonna pick the closest one
+                [ClearIntent (have_food 1 1) (take_item "food" 4 1), ClearIntent (be_unhungry 1) (eat 1)], -- we're gonna pick the closest one
                 bountiful_state
             )
         ]

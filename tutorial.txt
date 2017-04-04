@@ -1,0 +1,59 @@
+
+What's a monad?
+
+Let's break that question down into a few related questions:
+1) what _is_ the monad? what is its form? (is it like a type, a function, a variable, or what??)
+2) what is it for? what problem do monads solve?
+
+A monad is a *wrapper type* with a specific group of *conversion functions*.
+
+So, let's ignore monads for a second and refresh ourselves on wrapper types.
+
+1a) what is a wrapper type?
+2a) what is it for? what problem do wrapper types solve?
+
+1a)
+Let's define a "wrapper type" to be -- a type that can wrap another type.
+Many languages allow us to create these:
+Language    Feature Used    Example
+Java    Generics    ArrayList<Float>
+C++     Template Classes    std::ptr<std::string>
+Haskell Parameterized Types Maybe Integer
+
+2a)
+Having your data wrapped in one of these wrapper types means that:
+ - extra data can be carried with it
+ - the wrapper can have control over instantiating the wrapped type (like ArrayList does -- it can generate many instances of the wrapped type)
+
+Wrapper types are especially useful in Haskell for a few reasons:
+ - you can't modify data -- sometimes you'll wrap data instead of modifying it
+ - you can't throw exceptions -- so you need to handle every possible error -- the equivalent of a NullPointerException in Haskell is simply a program halt
+
+So there's more wrapper types being passed around in the Haskell standard library than there is in Java. This can make simple programming tasks (example: double a value in a hashtable) quite cumbersome compared to Java.
+
+Fortunately, the conversion methods add a lot of convenience -- giving you type-safety without verbosity and boilerplate.
+
+So now we come to:
+
+2) what problem do monads solve?
+
+The conversion methods are *purely for convenience*. You can use a monadic type without touching its Monad functions*.
+
+The conversion methods of a Monad* are useful in the following situations:
+a) i have a wrapped type, and i want to call a function that only accepts an unwrapped type.
+ * Example: I have a list of strings, and I have a function that lowercases a single string, but I want to apply it to all of my strings.
+ * Example: I have an (IO Integer), and I want to double it.
+ * Example: I have a Maybe Float, and I want to double it, but I don't want to cause an error if the Maybe doesn't have a value
+ 
+b) i have an unwrapped type, and i want to call a function that only accepts a wrapped type.
+ * Example: I have plain data, but I need to return a Promise.
+
+c) I have wrapped data, and I want to call a function that is *also* wrapped in the monad (remember, monads can wrap any data type, and functions are data too!)
+
+* - probably not true for the IO monad in Haskell, unfortunately. All the others are good, though.
+* - and Functor and Applicative, if you're in Haskell, but you don't care about that information right now
+
+
+Example: double a value in a hashtable
+(note -- Data.Map.alter would be a sensible way to do this, but let's pretend that method doesn't exist for now)
+

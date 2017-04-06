@@ -128,22 +128,141 @@ apple wrapped_a wrapped_func = jellybean $ furry' (\func -> furry' (\a -> func a
 
 -- Exercise 14
 -- Relative Difficulty: 6
+--moppy :: (Misty m) => [a] -> (a -> m b) -> m [b]
+--  furry :: (p -> q) -> m p -> m q
+--  banana :: (p -> m q) -> m p -> m q
+--  unicorn :: p -> m p
+--  jellybean :: (Misty m) => m (m p) -> m p
+--  apple :: (Misty m) => m p -> m (p -> q) -> m q
+--moppy list_of_a a_to_mb = error "todo"
+
+--  furry :: ([b] -> [b]) -> m [b] -> m [b]
+--  furry :: (b -> [b]) -> m b -> m [b]
+--  furry :: (b -> [b]) -> m b -> m [b]
+--  furry :: ([b] -> [b]) -> m [b] -> m [b]
+--  furry :: (p -> [b]) -> m p -> m [b]
+--  banana :: (p -> m [b]) -> m p -> m [b]
+--  jellybean :: m (m [b]) -> m [b]
+--  apple :: m p -> m (p -> [b]) -> m [b]
 moppy :: (Misty m) => [a] -> (a -> m b) -> m [b]
---  furry :: (a -> b) -> f a -> f b
+moppy [] a_to_mb = unicorn []
+--moppyA (a:as) a_to_mb = furry' (\new_b -> furry' (new_b :) others) (a_to_mb a)
+moppy (a:as) a_to_mb = furry2 (:) (a_to_mb a) others_mlb
+    where others_mlb = moppy as a_to_mb
+
+do_thingo :: (Misty m) => m [b] -> b -> m [b]
+do_thingo others_mlb unwrapped_converted_a = furry' (unwrapped_converted_a :) others_mlb
+
+thingoA :: b -> [b] -> [b]
+thingoA = (:)
+
+moppy1 :: [a] -> (a -> Maybe b) -> Maybe [b]
+moppy1 [] _ = Just []
+moppy1 (a:as) a_to_mb = case a_to_mb a of
+                        Just b -> case moppy1 as a_to_mb of
+                                  Just bs -> Just (b : bs)
+                                  Nothing -> Nothing
+                        Nothing -> Nothing
+
+furry2 :: (Misty m) => (a -> b -> c) -> m a -> m b -> m c
+furry2 func m_a m_b = apple m_b (furry' func m_a) 
+
+moppy2 :: [a] -> (a -> (p -> b)) -> (p -> [b])
+moppy2 as a_to_func = (\p -> furry (\func -> func p) (furry a_to_func as))
+
+--moppy3 :: Misty m => [a] -> (a -> m b) -> (m [b])
+--moppy3 as a_to_func = (\p -> furry (\func -> func p) (furry a_to_func as))
+
+moppy5 :: [a] -> (a -> (EitherRight k b)) -> (EitherRight k [b])
+-- convert it to a list of EitherRights
+-- if any of them are Left, return one of the Lefts (i dont care which one)
+-- otherwise, return a list saying they're all good
+-- so we go from [a] -> [EitherRight k b] -> EitherRight k [b]
+moppy5 [] _ = EitherRight (Right [])
+moppy5 (a:as) a_to_either = case a_to_either a of
+                            EitherRight (Left k) -> EitherRight (Left k)
+                            EitherRight (Right b) -> case moppy5 as a_to_either of
+                                       EitherRight (Left kk) -> EitherRight (Left kk)
+                                       EitherRight (Right bs) -> EitherRight (Right (b : bs))
+
+--  / furry :: (a -> b) -> [a] -> [b]
+--  furry :: (a -> b) -> [EitherRight k a] -> [EitherRight k b]
+--  banana :: (a -> EitherRight k b) -> EitherRight k a -> EitherRight k b
+--  unicorn :: a -> EitherRight k a
+--  jellybean :: [[a]] -> [a]
+--  apple :: [a] -> [a -> b] -> [b]
+
+--  furry :: (a -> b) -> EitherRight k a -> EitherRight k b
 --  banana :: (a -> m b) -> m a -> m b
 --  unicorn :: a -> m a
 --  jellybean :: (Misty m) => m (m a) -> m a
 --  apple :: (Misty m) => m a -> m (a -> b) -> m b
-moppy list_of_a a_to_mb = error "todo"
 
---moppy1 :: [a] -> (a -> Maybe b) -> Maybe [b]
---moppy1 list_of_a a_to_mb = furry () list_of_a
+--  furry :: (EitherRight k b -> q) -> m p -> m q
+--  banana :: (p -> m q) -> m p -> m q
+--  unicorn :: p -> m p
+--  jellybean :: (Misty m) => m (m p) -> m p
+--  apple :: (Misty m) => m p -> m (p -> q) -> m q
+
+--  furry :: (p -> q) -> m p -> m q
+--  banana :: (p -> m q) -> m p -> m q
+--  unicorn :: p -> m p
+--  jellybean :: (Misty m) => m (m p) -> m p
+--  apple :: (Misty m) => m p -> m (p -> q) -> m q
+
+-- if we assume it must return a (Maybe [b]):
+--  moppy :: [a] -> (a -> Maybe b) -> (Maybe [b])
+--  unicorn :: b -> Maybe [b]
+--  jellybean :: Maybe (Maybe [b]) -> Maybe [b]
+--  apple :: Maybe p -> Maybe (p -> [b]) -> Maybe [b]
+--nope because if you need to call unit to get the (Maybe p), then you really didn't need this function at all:
+--  banana :: (p -> Maybe [b]) -> Maybe p -> Maybe [b]
+--  furry :: (p -> [b]) -> Maybe p -> Maybe [b]
+
+-- if we assume it must return a (Maybe [b]) -- part 2:
+--  moppy :: [a] -> (a -> Maybe b) -> (Maybe [b])
+--  unicorn :: b -> Maybe [b]
+--  jellybean :: Maybe (Maybe [b]) -> Maybe [b]
+--  apple :: Maybe p -> Maybe (p -> [b]) -> Maybe [b]
+--  banana :: ([b] -> Maybe [b]) -> Maybe [b] -> Maybe [b]
+--  furry :: (p -> [b]) -> Maybe p -> Maybe [b]
+
+-- if we assume it must return a (m [b]):
+--  moppy :: (Misty m) => [a] -> (a -> m b) -> (m [b])
+--  furry :: (p -> [b]) -> m p -> m [b]
+--  banana :: (p -> m [b]) -> m p -> m [b]
+--  unicorn :: p -> m [b]
+--  jellybean :: (Misty m) => m (m [b]) -> m [b]
+--  apple :: (Misty m) => m p -> m (p -> [b]) -> m [b]
+
+-- if we assume it must return a (m (n b)):
+--  moppy :: (n a) -> (a -> m b) -> (m (n b))
+--  furry :: (p -> (n b)) -> m p -> m (n b)
+--  banana :: (p -> m (n b)) -> m p -> m (n b)
+--  unicorn :: p -> m (n b)
+--  jellybean :: m (m (n b)) -> m (n b)
+--  apple :: m p -> m (p -> (n b)) -> m (n b)
+          
+moppy7 :: [a] -> (a -> [b]) -> [[b]]
+moppy7 as a_to_bs = furry a_to_bs as
+
+--moppy8 :: Misty m => [a] -> (a -> m b) -> (m [b])
+--  apple :: Maybe p -> Maybe (p -> [b]) -> Maybe [b]
+--moppy8 as a_to_mb = furry a_to_mb as
+
+moppy9 :: (Misty m) => [a] -> (a -> m b) -> m [b]
+moppy9 list_of_a a_to_mb = sausage (furry a_to_mb list_of_a)
+
+--  apple :: Maybe p -> Maybe (p -> [b]) -> Maybe [b]
+--mini :: (a, a) -> (a -> Maybe b) -> (Maybe (b, b))
 
 -- Exercise 15
 -- Relative Difficulty: 6
 -- (bonus: use moppy)
 sausage :: (Misty m) => [m a] -> m [a]
-sausage = error "todo"
+--  moppy :: Misty m => [m a] -> (m a -> m a) -> m [a]
+--  moppy :: Misty m => [a] -> (a -> m b) -> m [b]
+sausage wrapped_things = moppy9 wrapped_things id
 
 sausage1 :: [Maybe a] -> Maybe [a]
 sausage1 [] = Nothing
@@ -161,6 +280,57 @@ sausage3 ((EitherRight (Left result)) : _) = EitherRight (Left result)
 sausage3 ((EitherRight (Right value)) : es) = case (sausage3 es) of
                                                   EitherRight (Left result) -> EitherRight (Left result)
                                                   EitherRight (Right values) -> EitherRight (Right (value : values))
+                                                  
+sausage4 :: (Misty m) => [m a] -> m [a]
+sausage4 [] = unicorn []
+sausage4 (wrapped_head : wrapped_things) = banana (inject4 wrapped_head) new_things
+    where new_things = sausage4 wrapped_things
+          
+inject4 :: (Misty m) => m a -> [a] -> m [a]
+inject4 wrapped_head new_thing = furry' (\x -> x : new_thing) wrapped_head
+
+sausage5 :: [[a]] -> [[a]]
+sausage5 [] = return []
+sausage5 (wrapped_head : wrapped_things) = new_things >>= inject5 wrapped_head
+    where new_things = sausage5 wrapped_things
+          
+--inject :: (Misty m) => m a -> m [a]
+--inject wrapped_head new_thing = wrapped_head >>= (: new_thing)
+
+--banana :: (a -> m b) -> m a -> m b
+--banana2 :: (Misty m) => (a -> (b -> c)) -> m a -> (m b -> m c)
+--apple :: (Misty m) => m a -> m (a -> b) -> m b
+--furry' :: (Misty m) => (a -> b) -> m a -> m b
+inject5 :: [a] -> [a] -> [[a]]
+inject5 wrapped_head new_thing = furry (\x -> x : new_thing) wrapped_head
+
+--sausage4 :: (Misty m) => [m a] -> m [a]
+--sausage4 [] = error "wtf"
+--sausage4 (m_a:m_as) = m_a >>= unicorn (\a -> a : sausage4 m_as)
+
+--sss :: m a -> m [a] -> m [a]
+--sss m_a m_as = furry (:) m_a m_as
+
+--sequence [[1,2,3],[4,5,6],[7,8,9]]
+--[[1,4,7],[1,4,8],[1,4,9],[1,5,7],[1,5,8],[1,5,9],[1,6,7],[1,6,8],[1,6,9],[2,4,7],[2,4,8],[2,4,9],[2,5,7],[2,5,8],[2,5,9],[2,6,7],[2,6,8],[2,6,9],[3,4,7],[3,4,8],[3,4,9],[3,5,7],[3,5,8],[3,5,9],[3,6,7],[3,6,8],[3,6,9]]
+
+--sequence [[1,2],[4,5],[7,8]]
+--[[1,4,7],[1,4,8],[1,5,7],[1,5,8],[2,4,7],[2,4,8],[2,5,7],[2,5,8]]
+
+--sequence [[1,2,3,4,5,6],[4,5]]
+--[[1,4],[1,5],[2,4],[2,5],[3,4],[3,5],[4,4],[4,5],[5,4],[5,5],[6,4],[6,5]]
+--cartesian_product :: [[a]] -> [[a]]
+--cartesian_product lists = foreach lists as list -> foreach element -> use it
+--[[1,2],[4,5]]
+--[[1,4],[4,5]]
+-- foreach (list, other_lists)
+--   foreach
+--cartesian_product :: [[a]] -> [[a]]
+-- prepend everything in list to everything in lists
+-- lists is [[a]] but it will become [[[a]]]
+--cartesian_product (list : lists) = list >>= (:)
+--cartesian_product [] = []
+--cartesian_product (list : lists) = list >>= (\x -> fmap (:) x (cartesian_product lists))
 
 -- Exercise 16
 -- Relative Difficulty: 6

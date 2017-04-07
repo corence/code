@@ -37,7 +37,7 @@ dump_state :: State -> String
 dump_state state = dump_actors $ Map.elems state
 
 dump_actors :: [Actor] -> String
-dump_actors actors = (actors >>= ("\n    " ++) . show) ++ "\n"
+dump_actors actors = (actors >>= ("\n    " ++) . show) -- ++ "\n"
 
 find_actor :: ActorID -> State -> Actor
 find_actor actor_id state = case Map.lookup actor_id state of

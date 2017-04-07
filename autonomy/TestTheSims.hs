@@ -9,14 +9,21 @@ import Data.List
 
 --printGood _ = return ()
 printGood = putStrLn . (++ "\n")
+
 printBad = putStrLn . (++ "\n")
+
+--printProgress = putStrLn
+printProgress _ = return ()
+
+--ctrace = trace
+ctrace _ = id
 
 run_preparation :: [Intent Command State] -> State -> String
 run_preparation initial state = devolves (prepare_intents initial state)
 
 assert_preparation :: ([Intent Command State], [Intent Command State], State) -> IO ()
 assert_preparation (initial, expected, state) = do
-    putStrLn $ "assert_preparation: " ++ devolves initial ++ " -> " ++ devolves expected
+    printProgress $ "assert_preparation: " ++ devolves initial ++ " -> " ++ devolves expected
     assert_equal (run_preparation initial state) (devolves expected)
 
 assert_preparations :: [([Intent Command State], [Intent Command State], State)] -> IO ()
@@ -30,8 +37,8 @@ assert_someday :: String -> (State -> Bool) -> Int -> [Intent Command State] -> 
 assert_someday name predicate iterations intents state
   | predicate state = printGood $ "√ succeeds: \"" ++ name ++ "\""
   | iterations == 0 = printBad $ "† exhausted: \"" ++ name ++ "\"\nfinal intents " ++ show (map devolve intents) ++ ", final state " ++ dump_state state
-  | intents_ready intents = trace ("ready intents: " ++ show intents ++ " -> " ++ show new_intents ++ "\n" ++ "new state: " ++ dump_state new_state) $ assert_someday name predicate (iterations - 1) new_intents new_state
-  | otherwise = trace ("prepping intents: " ++ show intents) $ assert_someday name predicate (iterations - 1) prepared_intents state
+  | intents_ready intents = ctrace ("ready intents: " ++ show intents ++ " -> " ++ show new_intents ++ "\n" ++ "new state: " ++ dump_state new_state) $ assert_someday name predicate (iterations - 1) new_intents new_state
+  | otherwise = ctrace ("prepping intents: " ++ show intents) $ assert_someday name predicate (iterations - 1) prepared_intents state
   where prepared_intents = prepare_intents intents state
         new_state = foldr (\action state -> action state) state actions 
         (new_intents, actions) = intents_extract_actions intents
@@ -45,7 +52,8 @@ assert_equal x y = if x == y
 devolve :: Intent Command State -> String
 devolve (HazyIntent goal) = goal_name goal
 devolve (OptionyIntent goal tasks) = goal_name goal ++ " [" ++ concat (intersperse ", " (map task_name tasks)) ++ "]"
-devolve (ClearIntent goal task) = goal_name goal ++ " " ++ task_name task
+devolve (TaskIntent goal task) = goal_name goal ++ " " ++ task_name task
+devolve (ExecutableIntent goal task) = goal_name goal ++ " " ++ task_name task ++ "!"
 
 devolves :: [Intent Command State] -> String
 devolves intents = show $ map devolve intents
@@ -71,38 +79,49 @@ prep_tests = [
             ),
             (
                 [OptionyIntent (be_unhungry 1) [eat 1]], -- from options,
-                [ClearIntent (be_unhungry 1) (eat 1)], -- produce clarity!
+                [TaskIntent (be_unhungry 1) (eat 1)], -- produce clarity!
                 hungry_state
             ),
             (
-                [ClearIntent (be_unhungry 1) (eat 1)], -- from the intent,
-                [ClearIntent (be_unhungry 1) (eat 1)], -- you can't improve a ClearIntent, you just have to execute it
+                [TaskIntent (be_unhungry 1) (eat 1)], -- from the intent,
+                [HazyIntent (have_food 1 1), TaskIntent (be_unhungry 1) (eat 1)], -- raise the prerequisite
                 hungry_state
             ),
             (
-                [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
-                [OptionyIntent (have_food 1 1) [], ClearIntent (be_unhungry 1) (eat 1)], -- no options will arise -- there's no food in this world
+                [HazyIntent (have_food 1 1), TaskIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
+                [OptionyIntent (have_food 1 1) [], TaskIntent (be_unhungry 1) (eat 1)], -- no options will arise -- there's no food in this world
                 hungry_state
             ),
             (
-                [OptionyIntent (have_food 1 1) [], ClearIntent (be_unhungry 1) (eat 1)], -- with no options on the table,
+                [OptionyIntent (have_food 1 1) [], TaskIntent (be_unhungry 1) (eat 1)], -- with no options on the table,
                 [], -- our hero will swiftly give up
                 hungry_state
             ),
             (
-                [HazyIntent (have_food 1 1), ClearIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
-                [OptionyIntent (have_food 1 1) [ -- TODO: fill in these options
+                [HazyIntent (have_food 1 1), TaskIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
+                [OptionyIntent (have_food 1 1) [
                     take_item "food" 4 1,
                     take_item "food" 5 1,
                     cook 2 1,
                     cook 3 1
                     ],
-                    ClearIntent (be_unhungry 1) (eat 1)], -- options will arise -- there's lots of food to choose from in this world
+                    TaskIntent (be_unhungry 1) (eat 1)], -- options will arise -- there's lots of food to choose from in this world
                 bountiful_state
             ),
             (
-                [OptionyIntent (have_food 1 1) (seek_item "food" 1 [1] bountiful_state), ClearIntent (be_unhungry 1) (eat 1)], -- with many edible options,
-                [ClearIntent (have_food 1 1) (take_item "food" 4 1), ClearIntent (be_unhungry 1) (eat 1)], -- we're gonna pick the closest one
+                [OptionyIntent (have_food 1 1) [
+                    take_item "food" 4 1,
+                    take_item "food" 5 1,
+                    cook 2 1,
+                    cook 3 1
+                    ],
+                    TaskIntent (be_unhungry 1) (eat 1)], -- with many edible options,
+                [TaskIntent (have_food 1 1) (take_item "food" 4 1), TaskIntent (be_unhungry 1) (eat 1)], -- we're gonna pick the closest one
+                bountiful_state
+            ),
+            (
+                [TaskIntent (have_food 1 1) (take_item "food" 4 1), TaskIntent (be_unhungry 1) (eat 1)], -- i'm so going for food
+                [HazyIntent (be_at 4 1), TaskIntent (have_food 1 1) (take_item "food" 4 1), TaskIntent (be_unhungry 1) (eat 1)], -- so i'm gonna be there!
                 bountiful_state
             )
         ]

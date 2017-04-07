@@ -15,6 +15,9 @@ import qualified Data.Map as Map
 import Data.Map(Map(..))
 import Debug.Trace
 
+--ctrace = trace
+ctrace _ = id
+
 -- if i have no Intents then i need to generate one
 -- if i have at least one intent, then look at the head:
 ---- does the Goal pass? if so, pop this intent
@@ -25,7 +28,8 @@ import Debug.Trace
 data Intent command state
     = HazyIntent (Goal command state)
     | OptionyIntent (Goal command state) [Task command state]
-    | ClearIntent (Goal command state) (Task command state)
+    | TaskIntent (Goal command state) (Task command state)
+    | ExecutableIntent (Goal command state) (Task command state)
     deriving Show
 data Goal command state = Goal String [state -> [Task command state]] [state -> Bool] -- name, task_generators, win conditions (need all for success)
 data Task command state = Task String [Goal command state] [command] -- name, prerequisites, actions
@@ -40,26 +44,28 @@ type ActorID = Int
 
 intents_ready :: [Intent command state] -> Bool
 intents_ready [] = False
-intents_ready (ClearIntent _ _ : _) = True
+intents_ready (ExecutableIntent _ _ : _) = True
 intents_ready _ = False
 
 intents_extract_actions :: [Intent command state] -> ([Intent command state], [command])
 intents_extract_actions [] = ([], [])
 intents_extract_actions (intent : other_intents) = case intent of
-    HazyIntent _ -> (intent : other_intents, [])
-    OptionyIntent _ _ -> (intent : other_intents, [])
-    ClearIntent goal task -> (HazyIntent goal : other_intents, task_actions task)
+    ExecutableIntent goal task -> (HazyIntent goal : other_intents, task_actions task)
+    otherwise -> (intent : other_intents, [])
 
--- if it returns True, then we'll need to run it again (because something changed)
 prepare_intents :: [Intent command state] -> state -> [Intent command state]
-prepare_intents [] _ = trace "    time to generate a fresh new intent " $ []
+prepare_intents [] _ = ctrace "    time to generate a fresh new intent " $ []
 prepare_intents (intent : intents) state = case intent of
     HazyIntent goal -> if goal_succeeds goal state
-                       then trace ("    " ++ goal_name goal ++ ": popping successful intent ") $ intents
-                       else trace ("    " ++ goal_name goal ++ ": generating task options: " ++ show (map task_name (goal_generate_tasks goal state))) $ OptionyIntent goal (goal_generate_tasks goal state) : intents
-    OptionyIntent goal [] -> trace ("    " ++ goal_name goal ++ ": hitting a wall! ") $ []
-    OptionyIntent goal tasks -> trace ("    " ++ goal_name goal ++ ": winnowing tasks down to " ++ task_name (select_task tasks)) $ ClearIntent goal (select_task tasks) : intents
-    ClearIntent goal task -> trace ("    " ++ goal_name goal ++ ": ready to execute ") $ intent : intents
+                       then ctrace ("    " ++ goal_name goal ++ ": popping successful intent ") $ intents
+                       else ctrace ("    " ++ goal_name goal ++ ": generating task options: " ++ show (map task_name (goal_generate_tasks goal state))) $ OptionyIntent goal (goal_generate_tasks goal state) : intents
+    OptionyIntent goal [] -> ctrace ("    " ++ goal_name goal ++ ": hitting a wall! ") $ []
+    OptionyIntent goal tasks -> ctrace ("    " ++ goal_name goal ++ ": winnowing tasks down to " ++ task_name (select_task tasks)) $ TaskIntent goal (select_task tasks) : intents
+    TaskIntent goal task -> if null incomplete_prerequisites
+                            then ctrace ("    " ++ goal_name goal ++ ": no prerequisites ") $ ExecutableIntent goal task : intents
+                            else ctrace ("    " ++ goal_name goal ++ ": preparing prerequisites ") $ HazyIntent (head incomplete_prerequisites) : intent : intents
+                            where incomplete_prerequisites = task_incomplete_prerequisites task state
+    ExecutableIntent goal _ -> ctrace ("    " ++ goal_name goal ++ ": ready to execute ") $ intent : intents
 
 goal_succeeds :: Goal command state -> state -> Bool
 goal_succeeds (Goal _ _ win_conditions) state = all (\condition -> condition state) win_conditions
@@ -75,6 +81,9 @@ task_name (Task name _ _) = name
 
 task_prerequisites :: Task command state -> [Goal command state]
 task_prerequisites (Task _ prerequisites _) = prerequisites
+
+task_incomplete_prerequisites :: Task command state -> state -> [Goal command state]
+task_incomplete_prerequisites task state = filter (\goal -> not (goal_succeeds goal state)) (task_prerequisites task)
 
 task_actions :: Task command state -> [command]
 task_actions (Task _ _ actions) = actions

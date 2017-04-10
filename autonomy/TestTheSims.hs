@@ -69,6 +69,13 @@ bountiful_state = Map.fromList [
     (4, Actor 4 44 (Map.fromList [("food", 2)])),
     (5, Actor 5 99 (Map.fromList [("food", 100)]))
     ]
+cookable_state = Map.fromList [
+    (1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 52)])),
+    (2, Actor 2 18 (Map.fromList [("oven", 1)])),
+    (3, Actor 3 0 (Map.fromList [("oven", 1)])),
+    (4, Actor 4 44 (Map.fromList [("food", 0)])),
+    (5, Actor 5 99 (Map.fromList [("food", 0), ("prepped_ingredients", 12)]))
+    ]
 
 prep_tests :: [([Intent Command State], [Intent Command State], State)]
 prep_tests = [
@@ -128,9 +135,10 @@ prep_tests = [
 
 someday_tests :: IO ()
 someday_tests = sequence_ [
-        assert_someday "the actor will feed herself somehow" (\state -> query_actor 1 unhungry state) 18 [HazyIntent (be_unhungry 1)] bountiful_state,
-        assert_someday "item 4 will have no food at some point, and the actor will have food" (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 18 [HazyIntent (be_unhungry 1)] bountiful_state,
-        assert_someday "item 4 will be down to 1 food at some point, and the actor will have food" (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 18 [HazyIntent (be_unhungry 1)] bountiful_state
+        assert_someday "the actor will feed herself somehow" (\state -> query_actor 1 unhungry state) 280 [HazyIntent (be_unhungry 1)] bountiful_state,
+        assert_someday "item 4 will have no food at some point, and the actor will have food" (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 0) . (get_item "food")) state) 380 [HazyIntent (be_unhungry 1)] bountiful_state,
+        assert_someday "item 4 will be down to 1 food at some point, and the actor will have food" (\state -> query_actor 1 ((== 1) . (get_item "food")) state && query_actor 4 ((== 1) . (get_item "food")) state) 380 [HazyIntent (be_unhungry 1)] bountiful_state,
+        assert_someday "the actor will cook" (\state -> query_actor 1 unhungry state) 280 [HazyIntent (be_unhungry 1)] cookable_state
         ]
 
 main :: IO ()

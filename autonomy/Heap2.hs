@@ -3,6 +3,7 @@ module Heap2
 ( Comparator(..)
 , Heap(..)
 , add
+, dump
 , query
 , remove_head
 , size
@@ -27,7 +28,7 @@ query :: Heap a -> Maybe a
 query (Heap _ entry _ _) = entry
 
 remove_head :: Comparator a -> Heap a -> Heap a
-remove_head compare (Heap 0 Nothing p_left p_right) = error "can't remove from empty tree"
+remove_head compare (Heap 0 Nothing p_left p_right) = void -- error "can't remove from empty tree" -- TODO: this condition should probably exist
 remove_head compare (Heap p_size p_entry p_left p_right) = delete_empty_entry compare (Heap (p_size - 1) Nothing p_left p_right)
 
 delete_empty_entry :: Comparator a -> Heap a -> Heap a
@@ -45,3 +46,10 @@ maybe_compare compare (Just left) (Just right) = compare left right
 
 size :: Heap a -> Int
 size (Heap size _ _ _) = size
+
+dump :: (Show a) => Heap a -> String
+dump heap = dump_indented "" heap
+
+dump_indented :: (Show a) => String -> Heap a -> String
+dump_indented indent (Heap 0 _ _ _) = ""
+dump_indented indent (Heap _ entry left right) = indent ++ show entry ++ "\n" ++ dump_indented ("  " ++ indent) left ++ dump_indented ("  " ++ indent) right

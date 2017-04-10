@@ -6,3 +6,5 @@ module Solution
 import Heap
 import Data.Map
 import Intents
+
+data Solution = Solution 

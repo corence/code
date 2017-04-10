@@ -2,6 +2,7 @@
 module AutoHeap
 ( AutoHeap(..)
 , add
+, dump
 , Heap(..)
 , Heap.void
 , query
@@ -26,3 +27,5 @@ remove_head (AutoHeap comparator heap) = AutoHeap comparator (Heap.remove_head c
 size :: AutoHeap a -> Int
 size (AutoHeap _ heap) = Heap.size heap
 
+dump :: Show a => AutoHeap a -> String
+dump (AutoHeap _ heap) = Heap.dump heap

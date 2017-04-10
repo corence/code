@@ -23,14 +23,18 @@ operations = [
                  (AutoHeap.remove_head, 1, (9, "nine"))
              ]
 
-run_operation :: (Show a, Eq a) => ((AutoHeap a -> AutoHeap a), Int, a) -> AutoHeap a -> IO ()
-run_operation (func, count, value) aheap = do
-    let aheap2 = func aheap
-    (assert (AutoHeap.size aheap2) count)
-    assertish (AutoHeap.query aheap2) value
+operation_to_conversion :: (Show a, Eq a) => ((AutoHeap a -> AutoHeap a), Int, a) -> AutoHeap a -> IO (AutoHeap a)
+operation_to_conversion (func, count, value) aheap_prev
+  = let aheap = func aheap_prev in (assert_size count aheap >> assert_value value aheap >> putStrLn(AutoHeap.dump aheap) >> return aheap)
+    where assert_size count aheap = assert (AutoHeap.size aheap) count
+          assert_value value aheap = assertish (AutoHeap.query aheap) value
 
-main = return ()
+-- run each of the functions to keep transforming the thing
+rollup :: Monad m => [a -> m a] -> a -> m a
+rollup [] a = return a
+rollup (func:funcs) a = func a >>= rollup funcs
 
+main = rollup (map operation_to_conversion operations) (AutoHeap compare AutoHeap.void)
 
 --main = 
     --let heap0 = AutoHeap compare AutoHeap.void 

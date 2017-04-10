@@ -5,7 +5,9 @@ module Intents
 , Task(..)
 , intents_extract_actions
 , intents_ready
+, goal_generate_tasks
 , goal_name
+, goal_succeeds
 , prepare_intents
 , task_actions
 , task_name

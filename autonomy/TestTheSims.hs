@@ -15,8 +15,8 @@ printBad = putStrLn . (++ "\n")
 --printProgress = putStrLn
 printProgress _ = return ()
 
---ctrace = trace
-ctrace _ = id
+ctrace = trace
+--ctrace _ = id
 
 run_preparation :: [Intent Command State] -> State -> String
 run_preparation initial state = devolves (prepare_intents initial state)

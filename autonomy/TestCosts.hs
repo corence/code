@@ -3,6 +3,12 @@ import Costs
 import Debug.Trace
 import TheSims
 
+import qualified Actor as Actor
+import Actor(ActorID, Actor(..), ItemID, Pos)
+
+import qualified Data.Map as Map
+import Data.Map(Map(..))
+
 --printGood _ = return ()
 printGood = putStrLn . (++ "\n")
 
@@ -35,4 +41,5 @@ cookable_state = Map.fromList [
     (5, Actor 5 99 (Map.fromList [("food", 0), ("prepped_ingredients", 12)]))
     ]
     
-main = assert_equal 3 (goal_cost . measure_goal bountiful_state) (have_food 2 1)
+main :: IO ()
+main = assert_equal 3 ((goal_cost . measure_goal bountiful_state) (have_food 2 1))

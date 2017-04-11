@@ -23,6 +23,18 @@ operations = [
                  (AutoHeap.remove_head, 1, (9, "nine"))
              ]
 
+uber_duplicates = [
+                 (AutoHeap.add (3, "three"), 1, (3, "three")),
+                 (AutoHeap.add (3, "three"), 2, (3, "three")),
+                 (AutoHeap.add (3, "three"), 3, (3, "three")),
+                 (AutoHeap.add (7, "seven"), 4, (3, "three")),
+                 (AutoHeap.add (3, "three"), 5, (3, "three")),
+                 (AutoHeap.remove_head, 4, (3, "three")),
+                 (AutoHeap.remove_head, 3, (3, "three")),
+                 (AutoHeap.remove_head, 2, (3, "three")),
+                 (AutoHeap.remove_head, 1, (7, "seven"))
+             ]
+
 operation_to_conversion :: (Show a, Eq a) => ((AutoHeap a -> AutoHeap a), Int, a) -> AutoHeap a -> IO (AutoHeap a)
 operation_to_conversion (func, count, value) aheap_prev
   = let aheap = func aheap_prev in (assert_size count aheap >> assert_value value aheap >> putStrLn(AutoHeap.dump aheap) >> return aheap)
@@ -34,7 +46,9 @@ rollup :: Monad m => [a -> m a] -> a -> m a
 rollup [] a = return a
 rollup (func:funcs) a = func a >>= rollup funcs
 
-main = rollup (map operation_to_conversion operations) (AutoHeap compare AutoHeap.void)
+main = do
+    rollup (map operation_to_conversion operations) (AutoHeap compare AutoHeap.void)
+    rollup (map operation_to_conversion uber_duplicates) (AutoHeap compare AutoHeap.void)
 
 --main = 
     --let heap0 = AutoHeap compare AutoHeap.void 

@@ -21,7 +21,7 @@ fromList compare entries = foldr (\entry heap -> add compare entry heap) void en
 add :: Comparator a -> a -> Heap a -> Heap a
 add compare entry (Heap p_size Nothing p_left p_right) = Heap (p_size + 1) (Just entry) p_left p_right
 add compare entry (Heap p_size (Just p_entry) p_left p_right)
-  | GT /= compare entry p_entry = swap_value_with_parent
+  | LT == compare entry p_entry = swap_value_with_parent
   | (size p_left <= size p_right) = add_to_left_child
   | otherwise = add_to_right_child
     where swap_value_with_parent = add compare p_entry (Heap p_size (Just entry) p_left p_right) -- the new entry is higher priority than the one in the heap, so swap them

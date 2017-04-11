@@ -4,6 +4,7 @@ module Heap2
 , Heap(..)
 , add
 , dump
+, fromList
 , query
 , remove_head
 , size
@@ -13,6 +14,9 @@ module Heap2
 data Heap a = Heap Int (Maybe a) (Heap a) (Heap a) -- size, key, value, left_child, right_child
 type Comparator a = a -> a -> Ordering
 void = Heap 0 Nothing void void
+
+fromList :: Comparator a -> [a] -> Heap a
+fromList compare entries = foldr (\entry heap -> add compare entry heap) void entries
 
 add :: Comparator a -> a -> Heap a -> Heap a
 add compare entry (Heap p_size Nothing p_left p_right) = Heap (p_size + 1) (Just entry) p_left p_right

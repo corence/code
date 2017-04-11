@@ -11,6 +11,7 @@ module Intents
 , prepare_intents
 , task_actions
 , task_name
+, task_prerequisites
 ) where
 
 import qualified Data.Map as Map

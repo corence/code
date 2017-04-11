@@ -1,6 +1,11 @@
 
 module Costs
-(
+( GoalWithCost
+, TaskWithCost
+, goal_cost
+, task_cost
+, measure_goal
+, measure_task
 ) where
 
 import qualified Heap2 as Heap

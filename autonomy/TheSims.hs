@@ -31,7 +31,7 @@ import qualified Data.Map as Map
 import Data.Map(Map(..))
 
 type State = Map ActorID Actor
-data Command = Command State -> State
+type Command = State -> State
 
 dump_state :: State -> String
 dump_state state = dump_actors $ Map.elems state

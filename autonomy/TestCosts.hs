@@ -42,4 +42,6 @@ cookable_state = Map.fromList [
     ]
     
 main :: IO ()
-main = assert_equal 3 ((goal_cost . measure_goal bountiful_state) (have_food 2 1))
+main = do
+    assert_equal 3 ((goal_full_cost . measure_goal bountiful_state) (have_food 2 1))
+    assert_equal ((99 - 14) + (99 - 18) + 1) ((goal_full_cost . measure_goal cookable_state) (have_food 1 1))

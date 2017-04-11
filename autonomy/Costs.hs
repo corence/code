@@ -3,8 +3,8 @@
 module Costs
 ( GoalWithCost
 , TaskWithCost
-, goal_cost
-, task_cost
+, goal_full_cost
+, task_full_cost
 , measure_goal
 , measure_task
 ) where
@@ -17,17 +17,17 @@ import Intents
 import Debug.Trace
 
 data GoalWithCost command state = SolvedGoal (Goal command state) | GoalWithCost (Goal command state) (Heap (TaskWithCost command state)) -- goal, tasks sorted by cost
-data TaskWithCost command state = TaskWithCost (Task command state) Float -- task, cost
+data TaskWithCost command state = TaskWithCost (Task command state) Float -- task, full cost
 
-goal_cost :: GoalWithCost command state -> Float
-goal_cost (SolvedGoal _) = 0
-goal_cost (GoalWithCost _ heap) = trace ("costing goal") $
+goal_full_cost :: GoalWithCost command state -> Float
+goal_full_cost (SolvedGoal _) = 0
+goal_full_cost (GoalWithCost _ heap) = trace ("costing goal") $
                                   case Heap.query heap of
-                                  Just task_with_cost -> task_cost task_with_cost
+                                  Just task_with_cost -> task_full_cost task_with_cost
                                   Nothing -> error "this goal is a failure"
 
-task_cost :: TaskWithCost command state -> Float
-task_cost (TaskWithCost _ cost) = cost
+task_full_cost :: TaskWithCost command state -> Float
+task_full_cost (TaskWithCost _ cost) = cost
 
 measure_goal :: state -> Goal command state -> GoalWithCost command state
 measure_goal state goal
@@ -39,8 +39,8 @@ measure_goal state goal
 
 measure_task :: state -> Task command state -> TaskWithCost command state
 measure_task state task = trace ("measure_task " ++ task_name task) $ TaskWithCost task ((sum prereq_costs) + sum (command_costs))
-    where prereq_costs = map (goal_cost . measure_goal state) (task_prerequisites task)
+    where prereq_costs = map (goal_full_cost . measure_goal state) (task_prerequisites task)
           command_costs = map (const 1) (task_actions task)
 
 compare_tasks :: TaskWithCost command state -> TaskWithCost command state -> Ordering
-compare_tasks left right = Prelude.compare (task_cost left) (task_cost right)
+compare_tasks left right = Prelude.compare (task_full_cost left) (task_full_cost right)

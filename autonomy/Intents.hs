@@ -10,6 +10,7 @@ module Intents
 , goal_succeeds
 , prepare_intents
 , task_actions
+, task_cost
 , task_name
 , task_prerequisites
 ) where
@@ -35,10 +36,10 @@ data Intent command state
     | ExecutableIntent (Goal command state) (Task command state)
     deriving Show
 data Goal command state = Goal String [state -> [Task command state]] [state -> Bool] -- name, task_generators, win conditions (need all for success)
-data Task command state = Task String [Goal command state] [command] -- name, prerequisites, actions
+data Task command state = Task String [Goal command state] [command] (state -> Float) -- name, prerequisites, actions, cost of the actions
 
 instance Show (Task command state) where
-    show (Task name _ _) = "Task " ++ name
+    show (Task name _ _ _) = "Task " ++ name
 
 instance Show (Goal command state) where
     show (Goal name _ _) = "Goal " ++ name
@@ -80,16 +81,19 @@ goal_name :: Goal command state -> String
 goal_name (Goal name _ _) = name
 
 task_name :: Task command state -> String
-task_name (Task name _ _) = name
+task_name (Task name _ _ _) = name
 
 task_prerequisites :: Task command state -> [Goal command state]
-task_prerequisites (Task _ prerequisites _) = prerequisites
+task_prerequisites (Task _ prerequisites _ _) = prerequisites
+
+task_cost :: Task command state -> state -> Float
+task_cost (Task _ _ _ cost) = cost
 
 task_incomplete_prerequisites :: Task command state -> state -> [Goal command state]
 task_incomplete_prerequisites task state = filter (\goal -> not (goal_succeeds goal state)) (task_prerequisites task)
 
 task_actions :: Task command state -> [command]
-task_actions (Task _ _ actions) = actions
+task_actions (Task _ _ actions _) = actions
 
 select_task :: [Task command state] -> Task command state
 select_task [] = error "can't select_task, empty list"

@@ -74,7 +74,7 @@ be_unhungry :: ActorID -> Goal Command State
 be_unhungry actor_id = Goal "be_unhungry" [\_ -> [eat actor_id]] [query_actor actor_id unhungry]
 
 eat :: ActorID -> Task Command State
-eat actor_id = Task "eat" [have_food 1 actor_id] [consume_food]
+eat actor_id = Task "eat" [have_food 1 actor_id] [consume_food] (const 1)
     where consume_food state = adjust_actors [(actor_id, Actor.sub_item "hunger" 10), (actor_id, Actor.sub_item "food" 1)] state
 
 have_food :: Int -> ActorID -> Goal Command State
@@ -94,7 +94,7 @@ generate_cook_tasks actor_id state = map (\oven_id -> cook oven_id actor_id) ove
 
 cook :: ActorID -> ActorID -> Task Command State
 cook oven_id actor_id
-    = Task ("cook in oven " ++ show oven_id) [have_item "prepped_ingredients" 1 [] actor_id, be_at oven_id actor_id] [make_food oven_id] -- TODO: mission generators
+    = Task ("cook in oven " ++ show oven_id) [have_item "prepped_ingredients" 1 [] actor_id, be_at oven_id actor_id] [make_food oven_id] (const 1) -- TODO: mission generators. Also this should be looked up from somewhere -- surely "cook" isn't the place to encode all the ways to find prepped_ingredients
       -- make_food: decrement the actor's prepped ingredients; increment the oven's food
     where make_food oven_id state = adjust_actors [
                                           (actor_id, Actor.sub_item "prepped_ingredients" 1),
@@ -108,7 +108,7 @@ seek_item item_id actor_id blacklist state = take_item_tasks
           take_item_tasks = map (\target -> take_item item_id target actor_id) aids_with_item
 
 take_item :: ItemID -> ActorID -> ActorID -> Task Command State
-take_item item_id target_id actor_id = Task name [be_at target_id actor_id] [exchange]
+take_item item_id target_id actor_id = Task name [be_at target_id actor_id] [exchange] (const 0)
     where name = ("take_item '" ++ item_id ++ "' from " ++ show target_id)
           exchange state = adjust_actors [(actor_id, (Actor.add_item item_id 1)), (target_id, (Actor.sub_item item_id 1))] state
 
@@ -126,7 +126,8 @@ be_at_actor_with item_id amount actor_id = Task any_matches Nothing missions
 -}
 
 go_toward :: ActorID -> ActorID -> Task Command State
-go_toward actor_id target_id = Task "go toward" [] [update_pos]
+go_toward actor_id target_id = Task "go toward" [] [update_pos] (\state -> fromIntegral $ Actor.distance (old_pos state) (new_pos state))
     where new_pos state = query_actor target_id Actor.get_pos state
+          old_pos state = query_actor actor_id Actor.get_pos state
           update_pos state = adjust_actor actor_id (Actor.set_pos (new_pos state)) state
 

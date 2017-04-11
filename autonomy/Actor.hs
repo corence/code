@@ -5,6 +5,7 @@ module Actor
 , ItemID
 , Pos
 , add_item
+, distance
 , get_id
 , get_item
 , get_pos
@@ -43,3 +44,5 @@ add_item item_id amount actor = set_item item_id (amount + get_item item_id acto
 sub_item :: ItemID -> Int -> Actor -> Actor
 sub_item item_id amount actor = add_item item_id (negate amount) actor
 
+distance :: Pos -> Pos -> Int
+distance pos1 pos2 = abs $ pos1 - pos2

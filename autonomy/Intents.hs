@@ -3,7 +3,10 @@ module Intents
 ( Command(..)
 , Goal(..)
 , Intent(..)
+, Intents(..)
 , Task(..)
+, advance_intents
+, advance_world
 , intents_extract_actions
 , intents_ready
 , goal_generate_tasks
@@ -32,7 +35,7 @@ ctrace _ = id
 ---- is there [] for the task_options? if so, CLEAR the whole intent stack (we've reached a failure world and we're at risk of endless looping now)
 ---- is there (x:[]) for the task_options? perfect; this stack is ready to execute
 ---- otherwise there are too many task_options; we need to filter some out
-type Command world = world -> (world, ())
+type Command world = world -> world
 data Goal world = Goal String [world -> [Task world]] [world -> Bool] -- name, task_generators, win conditions (need all for success)
 data Task world = Task String [Goal world] [Command world] (world -> Float) -- name, prerequisites, actions, cost of the actions
 data Intent world
@@ -41,6 +44,7 @@ data Intent world
     | TaskIntent (Goal world) (Task world)
     | ExecutableIntent (Goal world) (Task world)
     deriving Show
+type Intents world = [Intent world]
 
 instance Show (Task world) where
     show (Task name _ _ _) = "Task " ++ name
@@ -50,18 +54,40 @@ instance Show (Goal world) where
 
 type ActorID = Int
 
-intents_ready :: [Intent world] -> Bool
+intents_ready :: Intents world -> Bool
 intents_ready [] = False
 intents_ready (ExecutableIntent _ _ : _) = True
 intents_ready _ = False
 
-intents_extract_actions :: [Intent world] -> ([Intent world], [Command world])
+intents_extract_actions :: Intents world -> (Intents world, [Command world])
 intents_extract_actions [] = ([], [])
 intents_extract_actions (intent : other_intents) = case intent of
     ExecutableIntent goal task -> (HazyIntent goal : other_intents, task_actions task)
     otherwise -> (intent : other_intents, [])
 
-prepare_intents :: [Intent world] -> world -> [Intent world]
+advance_world :: world -> Intents world -> (world, [Intents world])
+advance_world world [] = error "can't advance empty intents"
+advance_world world (intent:intents)
+  = case intent of
+      ExecutableIntent _ task -> (new_world, [intents])
+        where new_world = foldr (\action world -> action world) world (task_actions task)
+      otherwise -> (world, advance_intents world intents)
+
+advance_intents :: world -> Intents world -> [Intents world]
+advance_intents world [] = ctrace "    time to generate a fresh new intent " $ []
+advance_intents world (intent : intents) = case intent of
+    HazyIntent goal -> if goal_succeeds goal world
+                       then ctrace ("    " ++ goal_name goal ++ ": popping successful intent ") $ [intents]
+                       else ctrace ("    " ++ goal_name goal ++ ": generating task options: " ++ show (map task_name (goal_generate_tasks goal world))) $ [OptionyIntent goal (goal_generate_tasks goal world) : intents]
+    OptionyIntent goal [] -> ctrace ("    " ++ goal_name goal ++ ": hitting a wall! ") $ []
+    OptionyIntent goal tasks -> ctrace ("    " ++ goal_name goal ++ ": blossoming tasks into " ++ show (length tasks) ++ " streams") $ map (: intents) (map (TaskIntent goal) tasks)
+    TaskIntent goal task -> if null incomplete_prerequisites
+                            then ctrace ("    " ++ goal_name goal ++ ": no prerequisites ") $ [ExecutableIntent goal task : intents]
+                            else ctrace ("    " ++ goal_name goal ++ ": preparing prerequisites ") $ [HazyIntent (head incomplete_prerequisites) : intent : intents]
+                            where incomplete_prerequisites = task_incomplete_prerequisites task world
+    ExecutableIntent goal _ -> ctrace ("    " ++ goal_name goal ++ ": ready to execute ") $ [intent : intents]
+
+prepare_intents :: Intents world -> world -> Intents world
 prepare_intents [] _ = ctrace "    time to generate a fresh new intent " $ []
 prepare_intents (intent : intents) world = case intent of
     HazyIntent goal -> if goal_succeeds goal world

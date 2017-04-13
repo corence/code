@@ -53,11 +53,11 @@ find_actors_with predicate world = filter predicate (Map.elems world)
 query_actor :: ActorID -> (Actor -> a) -> World -> a
 query_actor actor_id query world = query (find_actor actor_id world)
 
-adjust_actor :: ActorID -> (Actor -> Actor) -> World -> (World, ())
+adjust_actor :: ActorID -> (Actor -> Actor) -> World -> World
 adjust_actor actor_id adjust world = Map.insert actor_id (adjust (find_actor actor_id world)) world
 
-adjust_actors :: [(ActorID, (Actor -> Actor))] -> World -> (World, ())
-adjust_actors [] world = (world, ())
+adjust_actors :: [(ActorID, (Actor -> Actor))] -> World -> World
+adjust_actors [] world = world
 adjust_actors ((actor_id, adjust) : adjusters) world = adjust_actors adjusters new_world
     where new_world = adjust_actor actor_id adjust world
 

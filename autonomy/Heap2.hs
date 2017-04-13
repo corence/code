@@ -18,6 +18,16 @@ void = Heap 0 Nothing void void
 fromList :: Comparator a -> [a] -> Heap a
 fromList compare entries = foldr (\entry heap -> add compare entry heap) void entries
 
+toList :: Comparator a -> Heap a -> [a]
+toList comparator heap
+  = if size heap > 0
+      then maybe_prepend (query heap) (toList comparator (remove_head comparator heap))
+      else []
+
+maybe_prepend :: Maybe a -> [a] -> [a]
+maybe_prepend Nothing as = as
+maybe_prepend (Just a) as = a : as
+
 add :: Comparator a -> a -> Heap a -> Heap a
 add compare entry (Heap p_size Nothing p_left p_right) = Heap (p_size + 1) (Just entry) p_left p_right
 add compare entry (Heap p_size (Just p_entry) p_left p_right)

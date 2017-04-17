@@ -20,13 +20,14 @@ advance_single_solution ps = case next_intent of
      where (PartialSolution base_intent base_world base_cost (next_intent : base_stack)) = ps
            (new_world, new_stacks) = advance_world base_world (next_intent : base_stack)
 
+-- scans the lowest-cost solution and loops until one of them is actually winning
 find_best_solution :: AutoHeap (PartialSolution world) -> Maybe (PartialSolution world)
-find_best_solution aheap = case AutoHeap.query aheap of
-              Nothing -> Nothing
-              Just first -> if goal_succeeds (intent_goal f_intent) f_world
-                            then Just first
-                            else (find_best_solution . advance_solutions) aheap -- remove first, advance_single_solution it, add all the others, then find_best_solution
-                            where (PartialSolution f_intent f_world f_cost f_stack) = first
+find_best_solution aheap = do
+  first <- AutoHeap.query aheap
+  let (PartialSolution f_intent f_world f_cost f_stack) = first in
+      if goal_succeeds (intent_goal f_intent) f_world
+            then Just first
+            else (find_best_solution . advance_solutions) aheap -- remove first, advance_single_solution it, add all the others, then find_best_solution
 
 advance_solutions :: AutoHeap (PartialSolution world) -> AutoHeap (PartialSolution world)
 advance_solutions aheap = case AutoHeap.query aheap of

@@ -1,5 +1,5 @@
 
-import UninformedScan
+import UninformedScan2
 import Debug.Trace
 import TheSims
 

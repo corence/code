@@ -8,6 +8,7 @@ module Intents
 , advance_intents
 , advance_world
 , intents_extract_actions
+, intent_goal
 , intents_ready
 , goal_generate_tasks
 , goal_name
@@ -100,6 +101,12 @@ prepare_intents (intent : intents) world = case intent of
                             else ctrace ("    " ++ goal_name goal ++ ": preparing prerequisites ") $ HazyIntent (head incomplete_prerequisites) : intent : intents
                             where incomplete_prerequisites = task_incomplete_prerequisites task world
     ExecutableIntent goal _ -> ctrace ("    " ++ goal_name goal ++ ": ready to execute ") $ intent : intents
+
+intent_goal :: Intent world -> Goal world
+intent_goal (HazyIntent goal) = goal
+intent_goal (OptionyIntent goal _) = goal
+intent_goal (TaskIntent goal _) = goal
+intent_goal (ExecutableIntent goal _) = goal
 
 goal_succeeds :: Goal world -> world -> Bool
 goal_succeeds (Goal _ _ win_conditions) world = all (\condition -> condition world) win_conditions

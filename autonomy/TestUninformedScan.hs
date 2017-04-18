@@ -52,7 +52,7 @@ doit n aheap = if AutoHeap.is_empty aheap
                   else putStrLn (dump aheap) >> doit (n-1) (advance_resolutions aheap)
 
 dump :: AutoHeap (PartialResolution world) -> String
-dump aheap = "\n" ++ dump2 aheap ++ "\n"
+dump aheap = "\n" ++ show (AutoHeap.size aheap) ++ "\n" ++ dump2 aheap ++ "\n"
 
 dump2 :: AutoHeap (PartialResolution world) -> String
 dump2 aheap = case first of

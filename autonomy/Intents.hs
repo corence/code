@@ -72,7 +72,7 @@ advance_world world (intent:intents)
   = case intent of
       ExecutableIntent _ task -> (new_world, [intents])
         where new_world = foldr (\action world -> action world) world (task_actions task)
-      otherwise -> (world, advance_intents world intents)
+      otherwise -> (world, advance_intents world (intent : intents))
 
 advance_intents :: world -> Intents world -> [Intents world]
 advance_intents world [] = ctrace "    time to generate a fresh new intent " $ []

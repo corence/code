@@ -12,23 +12,18 @@ module UninformedScan4
 import AutoHeap
 import Intents
 
-import Debug.Trace
-
 import qualified Queue as Queue
 import Queue(Queue(..))
-
---ctrace = trace
-ctrace _ = id
 
 data Desire world = Desire (Goal world) (world -> Float) -- goal, and how good it would be (higher values = more good)
 data PartialSolution world = PartialSolution (Intent world) world Float [Intent world]
 data Solution world = Solution (Intent world) world Float
 
 advance_single_solution :: PartialSolution world -> [PartialSolution world]
-advance_single_solution (PartialSolution _ _ _ []) = ctrace "advance_single_solution 1" $ []
+advance_single_solution (PartialSolution _ _ _ []) = []
 advance_single_solution ps = case next_intent of
-                               (ExecutableIntent _ task) -> ctrace "advance_single_solution 2" $ map (\stack -> PartialSolution base_intent new_world (base_cost + task_cost task base_world) stack) new_stacks
-                               otherwise -> ctrace ("advance_single_solution 3, length new_stacks = " ++ show (length new_stacks)) $ concat $ map (\stack -> advance_single_solution (PartialSolution base_intent new_world base_cost stack)) new_stacks
+                               (ExecutableIntent _ task) -> map (\stack -> PartialSolution base_intent new_world (base_cost + task_cost task base_world) stack) new_stacks
+                               otherwise -> concat $ map (\stack -> advance_single_solution (PartialSolution base_intent new_world base_cost stack)) new_stacks
      where (PartialSolution base_intent base_world base_cost (next_intent : base_stack)) = ps
            (new_world, new_stacks) = advance_world base_world (next_intent : base_stack)
 
@@ -49,8 +44,8 @@ advance_solutions aheap = case AutoHeap.query aheap of
                       
 advance_resolutions :: AutoHeap (PartialResolution world) -> AutoHeap (PartialResolution world)
 advance_resolutions aheap = case AutoHeap.query aheap of
-                              Nothing -> ctrace "advance_resolutions 1" $ aheap
-                              Just (PartialResolution priority base_solution) -> ctrace ("advance_resolutions 2, length new_resolutions = " ++ show (length new_resolutions)) $ AutoHeap.add_all new_resolutions other_resolutions
+                              Nothing -> aheap
+                              Just (PartialResolution priority base_solution) -> AutoHeap.add_all new_resolutions other_resolutions
                                   where other_resolutions = AutoHeap.remove_head aheap
                                         new_solutions = advance_single_solution base_solution
                                         new_resolutions = map (PartialResolution priority) new_solutions

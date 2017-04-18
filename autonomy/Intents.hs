@@ -9,6 +9,7 @@ module Intents
 , advance_world
 , intents_extract_actions
 , intent_goal
+, intent_task
 , intents_ready
 , goal_generate_tasks
 , goal_name
@@ -107,6 +108,12 @@ intent_goal (HazyIntent goal) = goal
 intent_goal (OptionyIntent goal _) = goal
 intent_goal (TaskIntent goal _) = goal
 intent_goal (ExecutableIntent goal _) = goal
+
+intent_task :: Intent world -> Maybe (Task world)
+intent_task (HazyIntent _) = Nothing
+intent_task (OptionyIntent _ tasks) = Nothing
+intent_task (TaskIntent _ task) = Just task
+intent_task (ExecutableIntent _ task) = Just task
 
 goal_succeeds :: Goal world -> world -> Bool
 goal_succeeds (Goal _ _ win_conditions) world = all (\condition -> condition world) win_conditions

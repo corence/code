@@ -29,7 +29,6 @@ import qualified Actor as Actor
 import Actor(ActorID, Actor(..), ItemID, Pos)
 import qualified Data.Map as Map
 import Data.Map(Map(..))
-import Control.Monad.State
 
 type World = Map ActorID Actor
 
@@ -74,7 +73,7 @@ be_unhungry :: ActorID -> Goal World
 be_unhungry actor_id = Goal "be_unhungry" [\_ -> [eat actor_id]] [query_actor actor_id unhungry]
 
 eat :: ActorID -> Task World
-eat actor_id = Task "eat" [have_food 1 actor_id] [consume_food] (const 1)
+eat actor_id = Task "eat" [have_food 1 actor_id] [consume_food] (const 0)
     where consume_food world = adjust_actors [(actor_id, Actor.sub_item "hunger" 10), (actor_id, Actor.sub_item "food" 1)] world
 
 have_food :: Int -> ActorID -> Goal World
@@ -94,7 +93,7 @@ generate_cook_tasks actor_id world = map (\oven_id -> cook oven_id actor_id) ove
 
 cook :: ActorID -> ActorID -> Task World
 cook oven_id actor_id
-    = Task ("cook in oven " ++ show oven_id) [have_item "prepped_ingredients" 1 [] actor_id, be_at oven_id actor_id] [make_food oven_id] (const 1) -- TODO: mission generators. Also this should be looked up from somewhere -- surely "cook" isn't the place to encode all the ways to find prepped_ingredients
+    = Task ("cook in oven " ++ show oven_id) [have_item "prepped_ingredients" 1 [] actor_id, be_at oven_id actor_id] [make_food oven_id] (const 0) -- TODO: mission generators. Also this should be looked up from somewhere -- surely "cook" isn't the place to encode all the ways to find prepped_ingredients
       -- make_food: decrement the actor's prepped ingredients; increment the oven's food
     where make_food oven_id world = adjust_actors [
                                           (actor_id, Actor.sub_item "prepped_ingredients" 1),

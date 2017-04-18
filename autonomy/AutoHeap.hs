@@ -5,6 +5,7 @@ module AutoHeap
 , add
 , add_all
 , dump
+, from_list
 , is_empty
 , query
 , remove_head
@@ -22,11 +23,14 @@ void comparator = AutoHeap comparator Heap.void
 is_empty :: AutoHeap a -> Bool
 is_empty aheap = size aheap == 0
 
+from_list :: (Heap.Comparator a) -> [a] -> AutoHeap a
+from_list comparator list = add_all list (AutoHeap comparator Heap.void)
+
 add :: a -> AutoHeap a -> AutoHeap a
 add entry (AutoHeap comparator heap) = AutoHeap comparator (Heap.add comparator entry heap)
 
 add_all :: [a] -> AutoHeap a -> AutoHeap a
-add_all entries initial_aheap = foldr (\entry aheap -> add entry aheap) initial_aheap entries
+add_all entries initial_aheap = foldr add initial_aheap entries
 
 query :: AutoHeap a -> Maybe a
 query (AutoHeap _ heap) = Heap.query heap

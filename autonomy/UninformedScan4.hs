@@ -3,6 +3,7 @@ module UninformedScan4
 ( Desire(..)
 , Resolution(..)
 , PartialResolution(..)
+, PartialSolution(..)
 , advance_resolutions
 , resolve
 , start_resolving

@@ -10,6 +10,7 @@ module AutoHeap
 , query
 , remove_head
 , size
+, void
 ) where
 
 import qualified Heap2 as Heap

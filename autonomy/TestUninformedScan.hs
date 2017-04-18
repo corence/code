@@ -1,5 +1,5 @@
 
-import UninformedScan2
+import UninformedScan4
 import Debug.Trace
 import TheSims
 
@@ -8,6 +8,9 @@ import Actor(ActorID, Actor(..), ItemID, Pos)
 
 import qualified Data.Map as Map
 import Data.Map(Map(..))
+
+import qualified AutoHeap as AutoHeap
+import AutoHeap(AutoHeap(..))
 
 --printGood _ = return ()
 printGood = putStrLn . (++ "\n")
@@ -41,7 +44,11 @@ cookable_state = Map.fromList [
     (5, Actor 5 99 (Map.fromList [("food", 0), ("prepped_ingredients", 12)]))
     ]
     
+doit :: Int -> AutoHeap (PartialResolution world) -> IO (AutoHeap (PartialResolution world))
+doit 0 a = return a
+doit n aheap = putStrLn (AutoHeap.dump aheap) >> doit (n-1) (advance_resolutions aheap)
+
 main :: IO ()
 main = do
-    assert_equal 3 ((goal_full_cost . measure_goal bountiful_state) (have_food 2 1))
-    assert_equal ((99 - 14) + (99 - 18) + 1) ((goal_full_cost . measure_goal cookable_state) (have_food 1 1))
+    let x = doit 99 (start_resolving bountiful_state [Desire (be_unhungry 1) (const 44)])
+    return ()

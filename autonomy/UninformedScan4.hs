@@ -1,6 +1,11 @@
 
 module UninformedScan4
-(
+( Desire(..)
+, Resolution(..)
+, PartialResolution(..)
+, advance_resolutions
+, resolve
+, start_resolving
 ) where
 
 import AutoHeap
@@ -55,18 +60,24 @@ find_best_solution_capped max_cost solutions = do
                  then Nothing
                  else (find_best_solution . advance_solutions) solutions -- remove first, advance_single_solution it, add all the others, then find_best_solution
 
-find_best_resolution :: AutoHeap (PartialResolution world) -> Maybe (PartialResolution world)
+find_best_resolution :: AutoHeap (PartialResolution world) -> Maybe (Resolution world)
 find_best_resolution resolutions = do
   first <- AutoHeap.query resolutions
   let (PartialResolution f_priority (PartialSolution f_intent f_world f_cost f_stack)) = first in
       if goal_succeeds (intent_goal f_intent) f_world
-            then Just first
-            else (find_best_resolution . advance_resolutions) resolutions -- remove first, advance_single_solution it, add all the others, then find_best_solution
+         then Just (Resolution f_priority (Solution f_intent f_world f_cost))
+         else (find_best_resolution . advance_resolutions) resolutions -- remove first, advance_single_solution it, add all the others, then find_best_solution
 
-start_resolving :: Desire world -> world -> AutoHeap (PartialResolution world)
-start_resolving (Desire goal priority_func) world = AutoHeap.from_list pr_comparator resolutions
+start_resolving :: world -> [Desire world] -> AutoHeap (PartialResolution world)
+start_resolving world desires = foldr (\desire aheap -> AutoHeap.add_all (desire_to_partial_resolutions world desire) aheap) (AutoHeap.void pr_comparator) desires
+
+desire_to_partial_resolutions :: world -> Desire world -> [PartialResolution world]
+desire_to_partial_resolutions world (Desire goal priority_func) = resolutions
     where solutions = map (\task -> PartialSolution (TaskIntent goal task) world 0 [TaskIntent goal task]) (goal_generate_tasks goal world)
           resolutions = map (PartialResolution (priority_func world)) solutions
+          
+resolve :: world -> [Desire world] -> Maybe (Resolution world)
+resolve world desires = find_best_resolution (start_resolving world desires)
 
 -- resolutions are higher value if their desire is higher, or their cost is lower
 data PartialResolution world = PartialResolution Float (PartialSolution world) -- priority, then what we're doing for it

@@ -14,7 +14,6 @@ module Intents
 , goal_generate_tasks
 , goal_name
 , goal_succeeds
-, prepare_intents
 , task_actions
 , task_cost
 , task_name
@@ -27,8 +26,8 @@ import Debug.Trace
 
 import Control.Monad.State
 
---ctrace = trace
-ctrace _ = id
+ctrace = trace
+--ctrace _ = id
 
 -- if i have no Intents then i need to generate one
 -- if i have at least one intent, then look at the head:
@@ -89,20 +88,6 @@ advance_intents world (intent : intents) = case intent of
                             where incomplete_prerequisites = task_incomplete_prerequisites task world
     ExecutableIntent goal _ -> ctrace ("    " ++ goal_name goal ++ ": ready to execute ") $ [intent : intents]
 
-prepare_intents :: Intents world -> world -> Intents world
-prepare_intents [] _ = ctrace "    time to generate a fresh new intent " $ []
-prepare_intents (intent : intents) world = case intent of
-    HazyIntent goal -> if goal_succeeds goal world
-                       then ctrace ("    " ++ goal_name goal ++ ": popping successful intent ") $ intents
-                       else ctrace ("    " ++ goal_name goal ++ ": generating task options: " ++ show (map task_name (goal_generate_tasks goal world))) $ OptionyIntent goal (goal_generate_tasks goal world) : intents
-    OptionyIntent goal [] -> ctrace ("    " ++ goal_name goal ++ ": hitting a wall! ") $ []
-    OptionyIntent goal tasks -> ctrace ("    " ++ goal_name goal ++ ": winnowing tasks down to " ++ task_name (select_task tasks)) $ TaskIntent goal (select_task tasks) : intents
-    TaskIntent goal task -> if null incomplete_prerequisites
-                            then ctrace ("    " ++ goal_name goal ++ ": no prerequisites ") $ ExecutableIntent goal task : intents
-                            else ctrace ("    " ++ goal_name goal ++ ": preparing prerequisites ") $ HazyIntent (head incomplete_prerequisites) : intent : intents
-                            where incomplete_prerequisites = task_incomplete_prerequisites task world
-    ExecutableIntent goal _ -> ctrace ("    " ++ goal_name goal ++ ": ready to execute ") $ intent : intents
-
 intent_goal :: Intent world -> Goal world
 intent_goal (HazyIntent goal) = goal
 intent_goal (OptionyIntent goal _) = goal
@@ -138,7 +123,3 @@ task_incomplete_prerequisites task world = filter (\goal -> not (goal_succeeds g
 
 task_actions :: Task world -> [Command world]
 task_actions (Task _ _ actions _) = actions
-
-select_task :: [Task world] -> Task world
-select_task [] = error "can't select_task, empty list"
-select_task tasks = head tasks

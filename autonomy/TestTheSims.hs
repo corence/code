@@ -15,16 +15,16 @@ printBad = putStrLn . (++ "\n")
 --printProgress = putStrLn
 printProgress _ = return ()
 
-ctrace = trace
---ctrace _ = id
+--ctrace = trace
+ctrace _ = id
 
-run_preparation :: [Intent World] -> World -> String
-run_preparation initial world = devolves (prepare_intents initial world)
+run_preparation :: World -> [Intent World] -> String
+run_preparation world initial = devolves (head (advance_intents world initial))
 
 assert_preparation :: ([Intent World], [Intent World], World) -> IO ()
 assert_preparation (initial, expected, world) = do
     printProgress $ "assert_preparation: " ++ devolves initial ++ " -> " ++ devolves expected
-    assert_equal (run_preparation initial world) (devolves expected)
+    assert_equal (run_preparation world initial) (devolves expected)
 
 assert_preparations :: [([Intent World], [Intent World], World)] -> IO ()
 assert_preparations tests = sequence_ $ map assert_preparation tests
@@ -39,7 +39,7 @@ assert_someday name predicate iterations intents world
   | iterations == 0 = printBad $ "† exhausted: \"" ++ name ++ "\"\nfinal intents " ++ show (map devolve intents) ++ ", final world " ++ dump_world world
   | intents_ready intents = ctrace ("ready intents: " ++ show intents ++ " -> " ++ show new_intents ++ "\n" ++ "new world: " ++ dump_world new_world) $ assert_someday name predicate (iterations - 1) new_intents new_world
   | otherwise = ctrace ("prepping intents: " ++ show intents) $ assert_someday name predicate (iterations - 1) prepared_intents world
-  where prepared_intents = prepare_intents intents world
+  where prepared_intents = head (advance_intents world intents)
         new_world = foldr (\action world -> action world) world actions 
         (new_intents, actions) = intents_extract_actions intents
 
@@ -99,11 +99,11 @@ prep_tests = [
                 [OptionyIntent (have_food 1 1) [], TaskIntent (be_unhungry 1) (eat 1)], -- no options will arise -- there's no food in this world
                 hungry_world
             ),
-            (
+            {- this is an error case now. Someday it can be reimplemented based on Desires (
                 [OptionyIntent (have_food 1 1) [], TaskIntent (be_unhungry 1) (eat 1)], -- with no options on the table,
                 [], -- our hero will swiftly give up
                 hungry_world
-            ),
+            ), -}
             (
                 [HazyIntent (have_food 1 1), TaskIntent (be_unhungry 1) (eat 1)], -- with an intent to have food,
                 [OptionyIntent (have_food 1 1) [

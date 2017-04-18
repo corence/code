@@ -125,7 +125,7 @@ be_at_actor_with item_id amount actor_id = Task any_matches Nothing missions
 -}
 
 go_toward :: ActorID -> ActorID -> Task World
-go_toward actor_id target_id = Task "go toward" [] [update_pos] (\world -> fromIntegral $ Actor.distance (old_pos world) (new_pos world))
+go_toward target_id actor_id = Task "go toward" [] [update_pos] (\world -> fromIntegral $ Actor.distance (old_pos world) (new_pos world))
     where new_pos world = query_actor target_id Actor.get_pos world
           old_pos world = query_actor actor_id Actor.get_pos world
           update_pos world = adjust_actor actor_id (Actor.set_pos (new_pos world)) world

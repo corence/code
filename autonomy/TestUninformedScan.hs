@@ -55,7 +55,7 @@ doit :: Int -> AutoHeap (PartialResolution World) -> IO ()
 doit 0 _ = return ()
 doit n aheap = if AutoHeap.is_empty aheap
                   then return ()
-                  else putStrLn (dump_decisions aheap) >> doit (n-1) (advance_resolutions aheap)
+                  else putStrLn ("Step: " ++ show n) >> putStrLn (dump_decisions aheap) >> doit (n-1) (advance_resolutions aheap)
 
 doit2 :: Int -> AutoHeap (PartialResolution World) -> IO ()
 doit2 0 _ = return ()
@@ -64,7 +64,7 @@ doit2 n aheap = if AutoHeap.is_empty aheap
                   else putStrLn (show (AutoHeap.size aheap)) >> doit2 (n-1) (advance_resolutions aheap)
 
 dump_decisions :: AutoHeap (PartialResolution World) -> String
-dump_decisions aheap = "\n" ++ show (AutoHeap.size aheap) ++ "\n" ++ dump_each_decision aheap ++ "\n"
+dump_decisions aheap = dump_each_decision aheap ++ "\n"
 
 dump_each_decision :: AutoHeap (PartialResolution World) -> String
 dump_each_decision aheap = case first of
@@ -103,5 +103,5 @@ perhaps_dump = perhaps_do ""
 
 main :: IO ()
 main = do
-    doit 4 (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
+    doit 19 (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
     return ()

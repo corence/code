@@ -23,6 +23,7 @@ advance_single_solution :: PartialSolution world -> [PartialSolution world]
 advance_single_solution (PartialSolution _ _ _ []) = []
 advance_single_solution ps = case next_intent of
                                (ExecutableIntent _ task) -> map (\stack -> PartialSolution base_intent new_world (base_cost + task_cost task base_world) stack) new_stacks
+                               (TaskIntent _ task) -> map (\stack -> PartialSolution base_intent new_world (base_cost + task_cost task base_world) stack) new_stacks -- this is to help debugging / understanding. Should be able to remove it with no change in functionality
                                otherwise -> concat $ map advance_single_solution $ map (\stack -> PartialSolution base_intent new_world base_cost stack) new_stacks
      where (PartialSolution base_intent base_world base_cost (next_intent : base_stack)) = ps
            (new_world, new_stacks) = advance_world base_world (next_intent : base_stack)

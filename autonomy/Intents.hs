@@ -26,8 +26,8 @@ import Debug.Trace
 
 import Control.Monad.State
 
-ctrace = trace
---ctrace _ = id
+--ctrace = trace
+ctrace _ = id
 
 -- if i have no Intents then i need to generate one
 -- if i have at least one intent, then look at the head:

@@ -42,8 +42,10 @@ query :: Heap a -> Maybe a
 query (Heap _ entry _ _) = entry
 
 remove_head :: Comparator a -> Heap a -> Heap a
-remove_head compare (Heap 0 Nothing p_left p_right) = void -- error "can't remove from empty tree" -- TODO: this condition should probably exist
-remove_head compare (Heap p_size p_entry p_left p_right) = delete_empty_entry compare (Heap (p_size - 1) Nothing p_left p_right)
+remove_head compare (Heap 0 Nothing p_left p_right) = error "can't remove from empty tree"
+remove_head compare (Heap _ Nothing _ _) = error "this can't happen -- nonzero tree has Nothing at head"
+remove_head compare (Heap 0 _ _ _) = error "this can't happen -- zero tree has non-nothing head"
+remove_head compare (Heap p_size _ p_left p_right) = delete_empty_entry compare (Heap (p_size - 1) Nothing p_left p_right)
 
 delete_empty_entry :: Comparator a -> Heap a -> Heap a
 delete_empty_entry compare (Heap p_size Nothing p_left p_right)
@@ -54,8 +56,8 @@ delete_empty_entry compare (Heap p_size Nothing p_left p_right)
 
 maybe_compare :: Comparator a -> Maybe a -> Maybe a -> Ordering
 maybe_compare _ Nothing Nothing = EQ
-maybe_compare _ Nothing _ = LT
-maybe_compare _ _ Nothing = GT
+maybe_compare _ Nothing _ = GT
+maybe_compare _ _ Nothing = LT
 maybe_compare compare (Just left) (Just right) = compare left right
 
 size :: Heap a -> Int

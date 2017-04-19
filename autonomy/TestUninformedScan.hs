@@ -53,9 +53,12 @@ cookable_world = Map.fromList [
     
 doit :: Int -> AutoHeap (PartialResolution World) -> IO ()
 doit 0 _ = return ()
-doit n aheap = if AutoHeap.is_empty aheap
-                  then return ()
-                  else putStrLn ("Step: " ++ show n) >> putStrLn (dump_decisions aheap) >> doit (n-1) (advance_resolutions aheap)
+doit n aheap = case AutoHeap.query aheap of
+                 Nothing -> return ()
+                 Just pr -> if is_victorious pr
+                               then return ()
+                               else putStrLn ("Step: " ++ show n) >> putStrLn (dump_decisions aheap) >> doit (n-1) (advance_resolutions aheap)
+                                   where is_victorious (PartialResolution _ (PartialSolution intent world _ _)) = goal_succeeds (intent_goal intent) world
 
 doit2 :: Int -> AutoHeap (PartialResolution World) -> IO ()
 doit2 0 _ = return ()
@@ -103,5 +106,5 @@ perhaps_dump = perhaps_do ""
 
 main :: IO ()
 main = do
-    doit 19 (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
+    doit 9999 (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
     return ()

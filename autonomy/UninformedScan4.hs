@@ -19,6 +19,10 @@ data Desire world = Desire (Goal world) (world -> Float) -- goal, and how good i
 data PartialSolution world = PartialSolution (Intent world) world Float [Intent world]
 data Solution world = Solution (Intent world) world Float
 
+-- resolutions are higher value if their desire is higher, or their cost is lower
+data PartialResolution world = PartialResolution Float (PartialSolution world) -- priority, then what we're doing for it
+data Resolution world = Resolution Float (Solution world)
+
 advance_single_solution :: PartialSolution world -> [PartialSolution world]
 advance_single_solution (PartialSolution _ _ _ []) = []
 advance_single_solution ps = case next_intent of
@@ -80,10 +84,6 @@ desire_to_partial_resolutions world (Desire goal priority_func) = resolutions
           
 resolve :: world -> [Desire world] -> Maybe (Resolution world)
 resolve world desires = find_best_resolution (start_resolving world desires)
-
--- resolutions are higher value if their desire is higher, or their cost is lower
-data PartialResolution world = PartialResolution Float (PartialSolution world) -- priority, then what we're doing for it
-data Resolution world = Resolution Float (Solution world)
 
 ps_comparator :: PartialSolution world -> PartialSolution world -> Ordering
 ps_comparator (PartialSolution _ _ cost1 _) (PartialSolution _ _ cost2 _) = compare cost1 cost2

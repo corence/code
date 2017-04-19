@@ -23,7 +23,7 @@ advance_single_solution :: PartialSolution world -> [PartialSolution world]
 advance_single_solution (PartialSolution _ _ _ []) = []
 advance_single_solution ps = case next_intent of
                                (ExecutableIntent _ task) -> map (\stack -> PartialSolution base_intent new_world (base_cost + task_cost task base_world) stack) new_stacks
-                               (TaskIntent _ task) -> map (\stack -> PartialSolution base_intent new_world (base_cost + task_cost task base_world) stack) new_stacks -- this is to help debugging / understanding. Should be able to remove it with no change in functionality
+                               (TaskIntent _ task) -> map (\stack -> PartialSolution base_intent new_world base_cost stack) new_stacks -- this line is to help debugging / understanding. Should be able to remove it with no change in functionality
                                otherwise -> concat $ map advance_single_solution $ map (\stack -> PartialSolution base_intent new_world base_cost stack) new_stacks
      where (PartialSolution base_intent base_world base_cost (next_intent : base_stack)) = ps
            (new_world, new_stacks) = advance_world base_world (next_intent : base_stack)
@@ -89,4 +89,9 @@ ps_comparator :: PartialSolution world -> PartialSolution world -> Ordering
 ps_comparator (PartialSolution _ _ cost1 _) (PartialSolution _ _ cost2 _) = compare cost1 cost2
 
 pr_comparator :: PartialResolution world -> PartialResolution world -> Ordering
-pr_comparator (PartialResolution priority1 (PartialSolution _ _ cost1 _)) (PartialResolution priority2 (PartialSolution _ _ cost2 _)) = compare (cost1 / priority1 - priority1) (cost2 / priority2 - priority2)
+pr_comparator (PartialResolution priority1 (PartialSolution _ _ cost1 stack1)) (PartialResolution priority2 (PartialSolution _ _ cost2 stack2))
+  = compare (cost1 / priority1) (cost2 / priority2) `else_compare` compare (-priority1) (-priority2) `else_compare` compare (length stack1) (length stack2)
+
+else_compare :: Ordering -> Ordering -> Ordering
+else_compare EQ ordering2 = ordering2
+else_compare ordering1 _ = ordering1

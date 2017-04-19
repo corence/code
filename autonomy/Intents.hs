@@ -70,7 +70,7 @@ advance_world :: world -> Intents world -> (world, [Intents world])
 advance_world world [] = error "can't advance empty intents"
 advance_world world (intent:intents)
   = case intent of
-      ExecutableIntent _ task -> (new_world, [intents])
+      ExecutableIntent goal task -> (new_world, [HazyIntent goal : intents])
         where new_world = foldr (\action world -> action world) world (task_actions task)
       otherwise -> (world, advance_intents world (intent : intents))
 

@@ -11,27 +11,31 @@ assert a b
   | a == b = putStrLn $ "OK: " ++ show a ++ "\n"
   | otherwise = putStrLn $ show a ++ " != " ++ show b ++ "\n"
 
+action :: (Show a, Eq a) => (AutoHeap a -> AutoHeap a) -> a -> Int -> AutoHeap a -> IO (AutoHeap a)
+action func expected_value expected_size aheap = do
+    let new_aheap = func aheap
+    assertish (AutoHeap.query new_aheap) expected_value
+    assert (AutoHeap.size new_aheap) expected_size
+    return new_aheap
+    
+action_nothing :: (Show a, Eq a) => (AutoHeap a -> AutoHeap a) -> AutoHeap a -> IO (AutoHeap a)
+action_nothing func aheap = do
+    let new_aheap = func aheap
+    assert (AutoHeap.query new_aheap) Nothing
+    assert (AutoHeap.size new_aheap) 0
+    return new_aheap
+
 main = do
-    let heap0 = AutoHeap compare AutoHeap.void 
-    let heap1 = AutoHeap.add (3, "three") heap0
-    assertish (AutoHeap.query heap1) (3, "three")
-    let heap2 = AutoHeap.add (9, "nine") heap1
-    assertish (AutoHeap.query heap2) (3, "three")
-    let heap3 = AutoHeap.add (7, "seven") heap2
-    assertish (AutoHeap.query heap3) (3, "three")
-    let heap4 = AutoHeap.add (1, "one") heap3
-    assertish (AutoHeap.query heap4) (1, "one")
-    assert (AutoHeap.size heap4) 4
-    let heap5 = AutoHeap.remove_head heap4
-    assertish (AutoHeap.query heap5) (3, "three")
-    let heap6 = AutoHeap.remove_head heap5
-    assertish (AutoHeap.query heap6) (7, "seven")
-    let heap7 = AutoHeap.remove_head heap6
-    assertish (AutoHeap.query heap7) (9, "nine")
-    assert (AutoHeap.size heap7) 1
-    let heap8 = AutoHeap.remove_head heap7
-    assert (AutoHeap.query heap8) Nothing
-    assert (AutoHeap.size heap8) 0
-    --let heap9 = AutoHeap.remove_head heap8 -- this will now do an error
-    --assert (AutoHeap.query heap9) Nothing
-    --assert (AutoHeap.size heap9) 0
+    action_nothing id (AutoHeap.void compare)
+        >>= action (AutoHeap.add (9, "nine")) (9, "nine") 1
+        >>= action (AutoHeap.add (3, "three")) (3, "three") 2
+        >>= action (AutoHeap.add (7, "seven")) (3, "three") 3
+        >>= action (AutoHeap.add (1, "one")) (1, "one") 4
+        >>= action (AutoHeap.remove_head) (3, "three") 3
+        >>= action (AutoHeap.add (7, "seven")) (3, "three") 4
+        >>= action (AutoHeap.remove_head) (7, "seven") 3
+        >>= action (AutoHeap.remove_head) (7, "seven") 2
+        >>= action (AutoHeap.remove_head) (9, "nine") 1
+        >>= action_nothing (AutoHeap.remove_head)
+        >>= action (AutoHeap.add (3, "three")) (3, "three") 1
+        >>= action (AutoHeap.add (9, "nine")) (3, "three") 2

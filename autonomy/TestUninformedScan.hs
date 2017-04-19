@@ -44,6 +44,12 @@ cookable_world = Map.fromList [
     (4, Actor 4 44 (Map.fromList [("food", 0)])),
     (5, Actor 5 99 (Map.fromList [("food", 0), ("prepped_ingredients", 12)]))
     ]
+
+-- expected from bountiful_world
+-- 1) [be_unhungry eat]
+-- 2) [have_item_food] (skipped)
+-- 3) [take_item_food, take_item_food, cook, cook] (skipped)
+-- 4) [goto_food, goto_food, goto_oven, goto_oven]
     
 doit :: Int -> AutoHeap (PartialResolution World) -> IO ()
 doit 0 _ = return ()

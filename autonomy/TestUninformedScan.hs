@@ -58,7 +58,7 @@ run_simulation _ 0 _ _ = return ()
 run_simulation verbosity n statistics aheap = case AutoHeap.query aheap of
                  Nothing -> putStrLn "Aborted -- empty queue."
                  Just pr -> if is_victorious pr
-                               then putStrLn "\n\nSo victorious. " >> print_outcomes statistics
+                               then putStrLn ("\n\nSo victorious. Recommendation = " ++ dump_this_intent pr) >> print_outcomes statistics
                                else print_status >> run_simulation verbosity (n-1) (increment_statistics statistics) (advance_resolutions aheap)
                                    where is_victorious (PartialResolution _ (PartialSolution intent world _ _)) = goal_succeeds (intent_goal intent) world
                                          print_status = case verbosity of
@@ -67,6 +67,7 @@ run_simulation verbosity n statistics aheap = case AutoHeap.query aheap of
                                                             FullInfo -> putStrLn (show (AutoHeap.size aheap))
                                          print_outcomes (num_steps, biggest_breadth, total_breadths) = putStrLn ("Steps: " ++ show num_steps ++ ", biggest breadth: " ++ show biggest_breadth ++ ", average breadth: " ++ show (fromIntegral total_breadths / fromIntegral num_steps))
                                          increment_statistics (num_steps, biggest_breadth, total_breadths) = (num_steps + 1, max biggest_breadth (AutoHeap.size aheap), total_breadths + (AutoHeap.size aheap))
+                                         dump_this_intent (PartialResolution _ (PartialSolution intent _ _ _)) = dump_stack [intent]
 
 dump_decisions :: AutoHeap (PartialResolution World) -> String
 dump_decisions aheap = dump_each_decision aheap ++ "\n"

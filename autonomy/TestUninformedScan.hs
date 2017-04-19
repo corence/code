@@ -13,6 +13,8 @@ import Data.Map(Map(..))
 import qualified AutoHeap as AutoHeap
 import AutoHeap(AutoHeap(..))
 
+data Verbosity = NoVerbosity | StepCounter | FullInfo
+
 --printGood _ = return ()
 printGood = putStrLn . (++ "\n")
 
@@ -51,20 +53,20 @@ cookable_world = Map.fromList [
 -- 3) [take_item_food, take_item_food, cook, cook] (skipped)
 -- 4) [goto_food, goto_food, goto_oven, goto_oven]
     
-doit :: Int -> AutoHeap (PartialResolution World) -> IO ()
-doit 0 _ = return ()
-doit n aheap = case AutoHeap.query aheap of
-                 Nothing -> return ()
+run_simulation :: Verbosity -> Int -> (Int, Int, Int) -> AutoHeap (PartialResolution World) -> IO ()
+run_simulation _ 0 _ _ = return ()
+run_simulation verbosity n statistics aheap = case AutoHeap.query aheap of
+                 Nothing -> putStrLn "Aborted -- empty queue."
                  Just pr -> if is_victorious pr
-                               then return ()
-                               else putStrLn ("Step: " ++ show n) >> putStrLn (dump_decisions aheap) >> doit (n-1) (advance_resolutions aheap)
+                               then putStrLn "\n\nSo victorious. " >> print_outcomes statistics
+                               else print_status >> run_simulation verbosity (n-1) (increment_statistics statistics) (advance_resolutions aheap)
                                    where is_victorious (PartialResolution _ (PartialSolution intent world _ _)) = goal_succeeds (intent_goal intent) world
-
-doit2 :: Int -> AutoHeap (PartialResolution World) -> IO ()
-doit2 0 _ = return ()
-doit2 n aheap = if AutoHeap.is_empty aheap
-                  then return ()
-                  else putStrLn (show (AutoHeap.size aheap)) >> doit2 (n-1) (advance_resolutions aheap)
+                                         print_status = case verbosity of
+                                                            NoVerbosity -> return ()
+                                                            StepCounter -> putStrLn ("Step: " ++ show n) >> putStrLn (dump_decisions aheap)
+                                                            FullInfo -> putStrLn (show (AutoHeap.size aheap))
+                                         print_outcomes (num_steps, biggest_breadth, total_breadths) = putStrLn ("Steps: " ++ show num_steps ++ ", biggest breadth: " ++ show biggest_breadth ++ ", average breadth: " ++ show (fromIntegral total_breadths / fromIntegral num_steps))
+                                         increment_statistics (num_steps, biggest_breadth, total_breadths) = (num_steps + 1, max biggest_breadth (AutoHeap.size aheap), total_breadths + (AutoHeap.size aheap))
 
 dump_decisions :: AutoHeap (PartialResolution World) -> String
 dump_decisions aheap = dump_each_decision aheap ++ "\n"
@@ -106,5 +108,5 @@ perhaps_dump = perhaps_do ""
 
 main :: IO ()
 main = do
-    doit 9999 (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
+    run_simulation NoVerbosity 9999 (0, 0, 0) (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
     return ()

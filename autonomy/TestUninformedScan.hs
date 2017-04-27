@@ -114,5 +114,5 @@ perhaps_dump = perhaps_do ""
 
 main :: IO ()
 main = do
-    run_simulation StepCounter 9999 (0, AutoHeap.void (const (const EQ)), 0) (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
+    run_simulation NoVerbosity 9999 (0, AutoHeap.void (const (const EQ)), 0) (start_resolving bountiful_world [Desire (be_unhungry 1) (const 44)])
     return ()

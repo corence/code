@@ -90,7 +90,7 @@ ps_comparator (PartialSolution _ _ cost1 _) (PartialSolution _ _ cost2 _) = comp
 
 pr_comparator :: PartialResolution world -> PartialResolution world -> Ordering
 pr_comparator (PartialResolution priority1 (PartialSolution _ _ cost1 stack1)) (PartialResolution priority2 (PartialSolution _ _ cost2 stack2))
-  = compare (cost1 / priority1) (cost2 / priority2) `else_compare` compare (-priority1) (-priority2) `else_compare` compare (length stack1) (length stack2)
+  = compare (cost1 / priority1) (cost2 / priority2) `else_compare` compare (-priority1) (-priority2) `else_compare` compare (- length stack1) (- length stack2)
 
 else_compare :: Ordering -> Ordering -> Ordering
 else_compare EQ ordering2 = ordering2

@@ -79,7 +79,7 @@ advance_intents world [] = ctrace "    time to generate a fresh new intent " $ [
 advance_intents world (intent : intents) = case intent of
     HazyIntent goal -> if goal_succeeds goal world
                        then ctrace ("    " ++ goal_name goal ++ ": popping successful intent ") $ [intents]
-                       else trace ("    " ++ goal_name goal ++ ": generating task options: " ++ show (map task_name (goal_generate_tasks goal world))) $ [OptionyIntent goal (goal_generate_tasks goal world) : intents]
+                       else trace ("    " ++ goal_name goal ++ ": generating task options: " ++ show (map task_name (goal_generate_tasks goal world)) ++ "\n        from intents " ++ show (intent : intents)) $ [OptionyIntent goal (goal_generate_tasks goal world) : intents]
     OptionyIntent goal [] -> ctrace ("    " ++ goal_name goal ++ ": hitting a wall! ") $ []
     OptionyIntent goal tasks -> ctrace ("    " ++ goal_name goal ++ ": blossoming tasks into " ++ show (length tasks) ++ " streams") $ map (: intents) (map (TaskIntent goal) tasks)
     TaskIntent goal task -> if null incomplete_prerequisites

@@ -1,5 +1,5 @@
 
-module UninformedScan4
+module UninformedScan5
 ( Desire(..)
 , Resolution(..)
 , PartialResolution(..)
@@ -54,8 +54,6 @@ advance_resolutions aheap = case AutoHeap.query aheap of
                                   where other_resolutions = AutoHeap.remove_head aheap
                                         new_solutions = advance_single_solution base_solution
                                         new_resolutions = map (PartialResolution priority) new_solutions
-                                        
-advance_filtered_resolutions :: 
                       
 -- scans the lowest-cost solution and loops until one of them is actually winning -- but it won't generate any solutions more expensive than max_cost
 find_best_solution_capped :: Float -> AutoHeap (PartialSolution world) -> Maybe (PartialSolution world)

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Bootstrap 101 Template</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="intro.css">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> 
+    <!-- Bootstrap -->
+  </head>
+  <body>
+      <div class="container">
+          <div class="row">
+              <div class="side-column col-xs-2">
+              </div>
+              <div class="main-column col-xs-8">
+                  <h1>Background</h1>
+
+                  <p>
+                  Most monad tutorials start with
+                  </p>
+                  <blockquote>
+                      A monad is <strong>like</strong>….
+                  </blockquote>
+                  or
+                  <blockquote>
+                      A monad is <strong>for</strong>…
+                  </blockquote>
+                  or
+                  <blockquote>
+                      In category theory…
+                  </blockquote>
+
+                  <p>
+                  but I haven’t come across one with a succinct definition of what a monad <strong>is</strong>, in the context of programming languages.
+                  </p>
+
+                  <p>Here it is:</p>
+
+                  <blockquote>
+                      A monad is a <strong>wrapper type</strong> with a specific set of <strong>conversion functions</strong>.
+                  </blockquote>
+
+                  <p>
+                  If you can get this sentence as an intuitive concept, you'll be in a good position to absorb monad tutorials and make sense of them.
+                  </p>
+
+                  <p>
+                  So this intro covers:
+                  </p>
+                  <ul>
+                      <li>what a wrapper type is</li>
+                      <li>what wrapper types are for</li>
+                      <li>what the monad conversion functions are for</li>
+                  </ul>
+
+                  <h1>Wrapper types</h1>
+                  <h2>What they are</h2>
+
+                  <p>
+                  A wrapper type is a type that *wraps another type*. (For our purposes, we're only interested in wrapper types that have exactly 1 generic argument, and that can wrap <em>all</em> types with that argument.)
+                  </p>
+
+                  <p>
+                  If you're familiar with Generics (in Java, C#, TypeScript, or FlowType), a "wrapper type" is equivalent to those.
+                  </p>
+                  
+                  <ol>
+                      <li>
+                          In Java, a <code>List&lt;T&gt;</code> is a <strong>wrapper type</strong>. To make an instance of it, you pass it another type — like the type <code>Integer</code> to make the "wrapped type" <code>List&lt;Integer&gt;</code>. Note that:
+                          <ul>
+                              <li>
+                                  an instance of <code>List&lt;Integer&gt;</code> does not <em>necessarily</em> contain an instance of <code>Integer</code>. All it means is that this wrapper type can do <em>something</em> with the wrapped type.
+                              </li>
+                              <li>
+                                  <code>List</code> has <em>no knowledge</em> of the <code>Integer</code> type — it can’t do arithmetic or increment the Integer values. It can only deal with its wrapped type as an opaque black box.
+                              </li>
+                          </ul>
+                      </li>
+                      <li>
+                          In Javascript, a Promise also wraps an arbitrary type. (If you’re using TypeScript, a promise is <code>Promise&lt;string&gt;</code> — but even if you’re in pure Javascript and your types aren’t explicit in your code, the concept still exists.)
+                      </li>
+                  </ol>
+
+                  <h2>What wrapper types are for</h2>
+                  <p>
+                  Here's some example wrapper types in Java:
+                  </p>
+
+                  <ul>
+                      <li>
+                          <code>Collection&lt;String&gt;</code> -- the <code>Collection</code> type wraps the <code>String</code> type.
+                      </li>
+                      <li>
+                          <code>Comparable&lt;Integer&gt;</code> -- the <code>Comparable</code> type wraps the <code>Integer</code> type.
+                      </li>
+                      <li>
+                          <code>Iterator&lt;Comparable&lt;Integer&gt;&gt;</code> -- the <code>Iterator</code> type wraps the <code>Comparable&lt;Integer&gt;</code> type.
+                      </li>
+                  </ul>
+
+                  <p>
+                  Remember, monads are just wrapper types with some extra conversion functions -- so the purpose of monads is the same as the purpose of wrapper types.
+                  </p>
+
+                  <p>
+                  In Haskell, wrapper types are more prevalent, because the purity features of the language require state to be managed explicitly.
+                  </p>
+
+                  <h2>Conversion functions</h2>
+                  <h3>What they're for</h3>
+                  <p>
+                  The standard Monad conversion functions are for dealing with the following situations:
+                  </p>
+                  <ul>
+                      <li>
+                          you have an instance of the wrapped type, but you need an instance of the unwrapped type
+                      </li>
+                      <li>
+                          you have an instance of the unwrapped type, but you need an instance of the wrapped type
+                      </li>
+                  </ul>
+                  
+                  <p>
+                  These conversion functions are the *only* thing that separate monads from normal wrapper types.
+                  </p>
+
+                  <p>
+                  Note that in most cases, <strong>the conversion functions are purely for convenience</strong> or for writing higher-level code.
+                  For most Monads, you can achieve results without touching their monad functions — it’ll just take a lot of code and be ugly to read and write.
+                  </p>
+
+                  <h3>What they allow</h3>
+                  <p>
+                  This section focuses on what benefits are available from Monads to the Haskell programmer.
+                  </p>
+                  <h4>The best method chaining in any language</h4>
+                  <p>
+                  Method chaining is delightful -- it's expressive, it's nice to write, it's nice to read.
+                  </p>
+                  <p>
+                  In ruby, method chaining with lists can be very expressive and elegant. The following Ruby code returns the highest even number in the given list:
+                  </p>
+                  <code>
+                      [5,2,4,1,3].sort.reverse.select { |num| num.even? }.first
+                  </code>
+                  <p>
+                  
+                  </p>
+                  
+
+                  <h4></h4>
+
+                  
+              </div>
+              <div class="side-column col-xs-2">
+              </div>
+          </div>
+      </div>
+
+
+
+
+      
+          
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-1">
+                ONE
+            </div>
+            <div class="java col-xs-4">
+                TWO
+            </div>
+            <div class="col-xs-2">
+                THREE
+            </div>
+            <div class="haskell col-xs-4">
+                FOUR
+            </div>
+            <div class="col-xs-1">
+                FIVE
+            </div>
+        </div>
+    </div> 
+  </body>
+</html>
+
+<!--
+
+
+First example — Null-checking vs Chaining
+
+suppose you want to know the name of the country that a person is in
+you could say (in java):
+
+```String getCountryName(Dude dude) {
+    return dude.getCity().getCountry().getName();
+}
+```
+but that’ll throw an exception if i’m in the ISS (so I don’t have a country)
+
+to correct that, we need to check for null:
+```String getCountryName(Dude dude) {
+    if(dude != null) {
+        City city = dude.getCity();
+        if(city != null) {
+            Country country = city.getCountry();
+            if(country != null) {
+                return country.getName();
+            }
+        }
+    }
+    return null;
+}
+```
+
+or you could use exceptions instead:
+```String getCountryName(Dude dude) {
+    try {
+        return dude.getCity().getCountry().getName();
+    } catch(NullPointerException ex) {
+        return null;
+    }
+}
+```
+
+So in Java you need to make the choice between
+- function chaining (easy to read, but doesn’t cover edge cases)
+- null-checking (hard to read, but good implementation)
+- exceptions (easy to read, but it might be catching exceptions from unexpected places deeper in the call stack)
+
+now in Haskell, you aren’t *allowed* to ignore the nulls like in the first Java version — so it is very similar to the Java null-checking implementation:
+
+(in Haskell, there’s no `null`. The `Maybe` wrapper type allows the analogous value `Nothing` to be used.)
+```getCountryName :: Maybe Dude -> Maybe String
+getCountryName maybeDude
+  = case (maybeDude) of
+      Just dude -> case (getCity dude) of
+          Just city -> case (getCountry dude) of
+              Just country -> getName country
+              Nothing -> Nothing
+          Nothing -> Nothing
+      Nothing -> Nothing
+```
+
+but if you use the Monad function called `>>=` then you can tell it “if you get a `Nothing`, just give me back a `Nothing`” — and then it’ll look like this:
+```getCountryName :: Maybe Dude -> Maybe String
+getCountryName maybeDude = maybeDude >>= getCity >>= getCountry >>= getName
+```
+
+This final Haskell version is about as short as the first Java version — but it behaves like the null-safe versions.
+-->

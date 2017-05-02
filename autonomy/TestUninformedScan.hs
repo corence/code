@@ -33,7 +33,7 @@ assert_equal x y = if x == y
 
 hungry_world = Map.fromList [(1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 52)]))]
 bountiful_world = Map.fromList [
-    (1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 32), ("prepped_ingredients", 52)])),
+    (1, Actor 1 14 (Map.fromList [("dude", 1), ("hunger", 122), ("prepped_ingredients", 52)])),
     (2, Actor 2 18 (Map.fromList [("oven", 1)])),
     (3, Actor 3 0 (Map.fromList [("oven", 1)])),
     (4, Actor 4 44 (Map.fromList [("food", 2)])),
@@ -67,7 +67,7 @@ run_simulation verbosity n statistics aheap = case AutoHeap.query aheap of
                                                             FullInfo -> putStrLn (show (AutoHeap.size aheap))
                                          print_outcomes (num_steps, broadest, total_breadths)
                                             = putStrLn ("Steps: " ++ show num_steps ++ ", biggest breadth: " ++ show (AutoHeap.size broadest) ++ ", average breadth: " ++ show (fromIntegral total_breadths / fromIntegral num_steps))
-                                                >> putStrLn (dump_decisions False broadest)
+                                                -- >> putStrLn (dump_decisions False broadest)
                                          increment_statistics (num_steps, broadest, total_breadths) =
                                             (num_steps + 1,
                                             if AutoHeap.size aheap > AutoHeap.size broadest then aheap else broadest,

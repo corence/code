@@ -9,8 +9,8 @@ This document is aimed at you if:
 ## Definition
 
 In my experience, most monad tutorials start with one of these three phrases:
-> A monad is *like*...
-> A monad is *for*...
+> A monad is *like*...  
+> A monad is *for*...  
 > In category theory...
 
 but I haven’t come across one with a succinct definition of what a monad **is**, in the context of programming languages.
@@ -59,7 +59,7 @@ Javascript
 [1, 3, 4, 5].map(x => x * 2); // returns [2, 6, 8, 10]
 ```
 
-Haskell -- 
+Haskell
 ```haskell
 fmap (\x -> x * 2) [1, 3, 4, 5] -- returns [2, 6, 8, 10]
 ```
@@ -78,22 +78,21 @@ There are a bunch of other conversion functions -- but they all follow the basic
 
 ### What they're for, part 1: Chaining Method Calls
 
-The conversion functions give you a few specific benefits:
-1. you can chain method calls, as long as you pick the correct conversion function each time, and this really cuts down on the amount of boilerplate/safety code you'd need to copy-paste
+You can chain method calls, as long as you pick the correct conversion function each time. This really cuts down on the amount of boilerplate/safety code you'd need to copy-paste.
 
-First example — Null-checking vs Chaining
+Example — Null-checking vs Chaining
 
-suppose you want to know the name of the country that a person is in
-you could say (in java):
+Suppose you want to know the name of the country that a person is in.
+You could say (in java):
 
 ```java
 String getCountryName(Dude dude) {
     return dude.getCity().getCountry().getName();
 }
 ```
-but that’ll throw an exception if i’m in the ISS (so I don’t have a country)
+but that’ll throw a NullPointerException if the person is in international waters, or the ISS.
 
-to correct that, we need to check for null:
+To correct that, we need to check for null:
 ```java
 String getCountryName(Dude dude) {
     if(dude != null) {
@@ -109,7 +108,7 @@ String getCountryName(Dude dude) {
 }
 ```
 
-or you could use exceptions instead:
+Or, you could use exceptions instead:
 ```java
 String getCountryName(Dude dude) {
     try {
@@ -133,7 +132,7 @@ getCountryName :: Maybe Dude -> Maybe String
 getCountryName maybeDude
   = case (maybeDude) of
       Just dude -> case (getCity dude) of
-          Just city -> case (getCountry dude) of
+          Just city -> case (getCountry city) of
               Just country -> getName country
               Nothing -> Nothing
           Nothing -> Nothing
@@ -146,7 +145,7 @@ getCountryName :: Maybe Dude -> Maybe String
 getCountryName maybeDude = maybeDude >>= getCity >>= getCountry >>= getName
 ```
 
-This final Haskell version is about as short as the first Java version — but it behaves like the null-safe versions. (edited)
+This final Haskell version is about as short as the first Java version — but it behaves like the null-safe versions.
 
 ### What they're for, part 2: Familiar Syntax
 Each time you come across a new Monad type, you'll have a head-start in learning how to use it.
@@ -166,19 +165,74 @@ join [[1,2,5],[3,4],[2]]
 -- returns: [1,2,5,3,4,2]
 ```
 
-Another one that's handy is a function to take a `Maybe (Maybe String)` and convert that to a `Maybe String`.
+But actually, `join` can flatten any monad -- not just lists. So you can also do this:
 
-Or let's say you have a `Integer -> (Integer -> String)` (what this means is: a function, that takes an `Integer` as its argument, and returns another function that turns an `Integer` to a `String`!)
+```haskell
+join (Just (Just 3)) -- returns: Just 3
+join (Just (Nothing)) -- returns: Nothing
+join (Nothing) -- returns: Nothing
 
-In javascript, that might look like this:
+join (*) -- "joins" the multiplication function, to create a new function, that squares its argument
+(join (*)) 3 -- returns: 9
+```
+
+`join` is a super-flexible function. Yet the implementation is embarrassingly simple: (not necessarily simple to understand -- but simple in that it has few elements)
+```haskell
+join thing = thing >>= id
+```
+
+See? Nothing about lists, Maybes, or functions here :D
+
+Another Haskell example is the function called `>>`.
+
+When you have values in the `IO` monad, `>>` is pretty similar to the `;` operator in Javascript:
+
 ```javascript
-function numberConverterGenerator(number) {
-    return function(number2) { return 
+function printMyName() {
+    console.log('sonic');
+    console.log('the');
+    return console.log('hedgehog');
+}
+```
 
-For example, in Haskell it's possible to write a function that can do **all** of these things:
- - convert a 
- - convert a list of IO objects -- for example, an `[IO Integer]` -- to an IO object wrapping a list -- eg, an `IO [Integer]`
+`console.log` is a function that takes a `String`, and returns `undefined`.
+The `;` operator **throws away** the `undefined`, but **keeps** the IO side-effects.
 
+```haskell
+printMyName =
+    putStrLn "sonic" >>
+    putStrLn "the" >>
+    putStrLn "hedgehog"
+```
+
+`putStrLn` is a function that takes a `String` and returns `IO ()`. `()` is an empty/blank value, like `undefined` in javascript or `void` in Java.
+So, `IO ()` means "an empty/blank value, that I had to do some IO to obtain".
+The `>>` operator **throws away** the `()`, but **keeps** the IO side-effects.
+
+But `>>` works with *any* monad, not just IO.
+
+```haskell
+Just "sonic" >> Just "the" >> Just "hedgehog" -- returns Just "hedgehog"
+Just "sonic" >> Nothing >> Just "hedgehog" -- if there's a Nothing anywhere in the chain, it'll return Nothing. Remember that `>>` is only throwing away the wrapped type's value, but it's retaining the monadic context.
+
+[1,2,3] >> [4,5] -- returns [4,5,4,5,4,5]. The first list has 3 instances, so it keeps the "3 instances" part of the first list and mixes it with the monad context of the second!
+[1] >> [5,6,7] -- returns [5,6,7]
+[] >> [5,6,7] -- returns []
+```
 
 These conversion functions are the **only** thing that separate monads from wrapper types in general.
+
+## How to find conversion functions
+
+
+## Further reading
+http://www.google.com/url?q=http%3A%2F%2Fadit.io%2Fposts%2F2013-04-17-functors%2C_applicatives%2C_and_monads_in_pictures.html&sa=D&sntz=1&usg=AFQjCNGNGa2b94jgrzPd7l7FIJQoUoO44g
+This is the best monad tutorial in history. It's useful if:
+ - you'd like a better conceptual understanding of Monads
+ - you'd like to see the distinction between Functor, Applicative and Monad that I totally glossed over
+
+http://blog.tmorris.net/posts/20-intermediate-haskell-exercises/
+Complete these 20 exercises, and you will understand everything there is to know about Monads.
+You'll need a good understanding of Haskell syntax to undertake this -- including partially-applied functions, lambdas, and type signatures.
+
 

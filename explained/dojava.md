@@ -19,7 +19,7 @@ It'll walk through some of the syntax errors you're likely to run into, and how 
 # Outcomes
 
 Here are the final forms of the program that we're working toward. We'll explain every element in these two Haskell programs.
-If you can see how the following three code blocks are almost identical, and you know how to write each of them, then this article will be of no use to you. :)
+If you can see how the following three code blocks are almost identical, and you know how to write each of them, then this article will be of no use to you.
 
 ```java
 public class Triangle {
@@ -52,10 +52,10 @@ hypotenuse edge1 edge2 = sqrt (edge1 * edge1 + edge2 * edge2)
 
 makeRightAngleTriangle :: IO Triangle
 makeRightAngleTriangle = do
-    edge1 <- randomIO
+    edge1 <- randomIO :: Double
     putStrLn "give me a number"
-    edge2 <- parse readStrLn
-    edge3 <- hypotenuse edge1 edge2
+    edge2 <- parse readStrLn :: Double
+    edge3 <- hypotenuse edge1 edge2 :: Double
     return (Triangle edge1 edge2 edge3)
 ```
 
@@ -75,9 +75,26 @@ makeRightAngleTriangle =
     putStrLn "give me a number" >>
     parse readStrLn >>= (\edge2 ->
     hypotenuse edge1 edge2 >>= (\edge3 ->
-    return (Triangle edge1 edge2 edge3))))
+    return (Triangle { edge1 = edge1, edge2 = edge2, edge3 = edge3 }))))
 ```
 
+# 0) Data Types
+```java
+public class Triangle {
+    public double edge1;
+    public double edge2;
+    public double edge3;
+    public Triangle(double edge1, double edge2, double edge3) {
+        this.edge1 = edge1; this.edge2 = edge2; this.edge3 = edge3;
+    }
+}
+```
+
+```haskell
+data Triangle = Triangle Double Double Double
+```
+
+Data types are pretty terse in Haskell. When you define the constructor, as I've done here, then you don't need to be careful.
 # 1) Starting out
 ```java
 public class Triangle {
@@ -101,18 +118,20 @@ makeRightAngleTriangle :: Triangle
 makeRightAngleTriangle = Triangle 3 4 5
 ```
 
-Note: `return` in Java and `return` in Haskell are **completely** unrelated. It's a coincidence that they appear at the same place in the functions above.
-We'll cover its functionality later -- but for now, we don't need it.
+These Java and Haskell programs are doing the same thing.
 
-Note: Haskell function calls look pretty different to Java's function calls because they don't use `(` or `,`. You just write the function name (in this case, the constructor called `Triangle`) -- then list the arguments, separated by spaces. This has a cool advantage (partial function application) but we're not covering that today.
+Note: `return` in Java and `return` in Haskell are **completely** unrelated. It's a coincidence that they appear at the same place in the functions above.
+We'll go into its functionality later.
+
+Note: Haskell function calls look pretty different to Java's function calls because they don't use `(` or `,` punctuation. You just write the function name (in this case, the constructor called `Triangle`) -- then list the arguments, separated by spaces. This has a cool advantage (partial function application) but we're not covering that today.
 
 Note:
 ```haskell
 makeRightAngleTriangle :: Triangle
 ```
-This is a **type annotation**. It means the same as `Triangle makeRightAngleTriangle()` -- no arguments, and `Triangle` as the return type.
+This is a **type annotation**. It means the same as `Triangle makeRightAngleTriangle()` -- a method with no arguments, and `Triangle` as the return type.
 
-This function does what it says on the tin, but it's pretty useless. :) Let's bind some local variables before we go more complicated.
+This method does what it says on the tin, but it's pretty useless. :) Let's bind some local variables in the next iteration.
 
 # 2) Variables
 ```java
@@ -129,7 +148,7 @@ double makeRightAngleTriangle() {
     double edge1 = 3;
     double edge2 = 4;
     double edge3 = 5;
-    return new double[] {edge1, edge2, edge3};
+    return new Triangle(edge1, edge2, edge3);
 }
 ```
 
@@ -149,24 +168,21 @@ makeRightAngleTriangle
         in Triangle edge1 edge2 edge3
 ```
 
-`let` is a scoped block. Consider in Java:
+`let` is a scoped block. The format is: "let (some variables be assigned) in (expression that references those assigned variables)"
+Consider in Java:
 ```java
 for(int i = 0; i < 3; i++) {
 }
 i = 4; // this is a syntax error!
 ```
 the `i` doesn't live beyond the scope of the `for` block.
-The same rule applies to `let` and `in`.
+The same rule applies here: the variables in the `let` don't live beyond the scope of the `in` block.
 
 Note: we don't need to specify that `edge2` is of type Double.
 Haskell's type system infers that it **has** to be Double or else the code won't compile.
 
 Note -- the newline before the first `=` is optional -- I added it for readability.
-Indentation rules in Haskell are roughly like this:
- - if you start a new line with a bigger indent than the previous line, it means you're continuing the line above
- - if you start a new line with the same indent as the previous line, it means you're starting a new line at the same scope
- - if you start a new line with a smaller indent than the previous line, it means you're ending a scope
-This is *roughly* correct, but has a bunch of loopholes. If you have indentation issues, it'll almost certainly cause a compile error, so you can experiment until the compiler stops complaining.
+If you have indentation issues in Haskell, it'll almost certainly cause a compile error, so you can experiment until the compiler stops complaining.
 
 ```haskell
 data Triangle = Triangle Double Double Double
@@ -207,7 +223,7 @@ double makeRightAngleTriangle() {
 }
 ```
 
-Now we're calling a function.
+Now we've added a function, and we're calling that function.
 
 ```haskell
 data Triangle = Triangle Double Double Double
@@ -224,8 +240,19 @@ makeRightAngleTriangle
         in Triangle edge1 edge2 edge3
 ```
 
-The **type signature** of the `hypotenuse` function says: "This function takes 2 arguments -- both of type Double -- and it returns a Double."
-The type after the rightmost `->` is the return type of the function.
+Next up, let's do the random number!
+
+```haskell
+makeRightAngleTriangle :: IO Triangle -- we've added the IO type because accessing random numbers is an IO action
+makeRightAngleTriangle = do
+    edge1 <- randomIO :: Double
+    let edge2 = 4
+    let edge3 = hypotenuse edge1 edge2 :: Double
+    return (Triangle edge1 edge2 edge3)
+```
+
+The **type signature** of the `hypotenuse` method says: "This function takes 2 arguments -- both of type Double -- and it returns a Double."
+The type after the rightmost `->` is the return type of the method.
 
 Note: the above 2 lines are not quite accurate -- but they're an *analogy* to help us map the concepts with Java. :)
 In reality, Haskell functions are more flexible than this -- but we're not covering partial function application in this article, so for now just pretend that what I've said is true!

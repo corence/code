@@ -13,6 +13,22 @@ Interfaces and type classes
 
 # Method chaining
 Suppose you're arch-emperor of Planet Earth. Clearly, you need the ability to exile people from nations. Let's define a class and a datatype for that.
+import Control.Monad.State  
+
+type Stack = [Int]
+
+pop :: State Stack Int  
+pop = state $ \(x:xs) -> (x,xs)  
+
+push :: Int -> State Stack ()  
+push a = state $ \xs -> ((),a:xs)  
+
+stackManip :: State Stack Int  
+stackManip = do  
+    push 3  
+    x <- pop  
+    pop
+
 
 ```java
 import java.util.TreeMap;
@@ -117,3 +133,4 @@ makeNation2 = return emptyNation >> add fred >> add wilma >> add pebbles
     nation.add(new Citizen("Betty", new String[] {"Barney", "Bam-Bam"}));
     nation.add(new Citizen("Bam-Bam", new String[] {"Barney", "Betty"}));
 ```
+

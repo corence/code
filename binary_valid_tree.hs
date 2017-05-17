@@ -36,9 +36,7 @@ printTree input = do
   let tree = makeTree input :: (TreeNode Int)
   putStrLn $ (show tree) ++ ": " ++ (show $ traverseTree tree [])
 
-dumpTree (TreeNode value left right) indent = 
-  
-
+--dumpTree (TreeNode value left right) indent = 
 
 main = do
   let val = traverseTree tree1 []

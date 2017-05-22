@@ -1,10 +1,58 @@
 
+# Explaining `>>=` without Monads
+
+Aim:
+ - to get you started in Haskell without reading massive tutorials first
+ - to create an intuitive understanding of `>>=`, `IO`, and `do`
+ - to teach Haskell syntax by analogy to Java
+
+Prerequisites:
+ - you should be able to read Java
+ - no Haskell knowledge is assumed
+
+Goal: At the end of this article, you should be able to port a Java program like this:
+
+```java
+public static void main(String[] args) {
+    Scanner input = new Scanner(System.in);
+
+    String filename = input.readLine();
+    List<String> lines = Files.readLines(file, Charsets.UTF_8); // we're using the Guava library here to simplify the code
+    
+}
+
+```haskell
+main :: IO ()
+main = readLn >>= getEnv >>= readFile >>= (\fileContents -> pure (takeWhile (/= '\n') fileContents)) >>= getEnv >>= putStrLn
+```
+
+```haskell
+main :: IO ()
+main = do
+    readLn >>= getEnv >>= readFile >>= putStrLn . (takeWhile (/= '\n'))
+    putStrLn ("OK, so the first env was " ++ env1 ++ "=" ++ filename ++ " and the second env was " ++ env2 ++ "=" ++ 
+```
+
+ 
+
 plan:
  - use lots of String -> IO String functions
  - we may just be able to show the let, the >>= and the do versions with a little bit of explanation
  - then go into detail about what they're *for*
  intents:
  - intuitive understanding of ">>=", ">>", "do", "return", and ";"
+
+```haskell
+main :: IO ()
+main = readLn >>= getEnv >>= readFile >>= (\fileContents -> pure (takeWhile (/= '\n') fileContents)) >>= getEnv >>= putStrLn
+```
+
+```haskell
+main :: IO ()
+main = do
+    readLn >>= getEnv >>= readFile >>= putStrLn . (takeWhile (/= '\n'))
+    putStrLn ("OK, so the first env was " ++ env1 ++ "=" ++ filename ++ " and the second env was " ++ env2 ++ "=" ++ 
+```
 
 
 

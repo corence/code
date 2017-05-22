@@ -1,8 +1,78 @@
 
-# `IO`, `>>`, `>>=`, `do`, and `return` without Monads (by analogy with Java)
+# Explaining `>>=` without Monads
 ## because if you can write Java, you should be able to write Haskell without reading a bunch of Monad tutorials
 
-Let's just look into the syntax of how to deal with `IO`! (because when you know Haskell syntax, monad tutorials are _so much_ easier to read.)
+There are a lot of ways to explain `>>=` but all of them boggled me for a long time when I was learning Haskell.
+
+Let's look into `>>=` in the context of `IO`. From this document you should get:
+ - an intuitive understanding of the difference between `IO String` and `String` - and why we need special operators to translate between them
+ - what `>>` and `>>=` are for, and how they correspond to `;` in Java
+ - how to mix pure and impure code without massive frustration
+ - how to read `do` blocks
+
+Specifically, at the end of this guide you should be able to port imperative code like this:
+
+```java
+public static void main(String[] args) {
+    double x = Math.random();
+    double y = Math.random();
+    if(x < y) {
+        System.out.println(y + " is a huge number.");
+    } else {
+        System.out.println("y is too small. What's your name?");
+        String name = new Stream(System.in).readLine();
+        System.out.println("Imperative-style code can be good, " + name + "!");
+    }
+}
+```
+
+into Haskell that looks (and behaves) similarly:
+```haskell
+main :: IO ()
+main = do
+    x <- randomIO
+    y <- randomIO
+    if x < y
+        then putStrLn (y ++ " is a huge number.")
+        else do
+            putStrLn "y is too small. What's your name?"
+            name <- readLn
+            putStrLn ("Imperative-style code can be good, " ++ name ++ "!")
+```
+
+but with a full understanding of `>>=` -- so you can also port it without using `do`:
+```haskell
+main :: IO ()
+main = 
+    randomIO >>= (\x ->
+        randomIO >>= (\y ->
+            if x < y
+                then putStrLn (y ++ " is a huge number.")
+                else 
+                    putStrLn "y is too small. What's your name?" >>
+                    readLn >>= (\name ->
+                        putStrLn ("Imperative-style code can be good, " ++ name ++ "!")
+```
+
+
+
+and this:
+
+```haskell
+main :: IO ()
+main =
+    putStrLn "What's this programming language?"
+    name <- readLn
+    if name == "Haskell"
+        then putStr "Yeah. We're seeing how much imperative, " >> putStr name >> putStrLn "!!"
+        otherwise -> do
+            putStr "Hey "
+            
+    name <- readLn
+    putStr "Hi it's nice to meet you, " >> putStr name >> putStrLn "!!"
+```
+
+This guide is intended to be usable even if you don't know Haskell syntax. You should know Java, though.
 
 ## 1) What `IO` is
 > `IO a` is a generic type. Like any generic type, it can be specialised: `IO String`, `IO Integer`, and `IO (IO Float)` are concrete types.
@@ -10,42 +80,88 @@ If it were Java, we'd express it like this:
 > `IO<T>` is a generic type. Like any generic type, it can be specialised: `IO<String>`, `IO<Integer>`, and `IO<IO<Float>>` are concrete types.
 
 An `IO String` is literally "a `String` that i had to do some input/output to obtain."
-The `IO` part has a record of the input/output that you did.
+The `IO` part has a record of the input/output that you asked for.
 The `String` part is the value that you got from the outside world.
 
-## 2) What you need to do, to make `IO` happy
-> When your `main` function ends, you must return a _single_ `IO` object that has a record of every bit of input and output you did.
+Or alternatively:
+> An `IO String` is an input/output action that will give me a `String` whenever it's executed.
+
+We'll refer to a value wrapped in an `IO` object, as an "`IO` action", to emphasise that it's an object that is keeping track of all the input/output that you've asked for.
+
+## 2) What you need to do, to perform input and output
+In Java, you just have to call a function:
+```java
+public static void main(String[] args) {
+    System.out.println("omg!");
+}
+```
+will immediately do some output. Boom. Done.
+
+In Haskell, you must _create_ an `IO` action, and _return_ it from your `main` function in order to execute it:
+```haskell
+main :: IO ()
+main = two
+    where one = putStrLn "woah!"
+          two = putStrLn "omg!"
+          three = putStrLn "yeah!"
+```
+
+Because of lazy evaluation (and other reasons), Haskell will only print `omg!` when this program is run.
+
+Therefore, the rule for working with `IO` is:
+
+> To end your `main` function, you must return a _single_ `IO` action that has a record of every bit of input and output you want to do.
 Until you do this, Haskell will be a hassle.
 
 ## 3) Examples of `IO`
-In Java:
+Let's build some small helpers in Java so that our Haskell and Java code look more similar.
 ```java
 Stream input = new Stream(System.in);
+String readLn() {
+    return input.readLine();
+}
 
+void putStrLn(String string) {
+    System.out.println(string);
+}
+
+void putStr(String string) {
+    System.out.print(string);
+}
+```
+
+Cool, let's assume those are included in all of the Java examples.
+
+```java
 input.nextLine(); // takes no arguments; returns a String
+readLn(); // same as above
+
 System.out.println("omg"); // takes one argument; returns a void
+putStrLn("omg"); // same as above
+
+System.out.print("omg"); // takes one argument; returns a void
+putStr("omg2"); // same as above
 ```
 
 Ported to Haskell:
 ```haskell
 readLn -- readLn takes no arguments; it returns an "IO String" (see? it's "a string that we had to do some I/O to obtain")
 putStrLn "omg" -- putStrLn takes one argument -- a String -- and returns an "IO ()"
+putStrLn "omg2"
 ```
-A few notes about Haskell syntax:
- - To call a method with no arguments, just write its name (like `readLn`)
- - To call a method with multiple arguments, they need to be separated by spaces (not by parentheses and commas, as in Java)
 
-The first line (`input.nextLine()` or `readLn`) is getting the user to type in a line of input. Here, we're returning an `IO String`.
+The first line (`readLn`) is getting the user to type in a line of input. Here, we're returning an `IO String`.
 Remember:
-> An `IO String` is literally "a `String` that i had to do some input/output to obtain."
+> An `IO String` is "a `String` that i had to do some input/output to obtain."
 
-The next line is a bit interesting -- Haskell is returning an `IO ()` -- that's a weird type.
-The type `()` in Haskell is similar in meaning to type `void` in Java -- it represents "no value".
+The other parts are writing `"omg"` or `"omg2"` to standard output.
+`putStrLn` returns an `IO ()`, which is a weird type.
+`()` in Haskell is an empty tuple. It's similar to `void` in Java: it represents "no value".
 The type `IO ()` means "there's no value, but I did some input or output to obtain it".
 Why would `IO ()` be useful? Because remember:
-> When your `main` function ends, you must return a _single_ `IO` object that has a record of every bit of input and output you did.
+> When your `main` function ends, you must return a _single_ `IO` action that has a record of every bit of input and output you did.
 
-Even though it doesn't have a value associated with it, the `IO` is also storing the record of the input/output that we did. So we need to make good use of our `IO ()`.
+Even though it doesn't have a value associated with it, the `IO` is also storing the record of the input/output that we did. So we need to make sure we don't lose that `IO ()`.
 
 ## 4) Doing multiple `IO` actions in a row
 
@@ -72,7 +188,7 @@ main =
 The `>>` operator in Haskell is doing pretty much the same thing as the `;` operator in Java.
 
 But let's get really specific about what it's doing:
-> The `>>` operator mixes two `IO a` objects together. It _throws away_ the value from the first one, and _keeps_ the value from the second one. But the `IO` context from both is blended together and kept.
+> The `>>` operator mixes two `IO a` actions together. It _throws away_ the value from the first one, and _keeps_ the value from the second one. But the `IO` context from both is blended together and kept.
 
 We can say the same thing in Java too!
 > The `;` operator mixes two expressions together. It _throws away_ the value from the first one, and _keeps_ the value from the second one. But the side-effects that have happened so far are kept.
@@ -110,10 +226,10 @@ In Java, the side-effects from expressions are propagated by the `;` operator do
 An expression with no side-effects has nothing for `;` to propagate, so the value is simply thrown away.
 (This is a super-rough interpretation of Java syntax. It's not true, but it's approximately true.)
 
-In Haskell, the `IO a` objects have the record of their input/output effects propagated by the `>>` operator down to the end of `main`.
+In Haskell, the `IO a` actions have the record of their input/output effects propagated by the `>>` operator down to the end of `main`.
 An expression with no side-effects has nothing for `>>` to propagate, so the value is simply thrown away.
 
-The `pure` function takes any expression and turns it into an `IO` object - of course, it will have no input/output in its record.
+The `pure` function takes any expression and turns it into an `IO` action - of course, it will have no input/output in its record.
 It's useful because you can then call `>>` (which needs both its left side and right side to have that `IO` context).
 
 ## 5) Why using values is hard
@@ -145,7 +261,7 @@ main = putStrLn readLn
 
 Nope, that can't happen -- because now we're trying to pass an `IO String` to a function that wants a `String`. It's not the right type.
 
-It would be nice to be able to get the value out of the `IO` object:
+It would be nice to be able to get the value out of the `IO` action:
 
 ```haskell
 -- this is imaginary, and doesn't compile
@@ -155,7 +271,7 @@ main = putStrLn (getValue readLn)
 (expressing this in Java-like syntax would be: `putStrLn(getValue(readLn()))`)
 
 But if such a method existed, it'd be a *massive problem*. Remember:
-> When your `main` function ends, you must return a _single_ `IO` object that has a record of every bit of input and output you did.
+> When your `main` function ends, you must return a _single_ `IO` action that has a record of every bit of input and output you did.
 
 This hypothetical `getValue` method would get the value _and throw away the IO record_. We cannot do that without causing a huge hassle (we'll come to why, at the end), so this method _does not exist_.
 
@@ -299,4 +415,4 @@ main = do
 
 Hey, that last method looks pretty similar to the Java. We're going to work toward that.
 
-First: 
+First: you should know that Haskell uses functions for just about _everything_.

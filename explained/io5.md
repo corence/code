@@ -1,3 +1,6 @@
+```haskell
+f = sequence_ (reverse [print 1, print 2, print 3])
+```
 
 # Explaining `>>=` without Monads
 
@@ -16,20 +19,64 @@ Goal: At the end of this article, you should be able to port a Java program like
 public static void main(String[] args) {
     Scanner input = new Scanner(System.in);
 
-    String filename = input.readLine();
+    String filename = input.nextLine();
     List<String> lines = Files.readLines(file, Charsets.UTF_8); // we're using the Guava library here to simplify the code
-    
+    System.out.println(lines.get(0));
 }
+```
+
+into any of the following Haskell programs:
+
+```haskell
+-- ">>=" style 1, with pure
+main :: IO ()
+main = putStrLn "Give me a filename and I'll print the first line..." >> getLine >>= readFile >>= pure . lines >>= pure . head >>= putStrLn
+```
+
+```haskell
+-- ">>=" style 2, without pure
+main :: IO ()
+main =
+    putStrLn "Give me a filename and I'll print the first line..." >>
+    getLine >>=
+    readFile >>= (fileContents ->
+    putStrLn (head (lines fileContents))
+```
+
+```haskell
+-- ">>=" style 3, with let
+main :: IO ()
+main =
+    putStrLn "Give me a filename and I'll print the first line..." >>
+    getLine >>=
+    readFile >>= (fileContents ->
+        let fileLines = lines fileContents
+            firstLine = head fileLines
+        in putStrLn firstLine
+```
+
+```haskell
+-- ">>=" style 4, with where
+main :: IO ()
+main =
+    putStrLn "Give me a filename and I'll print the first line..." >>
+    getLine >>=
+    readFile >>= (fileContents ->
+        let fileLines = lines fileContents
+            firstLine = head fileLines
+        in putStrLn firstLine
+```
+
 
 ```haskell
 main :: IO ()
-main = readLn >>= getEnv >>= readFile >>= (\fileContents -> pure (takeWhile (/= '\n') fileContents)) >>= getEnv >>= putStrLn
+main = getLine >>= readFile >>= (\fileContents -> pure (takeWhile (/= '\n') fileContents)) >>= putStrLn
 ```
 
 ```haskell
 main :: IO ()
 main = do
-    readLn >>= getEnv >>= readFile >>= putStrLn . (takeWhile (/= '\n'))
+    getLine >>= getEnv >>= readFile >>= putStrLn . (takeWhile (/= '\n'))
     putStrLn ("OK, so the first env was " ++ env1 ++ "=" ++ filename ++ " and the second env was " ++ env2 ++ "=" ++ 
 ```
 
@@ -44,13 +91,13 @@ plan:
 
 ```haskell
 main :: IO ()
-main = readLn >>= getEnv >>= readFile >>= (\fileContents -> pure (takeWhile (/= '\n') fileContents)) >>= getEnv >>= putStrLn
+main = getLine >>= getEnv >>= readFile >>= (\fileContents -> pure (takeWhile (/= '\n') fileContents)) >>= getEnv >>= putStrLn
 ```
 
 ```haskell
 main :: IO ()
 main = do
-    readLn >>= getEnv >>= readFile >>= putStrLn . (takeWhile (/= '\n'))
+    getLine >>= getEnv >>= readFile >>= putStrLn . (takeWhile (/= '\n'))
     putStrLn ("OK, so the first env was " ++ env1 ++ "=" ++ filename ++ " and the second env was " ++ env2 ++ "=" ++ 
 ```
 
@@ -81,7 +128,7 @@ public static void main(String[] args) {
         System.out.println(y + " is a huge number.");
     } else {
         System.out.println("y is too small. What's your name?");
-        String name = new Stream(System.in).readLine();
+        String name = new Scanner(System.in).nextLine();
         System.out.println("Imperative-style code can be good, " + name + "!");
     }
 }
@@ -97,7 +144,7 @@ main = do
         then putStrLn (y ++ " is a huge number.")
         else do
             putStrLn "y is too small. What's your name?"
-            name <- readLn
+            name <- getLine
             putStrLn ("Imperative-style code can be good, " ++ name ++ "!")
 ```
 
@@ -111,7 +158,7 @@ main =
                 then putStrLn (y ++ " is a huge number.")
                 else 
                     putStrLn "y is too small. What's your name?" >>
-                    readLn >>= (\name ->
+                    getLine >>= (\name ->
                         putStrLn ("Imperative-style code can be good, " ++ name ++ "!")
 ```
 
@@ -123,13 +170,13 @@ and this:
 main :: IO ()
 main =
     putStrLn "What's this programming language?"
-    name <- readLn
+    name <- getLine
     if name == "Haskell"
         then putStr "Yeah. We're seeing how much imperative, " >> putStr name >> putStrLn "!!"
         otherwise -> do
             putStr "Hey "
             
-    name <- readLn
+    name <- getLine
     putStr "Hi it's nice to meet you, " >> putStr name >> putStrLn "!!"
 ```
 
@@ -178,7 +225,7 @@ Until you do this, Haskell will be a hassle.
 Let's build some small helpers in Java so that our Haskell and Java code look more similar.
 ```java
 Stream input = new Stream(System.in);
-String readLn() {
+String getLine() {
     return input.readLine();
 }
 
@@ -195,7 +242,7 @@ Cool, let's assume those are included in all of the Java examples.
 
 ```java
 input.nextLine(); // takes no arguments; returns a String
-readLn(); // same as above
+getLine(); // same as above
 
 System.out.println("omg"); // takes one argument; returns a void
 putStrLn("omg"); // same as above
@@ -206,12 +253,12 @@ putStr("omg2"); // same as above
 
 Ported to Haskell:
 ```haskell
-readLn -- readLn takes no arguments; it returns an "IO String" (see? it's "a string that we had to do some I/O to obtain")
+getLine -- getLine takes no arguments; it returns an "IO String" (see? it's "a string that we had to do some I/O to obtain")
 putStrLn "omg" -- putStrLn takes one argument -- a String -- and returns an "IO ()"
 putStrLn "omg2"
 ```
 
-The first line (`readLn`) is getting the user to type in a line of input. Here, we're returning an `IO String`.
+The first line (`getLine`) is getting the user to type in a line of input. Here, we're returning an `IO String`.
 Remember:
 > An `IO String` is "a `String` that i had to do some input/output to obtain."
 
@@ -295,16 +342,16 @@ It's useful because you can then call `>>` (which needs both its left side and r
 
 ## 5) Why using values is hard
 
-That's cool as long as our values are `IO ()`. But `readLn` is returning an `IO String` - in this case, throwing away the value is totally useless:
+That's cool as long as our values are `IO ()`. But `getLine` is returning an `IO String` - in this case, throwing away the value is totally useless:
 ```haskell
 main =
-    readLn >>
-    putStrLn "why are we bothering with readLn if we're just going to throw the value away?" >>
-    readLn >>
-    putStrLn "we could delete the readLn lines from this program and it wouldn't change"
+    getLine >>
+    putStrLn "why are we bothering with getLine if we're just going to throw the value away?" >>
+    getLine >>
+    putStrLn "we could delete the getLine lines from this program and it wouldn't change"
 ```
 
-So we want to make use of the `String` that the user typed into `readLn`, somehow.
+So we want to make use of the `String` that the user typed into `getLine`, somehow.
 
 In java this is easy -- just do this:
 ```java
@@ -317,7 +364,7 @@ but if we try that in Haskell:
 
 ```haskell
 -- this doesn't compile
-main = putStrLn readLn
+main = putStrLn getLine
 ```
 
 Nope, that can't happen -- because now we're trying to pass an `IO String` to a function that wants a `String`. It's not the right type.
@@ -326,10 +373,10 @@ It would be nice to be able to get the value out of the `IO` action:
 
 ```haskell
 -- this is imaginary, and doesn't compile
-main = putStrLn (getValue readLn)
+main = putStrLn (getValue getLine)
 ```
 
-(expressing this in Java-like syntax would be: `putStrLn(getValue(readLn()))`)
+(expressing this in Java-like syntax would be: `putStrLn(getValue(getLine()))`)
 
 But if such a method existed, it'd be a *massive problem*. Remember:
 > When your `main` function ends, you must return a _single_ `IO` action that has a record of every bit of input and output you did.
@@ -347,21 +394,21 @@ Examples!
 
 ```haskell
 main = 
-    readLn >>
-    putStrLn "omg" -- this _threw away_ the value of readLn and then we supplied our own argument to putStrLn. (This is a dumb/useless program.)
+    getLine >>
+    putStrLn "omg" -- this _threw away_ the value of getLine and then we supplied our own argument to putStrLn. (This is a dumb/useless program.)
 ```
 
 ```haskell
 main = 
-    readLn >>=
-    putStrLn -- we didn't supply an argument to putStrLn this time. The String that will be given to putStrLn is the one we got from readLn. And the IO record from both will be mixed. Cool!
+    getLine >>=
+    putStrLn -- we didn't supply an argument to putStrLn this time. The String that will be given to putStrLn is the one we got from getLine. And the IO record from both will be mixed. Cool!
 ```
 
 We didn't supply any arguments to `putStrLn`, but the compiler accepted it anyway. That's because:
- - `readLn` got an `IO String`
+ - `getLine` got an `IO String`
  - `>>=` passed the `String` from that into `putStrLn` as an argument
  - `putStrLn` returned an `IO ()`, which only has a record of the `putStrLn`
- - finally, `>>=` combines the `IO` context from its left and right sides, creating a new `IO ()`, which has a record of both the `readLn` *and* the `putStrLn`
+ - finally, `>>=` combines the `IO` context from its left and right sides, creating a new `IO ()`, which has a record of both the `getLine` *and* the `putStrLn`
  
 This can happen indefinitely -- and it's much more efficient than it sounds.
 We can string together a lot of operations, as long as `>>` and `>>=` are combining the `IO` context together:
@@ -369,11 +416,11 @@ We can string together a lot of operations, as long as `>>` and `>>=` are combin
 ```haskell
 main =
     putStrLn "Hi it's nice to meet you, " >>
-    readLn >>=
+    getLine >>=
     putStr >>
     putStrLn "!!" >>
     putStrLn "I will echo your next word." >>
-    readLn >>=
+    getLine >>=
     putStrLn
 ```
 The final `putStrLn` returns an `IO ()` with all of the records. Therefore, this is a good/working program.
@@ -382,9 +429,9 @@ If you prefer, you can cut some linebreaks. The same program might be clearer li
 ```haskell
 main =
     putStrLn "Hi it's nice to meet you, " >>
-    readLn >>= putStr >> putStrLn "!!" >>
+    getLine >>= putStr >> putStrLn "!!" >>
     putStrLn "I will echo your next word." >>
-    readLn >>= putStrLn
+    getLine >>= putStrLn
 ```
 
 But remember that if you want to use non-`IO` expressions with `>>` you need to call `pure` to wrap them up:
@@ -392,7 +439,7 @@ But remember that if you want to use non-`IO` expressions with `>>` you need to 
 ```haskell
 main = 
     pure (3 + 5) >> -- "pure" is needed to turn (3 + 5) from "Integer" to "IO Integer". Then its value is thrown away by ">>"
-    readLn >>= -- read a string and pass it to the `putStrLn` on the next line
+    getLine >>= -- read a string and pass it to the `putStrLn` on the next line
     putStrLn >>
     pure "raspberries" >>= -- now we're using "pure" to pass a String into putStrLn. This is not necessary, but it's valid.
     putStrLn
@@ -414,7 +461,7 @@ You can also reorder the Haskell code using the `=<<` operator - it's just like 
 ```haskell
 main =
     pure (3 + 5) >>
-    putStrLn =<< readLn
+    putStrLn =<< getLine
     putStrLn =<< pure "raspberries" -- or simply: `putStrLn "raspberries"`
 ```
 
@@ -433,7 +480,7 @@ In Java, although expression values are thrown away by `;`, we can use variables
 ```java
 public static void main(String[] args) {
     putStrLn("What's your name?");
-    String name = readLn();
+    String name = getLine();
     putStr("Hi it's nice to meet you, ");
     putStr(name);
     putStrLn("!!");
@@ -448,7 +495,7 @@ We could do that in Haskell too, but it's not normally how we do things. If we p
 main :: IO ()
 main =
     putStrLn "What's your name?" >>
-    let name = readLn in (
+    let name = getLine in (
         putStr "Hi it's nice to meet you, " >>
         putStr name >>
         putStrLn "!!")
@@ -458,7 +505,7 @@ main =
 main :: IO ()
 main =
     putStrLn "What's your name?" >>
-    readLn >>= (\name ->
+    getLine >>= (\name ->
         putStr "Hi it's nice to meet you, " >>
         putStr name >>
         putStrLn "!!")
@@ -468,7 +515,7 @@ main =
 main :: IO ()
 main = do
     putStrLn "What's your name?"
-    name <- readLn
+    name <- getLine
     putStr "Hi it's nice to meet you, "
     putStr name
     putStrLn "!!"

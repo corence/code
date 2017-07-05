@@ -16,7 +16,6 @@ var moment = require('moment');
 
 /**
  *
- *
  * @param requestPacket
  * @returns string
  */

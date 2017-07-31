@@ -2,10 +2,11 @@
 import System.Environment 
 
 counterstring :: String -> Int -> String
-counterstring _ 0 = []
-counterstring filler 1 = filler
-counterstring filler count = counterstring filler (count - length substring) ++ substring
+counterstring filler count
+  | count <= 0 = []
+  | otherwise = counterstring filler (count - length shavedSubstring) ++ shavedSubstring
     where substring = show count ++ filler
+          shavedSubstring = drop (length substring - count) substring -- note: if "drop" gets a negative number, it returns the whole list unmodified
     
 --main = (counterstring '.' <$> read <$> head <$> getArgs) >>= putStrLn
 main = do

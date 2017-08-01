@@ -10,11 +10,8 @@ import qualified Data.Text.Read as TextRead
 
 main = do
     numCasesLine <- TextIO.getLine
-    let numCasesOrNot = TextRead.decimal numCasesLine
-    case numCasesOrNot of
-        Left err -> error err
-        Right (numCases, chaff) ->
-            sequence $ Data.List.replicate numCases doTestCase
+    numCases <- getDecimal
+    sequence $ Data.List.replicate numCases doTestCase
 
 doTestCase :: IO ()
 doTestCase = do
@@ -32,4 +29,7 @@ textSubsequences text
   | otherwise = Set.fromList (Text.tails text) `Set.union` textSubsequences (Text.dropEnd 1 text)
 
 getIndex :: IO Int
-getIndex = TextIO.getLine <&> \text -> either error (subtract 1 . fst) (TextRead.decimal text)
+getIndex = getDecimal <&> subtract 1
+
+getDecimal :: IO Int
+getDecimal = TextIO.getLine <&> \text -> either error fst (TextRead.decimal text)

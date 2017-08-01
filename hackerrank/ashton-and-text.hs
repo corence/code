@@ -1,42 +1,38 @@
 
-{-# LANGUAGE NoImplicitPrelude #-} 
-import Data.Text
+import qualified Data.Text as Text
+import Data.Text(Text(..))
 import qualified Data.Text.IO as TextIO
 import qualified Data.Text.Read as TextRead
 import Data.List
 import Control.Monad
+import Control.Lens.Operators
+import Control.Monad.Reader
 import qualified Data.Set as Set
 import Data.Set(Set(..))
-import BasicPrelude
 
 main = do
-    numCases <- TextRead.read <$> TextIO.getLine :: IO Int
-    sequence $ Data.List.replicate numCases doTestCase
+    numCasesLine <- TextIO.getLine
+    let numCasesOrNot = TextRead.decimal numCasesLine
+    case numCasesOrNot of
+        Left err -> error err
+        Right (numCases, chaff) ->
+            sequence $ Data.List.replicate numCases doTestCase
 
 doTestCase :: IO ()
 doTestCase = do
-    string <- TextIO.getLine
-    index <- (subtract 1) <$> TextRead.read <$> TextIO.getLine
-    let char = getFromSubsequences index string
-    putChar char >> putChar '\n'
+    text <- TextIO.getLine
+    index <- getIndex
+    let char = getFromSubsequences index text in
+        putChar char >> putChar '\n'
+
+--textSubsequences :: Text -> [Text]
+--textSubsequences
 
 getFromSubsequences :: Int -> Text -> Char
---getFromSubsequences index string = (join . map head . group . sort . subsequences) string !! index
-getFromSubsequences index string = (join . Set.toList . Set.fromList . subsequences) string !! index
-    --(join (Set.toList (Set.fromList (subsequences string)))) !! index
-    --(join . map head . group . sort . subsequences) string !! index
+getFromSubsequences index text = (Text.concat . map head . group . sort . textSubsequences) text `Text.index` index
 
--- given a string, return an array that is all of the distinct substrings, sorted
-snowball :: Text -> [Text]
-snowball = uniq . sort . subsequences
-
--- given a string, return a sorted set that is all of the distinct substrings
-snowset :: Text -> Set Text
-snowset = Set.fromList . subsequences
-
--- given a string, return a sorted set that is all of the distinct substrings
-snowset2 :: Text -> [Text]
-snowset2 = Set.toList . Set.fromList . subsequences
+textSubsequences :: Text -> [Text]
+textSubsequences x = [x]
 
 -- filters duplicates from a sorted list
 uniq :: Eq a => [a] -> [a]
@@ -45,3 +41,6 @@ uniq (x:[]) = [x]
 uniq (x:y:zs)
   | x == y = uniq (x:zs)
   | otherwise = x : uniq (y:zs)
+
+getIndex :: IO Int
+getIndex = TextIO.getLine <&> \text -> either error (subtract 1 . fst) (TextRead.decimal text)

@@ -40,3 +40,15 @@ uniq (x:[]) = [x]
 uniq (x:y:zs)
   | x == y = uniq (x:zs)
   | otherwise = x : uniq (y:zs)
+
+something :: IO Int
+something = do
+    index1 <- (subtract 1) <$> read <$> getLine
+    index2 <- (subtract 1) <$> read <$> getLine
+    pure (index1 + index2)
+
+(<&>) :: Functor f => f a -> (a -> b) -> f b
+(<&>) = flip (<$>)
+    
+getIndex :: IO Int
+getIndex = getLine <&> read <&> subtract 1

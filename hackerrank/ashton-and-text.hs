@@ -9,7 +9,6 @@ import qualified Data.Text.IO as TextIO
 import qualified Data.Text.Read as TextRead
 
 main = do
-    numCasesLine <- TextIO.getLine
     numCases <- getDecimal
     sequence $ Data.List.replicate numCases doTestCase
 
@@ -26,7 +25,8 @@ getFromSubsequences index text = (Text.concat . Set.toList . textSubsequences) t
 textSubsequences :: Text -> Set Text
 textSubsequences text
   | Text.null text = Set.empty
-  | otherwise = Set.fromList (Text.tails text) `Set.union` textSubsequences (Text.dropEnd 1 text)
+  -- | otherwise = Set.fromList (Text.tails text) `Set.union` textSubsequences (Text.dropEnd 1 text)
+  | otherwise = foldr Set.insert (textSubsequences $ Text.dropEnd 1 text) (Text.tails text)
 
 getIndex :: IO Int
 getIndex = getDecimal <&> subtract 1

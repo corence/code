@@ -206,7 +206,7 @@ groupPossibleValuesToCellIDs :: Map CellID Possibilities -> Set CellID -> Map Ch
 groupPossibleValuesToCellIDs possibilities group
     = (foldr addToMap Map.empty . Set.foldr expandCellValuePairs [] . Set.map attachValues) group
         where attachValues :: CellID -> (CellID, Set Char)
-              attachValues cellID = (cellID, fromJust $ Map.lookup cellID possibilities)
+              attachValues cellID = maybe (cellID, Set.empty) ((,)cellID) (Map.lookup cellID possibilities)
               expandCellValuePairs :: (CellID, Set Char) -> [(CellID, Char)] -> [(CellID, Char)]
               expandCellValuePairs (cellID, values) result = Set.foldr (\value -> ((cellID, value) :)) result values
               addToMap :: (CellID, Char) -> Map Char (Set CellID) -> Map Char (Set CellID)

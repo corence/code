@@ -136,11 +136,6 @@ sampleBoard = [
     ("99", '3')
     ]
 
--- any cell that contains a single value should resolve immediately
--- any group that contains a locked tuple can delete those tuple values outside of that tuple
-reduce :: Solver -> Solver
-reduce = id
-
 -- the data to be represented is a row of cells. The first few are
 -- [could be anything, has to be 5, could be any of "3468", 2 or 4]
 -- before this function starts it's converted to a list of strings, max length 3 in each one.
@@ -155,10 +150,8 @@ reduce = id
 displayRow :: [[String]] -> String
 displayRow = (unlines . map (intercalate "|") . transpose)
 
---display :: Solver -> String
---display solver = (intercalate "\n" . map displayRow . split 3 . split 3 . map (displayCell solver)) allCellIDs
---display solver = (intercalate "\n" . map displayRow . split 3 . split 3 . map (displayCell solver)) allCellIDs
-display solver = (intercalate (replicate (9*4-1) '-' ++ "\n") . map displayRow . groupRows . map cellStringToGrid . map (cellToString solver)) allCellIDs
+display :: Solver -> String
+display solver = (intercalate (replicate (9*4-1) '-' ++ "\n") . map displayRow . groupRows . map cellStringToGrid . map (pad ' ' 9) . map (cellToString solver)) allCellIDs
 
 cellToString :: Solver -> CellID -> String
 cellToString solver cellID = (head . catMaybes) [displayOutputCell cellID, displayCellPossibilities cellID, Just "         "]
@@ -169,7 +162,7 @@ groupRows :: [[String]] -> [[[String]]]
 groupRows = split 9
 
 cellStringToGrid :: String -> [String]
-cellStringToGrid = map (pad ' ' 3) . split 3
+cellStringToGrid = split 3
 
 pad :: a -> Int -> [a] -> [a]
 pad filler len list = list ++ replicate (len - length list) filler
@@ -178,9 +171,54 @@ split :: Int -> [a] -> [[a]]
 split _ [] = []
 split rowLength list = take rowLength list : split rowLength (drop rowLength list)
 
+-- 1) if a tuple of cells has that many possibilities, clean out the other cells within that group
+reduce :: Solver -> Solver
+reduce = reduceUniques . reduceTuples
+
+-- if a value only appears in one place in a group, solidify it
+-- a "unique" possibility is a possibility that only appears in one place in a group
+reduceUniques :: Solver -> Solver
+reduceUniques solver = foldr reduceUniquesInGroup solver (groups solver)
+
+-- given a group and a solver,
+reduceUniquesInGroup :: Group -> Solver -> Solver
+reduceUniquesInGroup group solver
+    = Map.foldrWithKey setValue solver uniquesToCellIDs
+        where uniquesToCellIDs = findUniquePossibilitiesInGroup group (possibilities solver)
+
+-- for all the cells in the group, find the cells that have a unique possibility
+findUniquePossibilitiesInGroup :: Group -> Map CellID Possibilities -> Map Char CellID
+findUniquePossibilitiesInGroup group possibilities
+    = (Map.map Set.findMin . Map.filter ((== 1) . Set.size)) (groupPossibleValuesToCellIDs possibilities group)
+
+-- 1) for each member of the group:
+-- 1a) get all the possible values of it
+-- 1b) for each of those possible values:
+-- 1b1) add it to the Map
+--
+-- in pipeline form that's:
+-- 1) group :: Set CellID
+-- 1a) map :: CellID -> (CellID, Set Char)
+-- 2) groupWithValues :: Set (CellID, Set Char)
+-- 2a) func :: (CellID, Set Char) -> Map Char (Set CellID) -> Map Char (Set CellID)
+-- 3) Map Char (Set CellID)
+groupPossibleValuesToCellIDs :: Map CellID Possibilities -> Set CellID -> Map Char (Set CellID)
+groupPossibleValuesToCellIDs possibilities group
+    = (foldr addToMap Map.empty . Set.foldr expandCellValuePairs [] . Set.map attachValues) group
+        where attachValues :: CellID -> (CellID, Set Char)
+              attachValues cellID = (cellID, fromJust $ Map.lookup cellID possibilities)
+              expandCellValuePairs :: (CellID, Set Char) -> [(CellID, Char)] -> [(CellID, Char)]
+              expandCellValuePairs (cellID, values) result = Set.foldr (\value -> ((cellID, value) :)) result values
+              addToMap :: (CellID, Char) -> Map Char (Set CellID) -> Map Char (Set CellID)
+              addToMap (cellID, value) = Map.insertWith Set.union value (Set.singleton cellID)
+
+reduceTuples :: Solver -> Solver
+reduceTuples = id
+
 main = do
     print createSolver
     let solver2 = foldr (\(cellID, value) solver -> setValue value cellID solver) createSolver sampleBoard
     print solver2
-    putStrLn $ "-----"
+    putStrLn " "
     putStrLn $ display solver2
+    putStrLn $ display $ reduce solver2

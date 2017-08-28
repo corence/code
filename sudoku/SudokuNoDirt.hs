@@ -221,9 +221,14 @@ groupPossibleValuesToCellIDs possibilities group
 -- 1) given a tuple cluster
 -- 2) every cell that is not in this cluster
 -- 3) delete the cluster elements from it
-type Cluster = (Set CellID, Set Char)
+type Cluster = (Group, Set CellID, Set Char)
 reduceClusters :: Solver -> Solver
-reduceClusters = id
+reduceClusters solver = foldr quarantineCluster solver clusters
+    where clusters :: [Cluster]
+          clusters = undefined
+
+quarantineCluster :: Cluster -> Solver -> Solver
+quarantineCluster (cellIDs, values) solver 
 
 main = do
     print createSolver

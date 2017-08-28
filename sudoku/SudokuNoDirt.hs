@@ -43,7 +43,7 @@ concatSets = foldr Set.union Set.empty
 -- 3c2) if it existed, dirty this cell
 setValue :: Char -> CellID -> Solver -> Solver
 setValue value cellID solver
-    = (addOutput cellID value . removeCellFromGroups cellID . removeValueFromGroupPossibilities cellID value . removeCellIDFromPossibilities cellID) solver
+    = (addOutput cellID value . removeCellFromGroups cellID . removeValueFromGroupPossibilities (Set.singleton cellID) value . removeCellIDFromPossibilities cellID) solver
 
 addOutput :: CellID -> Char -> Solver -> Solver
 addOutput cellID value solver = solver { output = Map.insert cellID value (output solver) }
@@ -56,10 +56,10 @@ removeCellFromGroups :: CellID -> Solver -> Solver
 removeCellFromGroups cellID solver
     = solver { groups = map (Set.delete cellID) (groups solver) }
 
-removeValueFromGroupPossibilities :: CellID -> Char -> Solver -> Solver
-removeValueFromGroupPossibilities cellID value solver
+removeValueFromGroupPossibilities :: Set CellID -> Char -> Solver -> Solver
+removeValueFromGroupPossibilities cellIDs value solver
     = solver { possibilities = Set.foldr (cutPossibilityFromCell value) (possibilities solver) relevantCells }
-        where relevantGroups = filter (Set.member cellID) (groups solver)
+        where relevantGroups = filter (not . Set.null . Set.intersection cellIDs) (groups solver)
               relevantCells = concatSets relevantGroups
 {-
     solver {
@@ -171,9 +171,8 @@ split :: Int -> [a] -> [[a]]
 split _ [] = []
 split rowLength list = take rowLength list : split rowLength (drop rowLength list)
 
--- 1) if a tuple of cells has that many possibilities, clean out the other cells within that group
 reduce :: Solver -> Solver
-reduce = reduceUniques . reduceTuples
+reduce = reduceUniques . reduceClusters
 
 -- if a value only appears in one place in a group, solidify it
 -- a "unique" possibility is a possibility that only appears in one place in a group
@@ -212,8 +211,19 @@ groupPossibleValuesToCellIDs possibilities group
               addToMap :: (CellID, Char) -> Map Char (Set CellID) -> Map Char (Set CellID)
               addToMap (cellID, value) = Map.insertWith Set.union value (Set.singleton cellID)
 
-reduceTuples :: Solver -> Solver
-reduceTuples = id
+-- if a tuple of cells has that many possibilities, clean out the other cells within that group
+-- 1) foreach group
+-- 2) get all values for each cell
+-- 3) foreach cell
+-- 4) how many cells are a subset of this one? if n or less, then act
+--
+-- act:
+-- 1) given a tuple cluster
+-- 2) every cell that is not in this cluster
+-- 3) delete the cluster elements from it
+type Cluster = (Set CellID, Set Char)
+reduceClusters :: Solver -> Solver
+reduceClusters = id
 
 main = do
     print createSolver

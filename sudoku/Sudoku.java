@@ -204,6 +204,7 @@ public class Sudoku {
     }
 
     public static void addSampleBoard(Sudoku sudoku) {
+        // 3x3:5_8h3_1_4c7b2b6_7f6_2a7_8b5e2b4_2a1_8f1_4b5b6c5_2_9h1_3
         sudoku.cells.get(new Pos(0, 0)).setValue(5);
         sudoku.cells.get(new Pos(0, 1)).setValue(8);
         sudoku.cells.get(new Pos(1, 1)).setValue(3);

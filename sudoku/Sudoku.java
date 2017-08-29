@@ -59,6 +59,10 @@ public class Sudoku {
                 throw new IllegalStateException("can't set value to " + newValue + " because it is already " + value);
             }
 
+            if(newValue == 0) {
+                throw new IllegalArgumentException("what? you can't set a cell to 0");
+            }
+
             value = newValue;
             //System.out.println("clearing possibilities: " + dump(possibilities));
             possibilities.clear();
@@ -69,6 +73,9 @@ public class Sudoku {
                 for(Cell cell : group.cells) {
                     //System.out.println("removing " + newValue + " from a cell at " + cell.pos + " with possibilities: " + dump(cell.possibilities));
                     cell.possibilities.remove(newValue);
+                    if(cell.possibilities.isEmpty() && cell.value == 0) {
+                        throw new IllegalStateException("oops we cut too much from cell " + cell.pos + " -- it's empty now");
+                    }
                 }
                 group.cells.remove(this);
             }
@@ -240,7 +247,7 @@ public class Sudoku {
         Sudoku sudoku = new Sudoku();
         addSampleBoard(sudoku);
         System.out.println(sudoku.display());
-        for(int i=0; i<30; ++i) {
+        for(int i=0; i<200; ++i) {
             System.out.println("* " + i + " *");
             sudoku.reduce();
             System.out.println(sudoku.display());
@@ -262,7 +269,7 @@ public class Sudoku {
                         cellsMatchingKey.add(otherCell);
                     }
                 }
-                if(cellsMatchingKey.size() <= keyCell.possibilities.size()) {
+                if(cellsMatchingKey.size() == keyCell.possibilities.size()) {
                     // it's a match! cut these values from any other cell that contains them in the group
                     for(Cell victim : group.cells) {
                         if(cellsMatchingKey.contains(victim)) {

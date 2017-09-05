@@ -2,8 +2,6 @@
 import qualified Data.Set as Set
 import Data.Set(Set(..))
 import Data.List
-import qualified Heap as Heap
-import Heap(Heap(..))
 import Data.Char
 
 import Debug.Trace
@@ -17,7 +15,6 @@ type Value = Char
 type Depth = Int
 type Pattern = [Value]
 
-data Estimate = Estimate Depth Pattern deriving Show
 data Attempt = Attempt Pattern Int Int deriving Show -- matched positions, unmatched positions
 
 numZeroes :: Pattern -> Int
@@ -25,9 +22,6 @@ numZeroes = length . filter (== '.')
 
 numMatchy :: Attempt -> Int
 numMatchy (Attempt _ matchy _) = matchy
-
-estimate :: Pattern -> Estimate
-estimate pattern = Estimate (numZeroes pattern) pattern
 
 initialPattern :: Int -> Pattern
 initialPattern patternLength = take patternLength $ repeat '.'
@@ -53,44 +47,33 @@ makePatterns numValues pattern index
 -- randomly pick one (if that's too hard then pick one with the highest numZeroes)
 -- if it is fully-expanded: attempt it
 -- if not: remove it, expand it, put its children in
-type Status = (Int, Pattern, Collection, [Attempt])
+type Status = (Int, Pattern, Candidates, [Attempt])
 
-type Collection = Heap Int Estimate
+type Candidates = [Pattern]
 
 reduce :: Status -> Status
-reduce status@(numValues, answer, collection, attempts)
+reduce status@(numValues, answer, candidates, attempts)
   | not (null solutions) = status
-  | Heap.null collection = status
-  | otherwise = trace ("attempts " ++ show (length attempts) ++ ", collection " ++ show (Heap.size collection) ++ ", head " ++ show (Heap.query collection)) $ reduce $ action status
+  | null candidates = status
+  | otherwise = trace ("attempts " ++ show (length attempts) ++ ", candidates " ++ show (length candidates)) $ reduce $ action status
         where isSolution attempt = numMatchy attempt == length answer
               solutions = filter isSolution attempts
 
 action :: Status -> Status
-action status@(numValues, answer, collection, attempts) =
-    case Heap.query collection of
-        Nothing -> status
-        Just (Estimate 0 pattern) -> makeAttempt pattern (statusWith (Heap.remove_head collection))
-        Just (Estimate _ pattern) -> statusWith $ expandInCollection pattern (Heap.remove_head collection)
-        where expandInCollection pattern collection = foldr addToCollection collection (expand numValues attempts pattern)
+action status@(_, _, [], _) = status
+action status@(numValues, answer, (candidate:candidates), attempts) =
+    if numZeroes candidate == 0
+        then makeAttempt candidate (statusWith candidates)
+        else statusWith $ expandInCollection candidate candidates
+        where expandInCollection candidate candidates = foldr addToCollection candidates (expand numValues attempts candidate)
               statusWith newCollection = (numValues, answer, newCollection, attempts)
 
-addToCollection pattern = Heap.add (numZeroes pattern, Estimate (numZeroes pattern) pattern)
-{-
-action :: Status -> Status
-action status@(collection, attempts)
-  = case Heap.query collection of
-      Nothing -> status
-      Just (depth, pattern) -> if depth == 1
-                           then makeAttempt pattern status
-                           else expandAndReplace estimate collection
-        where expandAndReplace estimate collection = foldr Heap.add (Heap.remove_head collection) (newEstimatesFrom estimate)
-              newEstimatesFrom estimate = expand attempts estimate
--}
+addToCollection = (:)
 
 makeAttempt :: Pattern -> Status -> Status
-makeAttempt pattern status@(numValues, answer, collection, attempts)
-  | all (satisfiesAttempt pattern) attempts = (numValues, answer, collection, attempts ++ [attempt])
-  | otherwise = (numValues, answer, collection, attempts)
+makeAttempt pattern status@(numValues, answer, candidates, attempts)
+  | all (satisfiesAttempt pattern) attempts = (numValues, answer, candidates, attempts ++ [attempt])
+  | otherwise = status
     where attempt = Attempt pattern matchy unmatchy
           (matchy, unmatchy) = score answer pattern
 
@@ -100,7 +83,6 @@ expand numValues attempts pattern
     & map (makePatterns numValues pattern) -- we now have a [[Pattern]]
     & concat -- we now have a [Pattern]
     & filter (\pattern -> all (satisfiesAttempt pattern) attempts) -- foreach pattern: it should satisfy all attempts
-    --FIXME -- this filter is filtering too much
 
 -- fail if:
 -- the total score is higher than the recorded total
@@ -133,15 +115,15 @@ unmatchyScore (x:xs) ys
   | otherwise = unmatchyScore xs (tail ys)
 
 initialStatus :: Int -> Pattern -> Status
-initialStatus numValues answer = (numValues, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
+initialStatus numValues answer = (numValues, answer, addToCollection (initialPattern (length answer)) [], [])
 
 main = putStrLn $ displayStatus $ reduce $ initialStatus 4 "abaddaab"
 
 displayStatus :: Status -> String
-displayStatus status@(numValues, answer, collection, attempts)
+displayStatus status@(numValues, answer, candidates, attempts)
     = "Toward answer " ++ answer ++ " -> \n"
     ++ (concat $ map displayAttempt attempts)
-    ++ if Heap.null collection then "Dead end.\n" else ""
+    ++ if null candidates then "Dead end.\n" else ""
     where displayAttempt (Attempt pattern matchy unmatchy) = "Attempt " ++ pattern ++ "! Score " ++ show matchy ++ ":" ++ show unmatchy ++ "\n"
 
 -- assume pattern is RRO

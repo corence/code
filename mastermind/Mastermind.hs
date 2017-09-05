@@ -135,7 +135,7 @@ unmatchyScore (x:xs) ys
 initialStatus :: Int -> Pattern -> Status
 initialStatus numValues answer = (numValues, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
 
-main = putStrLn $ displayStatus $ reduce $ initialStatus 6 "abaddfeab"
+main = putStrLn $ displayStatus $ reduce $ initialStatus 4 "abaddaab"
 
 displayStatus :: Status -> String
 displayStatus status@(numValues, answer, collection, attempts)

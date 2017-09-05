@@ -100,14 +100,17 @@ expand numValues attempts pattern
     & map (makePatterns numValues pattern) -- we now have a [[Pattern]]
     & concat -- we now have a [Pattern]
     & filter (\pattern -> all (satisfiesAttempt pattern) attempts) -- foreach pattern: it should satisfy all attempts
+    --FIXME -- this filter is filtering too much
 
 -- fail if:
 -- the total score is higher than the recorded total
 -- the matchy score is lower OR higher than the recorded matchy
 satisfiesAttempt :: Pattern -> Attempt -> Bool
 satisfiesAttempt pattern (Attempt aPattern aMatchy aUnmatchy)
-    | matchy /= aMatchy = False
-    | (matchy + unmatchy) /= (aMatchy + aUnmatchy) = False
+    | matchy > aMatchy = False -- if there are more matches between these patterns than the attempt's score, we've gone too far
+    | unmatchy > aUnmatchy = False
+    | matchy + numZeroes pattern < aMatchy = False -- if we assume all our dots are matches, will we have enough matches to match?
+    | unmatchy + numZeroes pattern < aUnmatchy = False
     | otherwise = True
     where (matchy, unmatchy) = score pattern aPattern
 
@@ -132,7 +135,7 @@ unmatchyScore (x:xs) ys
 initialStatus :: Int -> Pattern -> Status
 initialStatus numValues answer = (numValues, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
 
-main = putStrLn $ displayStatus $ reduce $ initialStatus 4 "abaab"
+main = putStrLn $ displayStatus $ reduce $ initialStatus 6 "abaddfeab"
 
 displayStatus :: Status -> String
 displayStatus status@(numValues, answer, collection, attempts)

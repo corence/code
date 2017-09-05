@@ -1,16 +1,10 @@
 
-module Heap
-( Heap(..)
-, add
-, query
-, remove_head
-, size
-, void
-) where
+module Heap where
 
 type Entry key value = (key, value)
 data Heap key value = Heap Int (Maybe (key, value)) (Heap key value) (Heap key value) -- size, key, value, left_child, right_child
-void = Heap 0 Nothing void void
+    deriving (Show)
+empty = Heap 0 Nothing empty empty
 
 add :: Ord key => (key, value) -> Heap key value -> Heap key value
 add entry (Heap p_size Nothing p_left p_right) = Heap (p_size + 1) (Just entry) p_left p_right
@@ -33,7 +27,7 @@ remove_head (Heap p_size p_entry p_left p_right) = delete_empty_entry (Heap (p_s
 
 delete_empty_entry :: Ord key => Heap key value -> Heap key value
 delete_empty_entry (Heap p_size Nothing p_left p_right)
-  | size p_left == 0 && size p_right == 0 = void -- terminate if both children are empty
+  | size p_left == 0 && size p_right == 0 = empty -- terminate if both children are empty
   | higher_priority (entry p_left) (entry p_right) = Heap p_size (entry p_left) (remove_head p_left) p_right -- 
   | otherwise = Heap p_size (entry p_right) p_left (remove_head p_right)
   where entry (Heap _ entry _ _) = entry
@@ -47,3 +41,6 @@ values = map snd . toList
 
 toList :: Ord key => Heap key value -> [(key, value)]
 toList heap@(Heap _ entry _ _) = maybe [] (: toList (remove_head heap)) entry
+
+fromList :: Ord key => [(key, value)] -> Heap key value
+fromList = foldr Heap.add Heap.empty

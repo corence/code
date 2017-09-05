@@ -33,7 +33,9 @@ initialPattern :: Int -> Pattern
 initialPattern patternLength = take patternLength $ repeat '.'
 
 makePatterns :: Int -> Pattern -> Index -> [Pattern]
-makePatterns numValues pattern index = map insertValue ['a'..(chr ((ord 'a') + numValues - 1))]
+makePatterns numValues pattern index
+  | pattern !! index /= '.' = [] -- if it's not a dot, then throw this away -- we have better expansions on the way
+  | otherwise = map insertValue ['a'..(chr ((ord 'a') + numValues - 1))]
     where insertValue value = take index pattern ++ [value] ++ drop (index + 1) pattern -- probably there's a library function for this
 
 -- ....
@@ -55,14 +57,13 @@ type Status = (Int, Pattern, Collection, [Attempt])
 
 type Collection = Heap Int Estimate
 
-reduce :: Status -> Maybe Pattern
+reduce :: Status -> Status
 reduce status@(numValues, answer, collection, attempts)
-  | not (null solutions) = Just solution
-  | Heap.null collection = Nothing
-  | otherwise = ntrace ("attempts " ++ show attempts ++ ", collection " ++ show (Heap.size collection) ++ ", head " ++ show (Heap.query collection)) $ reduce $ action status
+  | not (null solutions) = status
+  | Heap.null collection = status
+  | otherwise = trace ("attempts " ++ show (length attempts) ++ ", collection " ++ show (Heap.size collection) ++ ", head " ++ show (Heap.query collection)) $ reduce $ action status
         where isSolution attempt = numMatchy attempt == length answer
               solutions = filter isSolution attempts
-              (Attempt solution _ _) = head solutions
 
 action :: Status -> Status
 action status@(numValues, answer, collection, attempts) =
@@ -88,14 +89,14 @@ action status@(collection, attempts)
 
 makeAttempt :: Pattern -> Status -> Status
 makeAttempt pattern status@(numValues, answer, collection, attempts)
-  | all (satisfiesAttempt pattern) attempts = (numValues, answer, collection, attempt : attempts)
+  | all (satisfiesAttempt pattern) attempts = (numValues, answer, collection, attempts ++ [attempt])
   | otherwise = (numValues, answer, collection, attempts)
     where attempt = Attempt pattern matchy unmatchy
           (matchy, unmatchy) = score answer pattern
 
 expand :: Int -> [Attempt] -> Pattern -> [Pattern]
 expand numValues attempts pattern
-    = [0..(numValues - 1)] -- we now have a [Index]
+    = [0..((length pattern) - 1)] -- we now have a [Index]
     & map (makePatterns numValues pattern) -- we now have a [[Pattern]]
     & concat -- we now have a [Pattern]
     & filter (\pattern -> all (satisfiesAttempt pattern) attempts) -- foreach pattern: it should satisfy all attempts
@@ -110,6 +111,10 @@ satisfiesAttempt pattern (Attempt aPattern aMatchy aUnmatchy)
     | otherwise = True
     where (matchy, unmatchy) = score pattern aPattern
 
+-- generates a score by comparing 2 patterns.
+-- Note that unlike the classic boardgame, our second score is how many total matching colours there are (ignoring position)
+-- It is therefore always >= the first value.
+score :: Pattern -> Pattern -> (Int, Int)
 score pattern1 pattern2 = (matchyScore pattern1 pattern2, unmatchyScore pattern1 pattern2)
 
 matchyScore [] [] = 0
@@ -127,14 +132,21 @@ unmatchyScore (x:xs) ys
 initialStatus :: Int -> Pattern -> Status
 initialStatus numValues answer = (numValues, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
 
-main = putStrLn $ show $ reduce $ initialStatus 3 "ababc"
+main = putStrLn $ displayStatus $ reduce $ initialStatus 4 "abaab"
+
+displayStatus :: Status -> String
+displayStatus status@(numValues, answer, collection, attempts)
+    = "Toward answer " ++ answer ++ " -> \n"
+    ++ (concat $ map displayAttempt attempts)
+    ++ if Heap.null collection then "Dead end.\n" else ""
+    where displayAttempt (Attempt pattern matchy unmatchy) = "Attempt " ++ pattern ++ "! Score " ++ show matchy ++ ":" ++ show unmatchy ++ "\n"
 
 -- assume pattern is RRO
--- RGR 1 1
--- ROV (invalid guess)
+-- RGR 1 2
+-- ROV (invalid guess) unmatchy too low
 -- RVR (invalid guess!) matchy too high
--- RRG (invalid guess!) score between RRG and RGR is: (1, 2) but that's a total of 3 which is too high
--- PRP (invalid guess!) matchy is too low
+-- RRG (invalid guess!) unmatchy too high
+-- PRP (invalid guess!) matchy too low
 
 -- OOR 0 2
 -- OGA (invalid guess) matchy too high

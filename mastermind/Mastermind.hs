@@ -124,13 +124,10 @@ unmatchyScore (x:xs) ys
   | elem x ys = 1 + unmatchyScore xs (delete x ys)
   | otherwise = unmatchyScore xs (tail ys)
 
-initialStatus :: Pattern -> Status
-initialStatus answer = (length answer, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
+initialStatus :: Int -> Pattern -> Status
+initialStatus numValues answer = (numValues, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
 
-main = do
-    putStrLn $ take 100 $ show $ initialPattern 3
-    putStrLn $ "-----"
-    putStrLn $ show $ reduce $ initialStatus "ababcc"
+main = putStrLn $ show $ reduce $ initialStatus 3 "ababc"
 
 -- assume pattern is RRO
 -- RGR 1 1

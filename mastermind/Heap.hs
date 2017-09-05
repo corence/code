@@ -3,8 +3,13 @@ module Heap where
 
 type Entry key value = (key, value)
 data Heap key value = Heap Int (Maybe (key, value)) (Heap key value) (Heap key value) -- size, key, value, left_child, right_child
-    deriving (Show)
 empty = Heap 0 Nothing empty empty
+
+instance (Show key, Show value) => Show (Heap key value) where
+    show (Heap size value left right) =
+        if size > 0
+            then "{" ++ show value ++ " " ++ show left ++ " " ++ show right ++ "}"
+            else "{}"
 
 add :: Ord key => (key, value) -> Heap key value -> Heap key value
 add entry (Heap p_size Nothing p_left p_right) = Heap (p_size + 1) (Just entry) p_left p_right
@@ -34,6 +39,9 @@ delete_empty_entry (Heap p_size Nothing p_left p_right)
 
 size :: Heap key value -> Int
 size (Heap size _ _ _) = size
+
+null :: Heap key value -> Bool
+null heap = size heap == 0
 
 values :: Ord key => Heap key value -> [value]
 --values heap = maybe [] (: values (remove_head heap)) (query heap)

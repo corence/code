@@ -6,7 +6,11 @@ import qualified Heap as Heap
 import Heap(Heap(..))
 import Data.Char
 
+import Debug.Trace
+
 (&) = flip ($)
+
+ntrace _ = id
 
 type Index = Int
 type Value = Char
@@ -30,7 +34,7 @@ initialPattern patternLength = take patternLength $ repeat '.'
 
 makePatterns :: Int -> Pattern -> Index -> [Pattern]
 makePatterns numValues pattern index = map insertValue ['a'..(chr ((ord 'a') + numValues - 1))]
-    where insertValue value = take (index - 1) pattern ++ [value] ++ drop index pattern -- probably there's a library function for this
+    where insertValue value = take index pattern ++ [value] ++ drop (index + 1) pattern -- probably there's a library function for this
 
 -- ....
 -- ...1, ...2, ...3
@@ -51,20 +55,23 @@ type Status = (Int, Pattern, Collection, [Attempt])
 
 type Collection = Heap Int Estimate
 
-reduce :: Status -> Status
-reduce status@(numValues, answer, collection, attempts) =
-    if (filter isSolution attempts & length & (> 0))
-        then status
-        else reduce $ action status
+reduce :: Status -> Maybe Pattern
+reduce status@(numValues, answer, collection, attempts)
+  | not (null solutions) = Just solution
+  | Heap.null collection = Nothing
+  | otherwise = ntrace ("attempts " ++ show attempts ++ ", collection " ++ show (Heap.size collection) ++ ", head " ++ show (Heap.query collection)) $ reduce $ action status
         where isSolution attempt = numMatchy attempt == length answer
+              solutions = filter isSolution attempts
+              (Attempt solution _ _) = head solutions
 
 action :: Status -> Status
 action status@(numValues, answer, collection, attempts) =
     case Heap.query collection of
         Nothing -> status
-        Just (Estimate 0 pattern) -> makeAttempt pattern status
-        Just (Estimate _ pattern) -> (numValues, answer, expandInCollection pattern collection, attempts)
-        where expandInCollection pattern collection = foldr addToCollection (Heap.remove_head collection) (expand numValues attempts pattern)
+        Just (Estimate 0 pattern) -> makeAttempt pattern (statusWith (Heap.remove_head collection))
+        Just (Estimate _ pattern) -> statusWith $ expandInCollection pattern (Heap.remove_head collection)
+        where expandInCollection pattern collection = foldr addToCollection collection (expand numValues attempts pattern)
+              statusWith newCollection = (numValues, answer, newCollection, attempts)
 
 addToCollection pattern = Heap.add (numZeroes pattern, Estimate (numZeroes pattern) pattern)
 {-
@@ -80,7 +87,9 @@ action status@(collection, attempts)
 -}
 
 makeAttempt :: Pattern -> Status -> Status
-makeAttempt pattern status@(numValues, answer, collection, attempts) = (numValues, answer, collection, attempt : attempts)
+makeAttempt pattern status@(numValues, answer, collection, attempts)
+  | all (satisfiesAttempt pattern) attempts = (numValues, answer, collection, attempt : attempts)
+  | otherwise = (numValues, answer, collection, attempts)
     where attempt = Attempt pattern matchy unmatchy
           (matchy, unmatchy) = score answer pattern
 
@@ -110,13 +119,18 @@ matchyScore (x:xs) (y:ys)
   | x == y = 1 + matchyScore xs ys
   | otherwise = matchyScore xs ys
 
+unmatchyScore [] [] = 0
 unmatchyScore (x:xs) ys
   | elem x ys = 1 + unmatchyScore xs (delete x ys)
   | otherwise = unmatchyScore xs (tail ys)
 
+initialStatus :: Pattern -> Status
+initialStatus answer = (length answer, answer, addToCollection (initialPattern (length answer)) Heap.empty, [])
+
 main = do
-    putStrLn $ show $ initialPattern 3
-    putStrLn $ show $ reduce (3, "abc", addToCollection (initialPattern 3) Heap.empty, [])
+    putStrLn $ take 100 $ show $ initialPattern 3
+    putStrLn $ "-----"
+    putStrLn $ show $ reduce $ initialStatus "ababcc"
 
 -- assume pattern is RRO
 -- RGR 1 1

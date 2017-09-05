@@ -247,11 +247,21 @@ public class Sudoku {
         Sudoku sudoku = new Sudoku();
         addSampleBoard(sudoku);
         System.out.println(sudoku.display());
-        for(int i=0; i<200; ++i) {
+        for(int i=0; i<2000; ++i) {
+            if(sudoku.isSolved()) break;
             System.out.println("* " + i + " *");
             sudoku.reduce();
             System.out.println(sudoku.display());
         }
+    }
+
+    public boolean isSolved() {
+        for(Cell cell : this.cells.values()) {
+            if(!cell.possibilities.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void reduce() {

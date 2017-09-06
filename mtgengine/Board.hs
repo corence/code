@@ -12,13 +12,12 @@ import Data.List
 
 data Board = Board {
     _boardEvents :: [Event], -- more recent events are at the head
-    _boardCards :: Map CardID Card
+    _boardCards :: Map CardID Card,
+    _nextCardID :: CardID
     }
 
 makeLenses ''Board
 
-
-type Outcome a b = Board -> Board
 
 boardCard :: CardID -> Board -> Card
 boardCard cardID board = board ^. boardCards ^. at cardID & fromJust
@@ -30,14 +29,24 @@ attach :: CardID -> CardID -> Board -> Board
 attach parent child board
     = case boardCard child board ^. cardParent of
           Just parent -> board
-          _ -> detach parent child board
-               & (over boardEvents (EventAttach parent child :) . updateCard (over cardChildren (child :)) parent . updateCard (set cardParent (Just parent)) child)
+          _ -> detachOldParent & addEvent & updateParent & updateChild
+      where detachOldParent = detach parent child board
+            addEvent = over boardEvents (EventAttach parent child :)
+            updateParent = updateCard (over cardChildren (child :)) parent
+            updateChild = updateCard (set cardParent (Just parent)) child
 
 detach :: CardID -> CardID -> Board -> Board
 detach parent child board
     = case boardCard child board ^. cardParent of
-          Just parent -> (over boardEvents (EventDetach parent child :) . updateCard (over cardChildren (delete child)) parent . updateCard (set cardParent Nothing) child) board
+          Just parent -> board & addEvent & updateParent & updateChild
           _ -> board
+      where addEvent = over boardEvents (EventDetach parent child :)
+            updateParent = updateCard (over cardChildren (delete child)) parent
+            updateChild = updateCard (set cardParent Nothing) child
 
-createCard :: Card -> Board -> Board
-createCard card = over boardCards (Map.insert (card ^. cardID) card)
+createCard :: Card -> Board -> (CardID, Board)
+createCard card board = (identifier, board & updateID & addCard)
+    where cardWithID = set cardID identifier card
+          identifier = board ^. nextCardID
+          updateID = over nextCardID (+1)
+          addCard = over boardCards (Map.insert identifier cardWithID)

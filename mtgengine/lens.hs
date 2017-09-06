@@ -19,4 +19,10 @@ shiftAtomX = over (point . x) (+ 1)
 pos :: Water -> Double
 pos water = water ^. left ^. point ^. x
 
+nerp :: Point -> Double
+nerp point = point ^. y
+
+setMultiple :: Double -> Double -> Point -> Point
+setMultiple xx yy = set x xx . over y (+ yy)
+
 main = pure ()

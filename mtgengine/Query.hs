@@ -12,6 +12,13 @@ import Card
 --class CardQuery q where
     --queryCards :: q -> [Card]
 
+data BoardState = BoardState {
+    board :: [Card],
+    this :: Card,
+    owner :: Card,
+    controller :: Card
+    }
+
 type CardFilter = Card -> Bool
 type CardToInt = Card -> Int
 

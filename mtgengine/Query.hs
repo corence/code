@@ -44,6 +44,9 @@ hasType typename creature = elem typename (creature ^. cardType)
 queryCards :: CardQuery -> Board -> [CardID]
 queryCards query board = filter (query board) $ Map.keys (board ^. boardCards)
 
+self :: CardID -> CardQuery
+self a _ b = a == b
+
 damage :: Int -> CardQuery -> (Board -> Board)
 damage amount query board = foldl' (\board cid -> attachDamage cid board) board victims
     where attachDamage cid board = attach cid did boardWithDamage
@@ -53,4 +56,3 @@ damage amount query board = foldl' (\board cid -> attachDamage cid board) board 
               }
           (did, boardWithDamage) = createCard damageCard board
           victims = queryCards query board
-

@@ -6,6 +6,7 @@ module Board where
 import Control.Lens
 import Card
 import qualified Data.Map as Map
+import Events
 import Data.Map(Map(..))
 import Data.Maybe
 import Data.List

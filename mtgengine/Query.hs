@@ -4,6 +4,7 @@
 module Query where
 
 import Card
+import Events
 import Board
 import Data.List
 import BoardCards
@@ -47,12 +48,6 @@ queryCards query board = filter (query board) $ Map.keys (board ^. boardCards)
 self :: CardID -> CardQuery
 self a _ b = a == b
 
-damage :: Int -> CardQuery -> (Board -> Board)
-damage amount query board = foldl' (\board cid -> attachDamage cid board) board victims
-    where attachDamage cid board = attach cid did boardWithDamage
-          damageCard = defaultCard {
-              _cardName = "Damage",
-              _cardPower = amount
-              }
-          (did, boardWithDamage) = createCard damageCard board
-          victims = queryCards query board
+damage :: Int -> CardQuery -> Board -> [Event]
+damage amount query board = map (EventDamage amount) victims
+    where victims = queryCards query board

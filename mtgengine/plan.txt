@@ -1,0 +1,74 @@
+TLDR: just use Data for most things and Functions if we can't.
+
+The main hiccup is outcomes and events:
+"whenever a player would lose life, instead that player draws twice that many cards."
+
+We really want to use functions here rather than writing my own interpreter for my own custom DSL.
+
+BUT each thing that could actually update the model needs to be data. Just the conditionals should be functions.
+
+We have 3 kinds of eventish data:
+x) Events ("something takes damage" or "player 2 takes 4 damage") -- can trigger Triggers
+y) Intents ("i am about to create a 4-damage token and attach it to player 2") -- can be rewritten by replacement effects; can also trigger Triggers
+z) Outcomes ("create them tokens") -- we could create this as code, but frankly, Intents seems to obsolete outcomes and events
+
+THEREFORE:
+ - triggers are totally code
+ - they create Events which have all the needed info to update the model -- even including the new cards that will be created
+ - Events may *also* have a redundant json form - so we can do indexed lookups on that
+
+ways that each thing can be represented:
+1) Function
+this gives us flexibility, and we can work well with Data. However it can't be stored in a db, and it can't be interfered.
+
+2) Data
+this gives us safety and convenience. It's easier to work with and develop it. However, it is a pain in the ass to query it and to deal with Maybe.
+
+3) json
+this gives convenient Maybe and querying. It's convenient when we want to deal with a lump of data and not care about what it means. But it's inconvenient and bug-prone when we DO care what it means, so it should be used sparingly!
+
+
+Things to represent:
+a) the model (consumes outcomes)
+Function: NO
+Data: GREAT
+json: poor
+
+b) events (causes triggers to happen)
+Function: NO
+Data: GREAT but what about queries?
+json: weak
+We might be able to merge events with outcomes - but is this a good idea? I think we can have much less outcomes than events, but, if we maintain an outcome log then it might render events obsolete.
+
+c) outcomes (updates the model. Can be modified by abilities)
+Function: poor (how do i double the damage? this won't work imo)
+Data: probably GREAT
+json: 
+
+d) abilities, triggers, replacement effects (the things that consume and produce events, and produce outcomes)
+Function: totally. Yes. No question.
+
+e) player actions (record of every player choice)
+This will only be used for querying, but, 
+
+replacement effects need to be able to *intercept* any changes to the model. Thus, outcomes need to be fully queryable.
+After being queried, outcomes need to be applied. Therefore they have semantics, even if they don't while being queried. Thus, they should be Data.
+
+
+Name: Bob
+Color: Black/White
+Type: Creature - Zombie
+Zone: Battlefield
+2/2
+
+Whenever a multicolored creature takes damage, if the source of that damage has 2 or more Auras attached, then prevent that damage. Bob gains +X/+0, where X is the amount of damage prevented in this way.
+
+Name: Suzy
+Color: Black/Blue
+Type: Creature - Fish
+Zone: Battlefield
+2/6
+
+Indestructible
+
+Whenever a creature would enter the battlefield without a +1/+1 counter on it, add a +1/+1 counter on it and make it a copy of this card.

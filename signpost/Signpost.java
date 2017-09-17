@@ -106,13 +106,16 @@ class Signpost {
         List<Action> results = new ArrayList<>();
         for(Cell s : cell.successors) {
             if(s.predecessors.size() == 1) {
+                System.out.println("gonna link " + cell.pos + " to " + s.pos + " because pred=1");
                 results.add(new Action(cell, s, true));
             }
 
             if(cell.value != null && s.value != null) {
                 if(cell.value + 1 == s.value) {
+                    System.out.println("gonna link " + cell.pos + " to " + s.pos + " because value follows");
                     results.add(new Action(cell, s, true));
                 } else {
+                    System.out.println("gonna unlink " + cell.pos + " to " + s.pos + " because value follows not");
                     results.add(new Action(cell, s, false));
                 }
             }
@@ -120,13 +123,16 @@ class Signpost {
 
         for(Cell p : cell.predecessors) {
             if(p.successors.size() == 1) {
+                System.out.println("gonna link " + p.pos + " to " + cell.pos + " because succ=1");
                 results.add(new Action(p, cell, true));
             }
 
             if(cell.value != null && p.value != null) {
                 if(p.value + 1 == cell.value) {
+                    System.out.println("gonna link " + p.pos + " to " + cell.pos + " because value follows");
                     results.add(new Action(p, cell, true));
                 } else {
+                    System.out.println("gonna unlink " + p.pos + " to " + cell.pos + " because value follows not");
                     results.add(new Action(p, cell, false));
                 }
             }
@@ -205,8 +211,10 @@ class Signpost {
 
     public void solve() {
         while(!dirtyCells.isEmpty()) {
-            System.out.println("dirties: " + dirtyCells.size() + ". ");
+            System.out.println(dump(this));
+            System.out.print("dirties: " + dirtyCells.size() + ". ");
             Cell cell = pop(dirtyCells);
+            System.out.println("Checking " + cell);
             for(Action action : solveCell(cell)) {
                 Cell cell1 = action.cell1;
                 Cell cell2 = action.cell2;
@@ -253,7 +261,6 @@ class Signpost {
 
     public static void main(String[] args) {
         Signpost sp = new Signpost(sample);
-        System.out.println(dump(sp));
         sp.solve();
     }
 

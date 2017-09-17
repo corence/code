@@ -72,6 +72,7 @@ class Signpost {
             sb.append(this.pos).append(" ").append(this.direction);
             sb.append(" (" + this.value + ") ");
             sb.append(dump(poses(this.predecessors)) + ", " + dump(poses(this.successors)));
+            sb.append("}");
             return sb.toString();
         }
 
@@ -105,8 +106,8 @@ class Signpost {
 
         List<Action> results = new ArrayList<>();
         for(Cell s : cell.successors) {
-            if(s.predecessors.size() == 1) {
-                System.out.println("gonna link " + cell.pos + " to " + s.pos + " because pred=1");
+            if(cell.successors.size() == 1) {
+                System.out.println("gonna link " + cell.pos + " to " + s.pos + " because succ=1");
                 results.add(new Action(cell, s, true));
             }
 
@@ -122,8 +123,8 @@ class Signpost {
         }
 
         for(Cell p : cell.predecessors) {
-            if(p.successors.size() == 1) {
-                System.out.println("gonna link " + p.pos + " to " + cell.pos + " because succ=1");
+            if(cell.predecessors.size() == 1) {
+                System.out.println("gonna link " + p.pos + " to " + cell.pos + " because pred=1");
                 results.add(new Action(p, cell, true));
             }
 
@@ -221,21 +222,25 @@ class Signpost {
                 if(action.shouldLink) {
                     System.out.println("assigning " + cell1 + " successors");
                     if(assignSetContents(cell1.successors, cell2)) {
+                        System.out.println("x1!");
                         this.dirtyCells.add(cell1);
                     }
 
                     System.out.println("assigning " + cell2 + " predecessors");
                     if(assignSetContents(cell2.predecessors, cell1)) {
+                        System.out.println("x2!");
                         this.dirtyCells.add(cell2);
                     }
                 } else {
                     System.out.println("cutting " + cell1 + " successor" + cell2);
                     if(cell1.successors.remove(cell2)) {
+                        System.out.println("x3!");
                         this.dirtyCells.add(cell1);
                     }
 
                     System.out.println("cutting " + cell2 + " predecessor" + cell1);
                     if(cell2.predecessors.remove(cell1)) {
+                        System.out.println("x4!");
                         this.dirtyCells.add(cell2);
                     }
                 }
@@ -262,6 +267,9 @@ class Signpost {
     public static void main(String[] args) {
         Signpost sp = new Signpost(sample);
         sp.solve();
+
+        System.out.println("outcome!");
+        System.out.println(dump(sp));
     }
 
     public static <T> String dump(Iterable<T> collection) {

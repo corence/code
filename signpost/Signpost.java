@@ -45,7 +45,7 @@ class Signpost {
         public final Integer value;
         public final ListSet<Cell> predecessors;
         public final ListSet<Cell> successors;
-        public Chain chain;
+        public List<Cell> chain;
 
         public Cell(Pos pos, Pos direction, Integer value) {
             this.pos = pos;
@@ -53,7 +53,8 @@ class Signpost {
             this.value = value;
             this.predecessors = new ListSet<>();
             this.successors = new ListSet<>();
-            this.chain = new Chain(this);
+            this.chain = new ArrayList<>();
+            this.chain.add(this);
         }
 
         @Override
@@ -87,19 +88,6 @@ class Signpost {
         }
     }
 
-    public static class Chain {
-        public List<Cell> cells;
-
-        public Chain(Cell cell) {
-            this.cells = new ArrayList<>();
-            this.cells.add(cell);
-        }
-
-        public String toString() {
-            return dump(cells);
-        }
-    }
-
     public static class Action {
         public final Cell cell1;
         public final Cell cell2;
@@ -126,12 +114,17 @@ class Signpost {
                 results.add(new Action(cell, s, true));
             }
 
+            if(cell.chain == s.chain) {
+                System.out.println("gonna unlink " + cell.pos + " from " + s.pos + " because incest");
+                results.add(new Action(cell, s, false));
+            }
+
             if(cell.value != null && s.value != null) {
                 if(cell.value + 1 == s.value) {
                     System.out.println("gonna link " + cell.pos + " to " + s.pos + " because value follows");
                     results.add(new Action(cell, s, true));
                 } else {
-                    System.out.println("gonna unlink " + cell.pos + " to " + s.pos + " because value follows not");
+                    System.out.println("gonna unlink " + cell.pos + " from " + s.pos + " because value follows not");
                     results.add(new Action(cell, s, false));
                 }
             }
@@ -143,6 +136,8 @@ class Signpost {
                 results.add(new Action(p, cell, true));
             }
 
+            /* i think we don't need this (but we might need to expand dirt tracking) */
+            /*
             if(cell.value != null && p.value != null) {
                 if(p.value + 1 == cell.value) {
                     System.out.println("gonna link " + p.pos + " to " + cell.pos + " because value follows");
@@ -152,6 +147,7 @@ class Signpost {
                     results.add(new Action(p, cell, false));
                 }
             }
+            */
         }
 
         return results;
@@ -268,12 +264,14 @@ class Signpost {
             cell2.predecessors.clear();
             this.dirtyCells.add(cell2);
         }
-        if(cell1.chain.cells == cell2.chain.cells) {
+        if(cell1.chain == cell2.chain) {
             throw new IllegalStateException("nope3");
         }
-        cell1.chain.cells.addAll(cell2.chain.cells);
-        cell2.chain.cells = cell1.chain.cells;
-        cell2.chain = cell1.chain;
+        for(Cell c : cell2.chain) {
+            cell1.chain.add(c);
+            c.chain = cell1.chain;
+            this.dirtyCells.add(c);
+        }
     }
 
     public static <T> boolean assignSetContents(Set<T> set, T value) {
@@ -318,7 +316,7 @@ class Signpost {
         final ListSet<List<Cell>> chains = new ListSet<>();
         for(Cell cell : sp.posToCell.values()) {
             sb.append(cell).append("\n");
-            chains.add(cell.chain.cells);
+            chains.add(cell.chain);
         }
         sb.append("Chains:\n");
         for(List<Cell> chain : chains) {

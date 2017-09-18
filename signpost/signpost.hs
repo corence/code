@@ -11,6 +11,11 @@ import Data.Maybe
 for :: b -> [a] -> (b -> a -> b) -> b
 for initValue series function = foldl' function initValue series
 
+maybe2 :: c -> (a -> b -> c) -> (Maybe a, Maybe b) -> c
+maybe2 fallback _ (Nothing, _) = fallback
+maybe2 fallback _ (_, Nothing) = fallback
+maybe2 _ func (Just a, Just b) = func a b
+
 data Pos = Pos Int Int deriving (Eq, Ord, Show)
 
 type Value = Int
@@ -135,6 +140,40 @@ solveCell grid cell = actionsFromSoloSuccessors ++ actionsFromSuccessorValues (c
           actionsFromPredecessorValues (Just v2) = predecessorsWithValues & partition ((== v2 - 1) . fromJust . cellValue) & (\(linky, unlinky) -> map (\s -> Link (cellPos cell) (cellPos s)) linky ++ map (\s -> Unlink (cellPos cell) (cellPos s)) unlinky)
           predecessorsWithValues = cellPredecessors cell & map lookup & filter (isJust . cellValue)
           lookup pos = Map.lookup pos grid & fromJust
+
+solveCell2 :: Grid -> Cell -> [Action]
+solveCell2 grid cell
+    = actionsFromSoloSuccessors
+    ++ actionsFromSoloPredecessors
+    ++ actionsFromSuccessorValues grid cell
+    where actionsFromSoloSuccessors = if 1 == length (cellSuccessors cell) then [Link (cellPos cell) (head (cellSuccessors cell))] else []
+          actionsFromSoloPredecessors = if 1 == length (cellPredecessors cell) then [Link (head (cellPredecessors cell)) (cellPos cell)] else []
+
+actionsFromSuccessorValues :: Grid -> Cell -> [Action]
+actionsFromSuccessorValues grid cell
+  = map (\realSuccessor -> Link (cellPos cell) (cellPos realSuccessor)) realSuccessors
+  ++ map (\notSuccessor -> Unlink (cellPos cell) (cellPos notSuccessor)) notSuccessors
+      where successors = cellSuccessors cell & map lookup
+            areCellsAscending cell1 cell2 = areValuesAscending (cellValue cell1) (cellValue cell2)
+            areValuesAscending value1 value2 = maybe2 False (\v1 v2 -> v1 + 1 == v2) (value1, value2)
+            lookup pos = Map.lookup pos grid & fromJust
+            (realSuccessors, notSuccessors) = successors & partition (areCellsAscending cell)
+
+linkSuccessiveValues :: Grid -> Cell -> [Action]
+linkSuccessiveValues grid cell
+  = successors & filter (areCellsAscending cell) & map (\s -> Link (cellPos cell) (cellPos s))
+      where successors = cellSuccessors cell & map lookup
+            areCellsAscending cell1 cell2 = areValuesAscending (cellValue cell1) (cellValue cell2)
+            areValuesAscending value1 value2 = maybe2 False (\v1 v2 -> v1 + 1 == v2) (value1, value2)
+            lookup pos = Map.lookup pos grid & fromJust
+
+unlinkNonsuccessiveValues :: Grid -> Cell -> [Action]
+unlinkNonsuccessiveValues grid cell
+  = successors & filter (areCellsUnascending cell) & map (\s -> Unlink (cellPos cell) (cellPos s))
+      where successors = cellSuccessors cell & map lookup
+            areCellsUnascending cell1 cell2 = areValuesUnascending (cellValue cell1) (cellValue cell2)
+            areValuesUnascending value1 value2 = maybe2 False (\v1 v2 -> v1 + 1 /= v2) (value1, value2)
+            lookup pos = Map.lookup pos grid & fromJust
 
 main = pure ()
 

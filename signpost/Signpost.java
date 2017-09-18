@@ -45,6 +45,7 @@ class Signpost {
         public final Integer value;
         public final ListSet<Cell> predecessors;
         public final ListSet<Cell> successors;
+        public Chain chain;
 
         public Cell(Pos pos, Pos direction, Integer value) {
             this.pos = pos;
@@ -52,6 +53,7 @@ class Signpost {
             this.value = value;
             this.predecessors = new ListSet<>();
             this.successors = new ListSet<>();
+            this.chain = new Chain(this);
         }
 
         @Override
@@ -82,6 +84,19 @@ class Signpost {
                 result.add(cell.pos);
             }
             return result;
+        }
+    }
+
+    public static class Chain {
+        public List<Cell> cells;
+
+        public Chain(Cell cell) {
+            this.cells = new ArrayList<>();
+            this.cells.add(cell);
+        }
+
+        public String toString() {
+            return dump(cells);
         }
     }
 
@@ -220,17 +235,7 @@ class Signpost {
                 Cell cell1 = action.cell1;
                 Cell cell2 = action.cell2;
                 if(action.shouldLink) {
-                    System.out.println("assigning " + cell1 + " successors");
-                    if(assignSetContents(cell1.successors, cell2)) {
-                        System.out.println("x1!");
-                        this.dirtyCells.add(cell1);
-                    }
-
-                    System.out.println("assigning " + cell2 + " predecessors");
-                    if(assignSetContents(cell2.predecessors, cell1)) {
-                        System.out.println("x2!");
-                        this.dirtyCells.add(cell2);
-                    }
+                    link(cell1, cell2);
                 } else {
                     System.out.println("cutting " + cell1 + " successor" + cell2);
                     if(cell1.successors.remove(cell2)) {
@@ -246,6 +251,29 @@ class Signpost {
                 }
             }
         }
+    }
+
+    public void link(Cell cell1, Cell cell2) {
+        if(!cell1.successors.isEmpty()) {
+            if(!cell1.successors.contains(cell2)) {
+                throw new IllegalStateException("nope1");
+            }
+            cell1.successors.clear();
+            this.dirtyCells.add(cell1);
+        }
+        if(!cell2.predecessors.isEmpty()) {
+            if(!cell2.predecessors.contains(cell1)) {
+                throw new IllegalStateException("nope2");
+            }
+            cell2.predecessors.clear();
+            this.dirtyCells.add(cell2);
+        }
+        if(cell1.chain.cells == cell2.chain.cells) {
+            throw new IllegalStateException("nope3");
+        }
+        cell1.chain.cells.addAll(cell2.chain.cells);
+        cell2.chain.cells = cell1.chain.cells;
+        cell2.chain = cell1.chain;
     }
 
     public static <T> boolean assignSetContents(Set<T> set, T value) {
@@ -287,8 +315,14 @@ class Signpost {
 
     public static String dump(Signpost sp) {
         final StringBuilder sb = new StringBuilder("<\n");
+        final ListSet<List<Cell>> chains = new ListSet<>();
         for(Cell cell : sp.posToCell.values()) {
             sb.append(cell).append("\n");
+            chains.add(cell.chain.cells);
+        }
+        sb.append("Chains:\n");
+        for(List<Cell> chain : chains) {
+            sb.append(dump(Cell.poses(chain))).append("\n");
         }
         sb.append(">\n");
         return sb.toString();

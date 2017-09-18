@@ -159,22 +159,6 @@ actionsFromSuccessorValues grid cell
             lookup pos = Map.lookup pos grid & fromJust
             (realSuccessors, notSuccessors) = successors & partition (areCellsAscending cell)
 
-linkSuccessiveValues :: Grid -> Cell -> [Action]
-linkSuccessiveValues grid cell
-  = successors & filter (areCellsAscending cell) & map (\s -> Link (cellPos cell) (cellPos s))
-      where successors = cellSuccessors cell & map lookup
-            areCellsAscending cell1 cell2 = areValuesAscending (cellValue cell1) (cellValue cell2)
-            areValuesAscending value1 value2 = maybe2 False (\v1 v2 -> v1 + 1 == v2) (value1, value2)
-            lookup pos = Map.lookup pos grid & fromJust
-
-unlinkNonsuccessiveValues :: Grid -> Cell -> [Action]
-unlinkNonsuccessiveValues grid cell
-  = successors & filter (areCellsUnascending cell) & map (\s -> Unlink (cellPos cell) (cellPos s))
-      where successors = cellSuccessors cell & map lookup
-            areCellsUnascending cell1 cell2 = areValuesUnascending (cellValue cell1) (cellValue cell2)
-            areValuesUnascending value1 value2 = maybe2 False (\v1 v2 -> v1 + 1 /= v2) (value1, value2)
-            lookup pos = Map.lookup pos grid & fromJust
-
 main = pure ()
 
 indent :: Int -> String

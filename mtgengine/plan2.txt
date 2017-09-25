@@ -1,0 +1,67 @@
+
+layer 1: the CHOICE LOG
+this records ALL choices by human players across the course of the game, with no context.
+it also records choices by Xom (the random number god).
+Choices can be erased if they lead to invalid states! No record of erasure is retained.
+
+chooseThing :: Int -> [a] -> [a]
+chooseNumber :: Int -> Int -> Int -- min, max
+data Choice = PlayerChoseThings [a] | PlayerChoseNumber Int | XomChoseNumber Int
+
+layer 2: the EVENT LOG
+this records all EVENTS that have happened during the CURRENT TURN -- it is flushed as the very, very last thing in a turn.
+Each event stores a reference to the entire board state at that time. (?)
+This might be something that the cards use; nothing automatically logged here.
+
+layer 3: the EVENT STACK
+when events are created:
+a) they're added here
+b) replacement effects are triggered
+c) they're moved to the event log (one at a time)
+d) they're executed (and the model is updated accordingly)
+e) reaction effects are triggered
+This pool is processed in lifo order.
+
+layer 4: the TRIGGER POOL
+when triggers are triggered
+a) their events are added here -- in clusters
+b) they're chosen in APNAP order
+c) each chosen event goes to the tail of the Event Pool
+
+layer 5: the MODEL
+whenever events are moved to the EVENT LOG, they update this.
+note that events can never go on the stack -- only cards.
+
+Example: "Whenever a player casts a spell, destroy target creature. If it was destroyed this way, gain one life if it was an Elf."
+1) event happens: a player casts a spell
+2) trigger activates
+3) trigger pool gains "destroy target creature."
+4) trigger pool is processed and this event-cluster is selected
+5) event "destroy target creature" is added to the event pool
+6) event "target creature" is added to the event pool (as a result of 5? or as a result of 4?)
+7) idk how to handle this
+
+events:
+{ "name": "target", "subjects": [ 203 ] }
+{ "name": "destroy", "subjects": [ 203 ] }
+{ "name": "die", "subjects": 203 }
+{ "name": "move", "from": 5, "to": 6, "subject": 203 }
+{ "name": "gain_life", "amount": 1, "subjects": [ 1 ] }
+
+thisTrigger() {
+    // hrm is playerChoice async or something?
+    subject = playerChoice(1, collect([isCreature, onBattlefield, targetableBy(1)]))
+    const target = raiseEvent("target", subject);
+    const destroy = raiseEvent("destroy", subject);
+    raiseTrigger(
+}
+
+thisTrigger() {
+    // now with promises
+    playerChoice(1, collect([isCreature, onBattlefield, targetableby(1)))
+    .then((subject) => {
+        raiseEvent("target", subject);
+        raiseEvent("destroy", subject).then((outcome) => {
+        });
+    });
+}

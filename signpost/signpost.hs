@@ -5,6 +5,8 @@ import qualified Data.Set as Set
 import Data.Set(Set(..))
 import Data.List
 import Data.Maybe
+import Control.Applicative
+import Debug.Trace
 
 (&) = flip ($)
 
@@ -24,18 +26,32 @@ data Cell = Cell {
     cellDirection :: Direction,
     cellValue :: Maybe Value,
     cellSuccessors :: [Pos],
-    cellPredecessors :: [Pos]
-    }
+    cellPredecessors :: [Pos],
+    cellConnection :: Maybe Pos
+    } deriving (Eq)
 
 instance Show Cell where
-    show cell = "{" ++ show (cellPos cell) ++ " " ++ show (cellDirection cell) ++ " " ++ showValue (cellValue cell) ++ "}"
-        where showValue Nothing = "*"
-              showValue (Just x) = show x
+    show cell
+        = "{"
+        ++ showCellThing cellPos
+        ++ " "
+        ++ showCellThing cellDirection
+        ++ " "
+        ++ showCellMaybe cellValue
+        ++ " <"
+        ++ showCellThing (length . cellPredecessors)
+        ++ ":"
+        ++ showCellThing (length . cellSuccessors)
+        ++ "> -> "
+        ++ showCellMaybe cellConnection
+        ++ "}"
+        where showCellMaybe func = maybe "*" show (func cell)
+              showCellThing func = show (func cell)
 
 type Grid = Map Pos Cell
 type DirtyGrid = (Set Pos, Grid)
 
-data Direction = Nowhere | North | Northeast | East | Southeast | South | Southwest | West | Northwest
+data Direction = Nowhere | North | Northeast | East | Southeast | South | Southwest | West | Northwest deriving (Eq)
 
 instance Show Direction where
     show Nowhere = "--"
@@ -51,7 +67,7 @@ instance Show Direction where
 makeGrid :: [(Pos, Direction, Maybe Value)] -> Grid
 makeGrid datums = makeInitialGrid & linkForward & linkBackward
     where   makeInitialGrid = foldl' (\grid datum@(pos, direction, value) -> Map.insert pos (makeCell datum) grid) Map.empty datums
-            makeCell (pos, direction, value) = Cell { cellPos = pos, cellDirection = direction, cellValue = value, cellSuccessors = [], cellPredecessors = [] }
+            makeCell (pos, direction, value) = Cell { cellPos = pos, cellDirection = direction, cellValue = value, cellSuccessors = [], cellPredecessors = [], cellConnection = Nothing }
             linkForward grid = foldl' linkCellForward grid (Map.toList grid & map snd)
                 where   linkCellForward grid cell = Map.insert (cellPos cell) (newCell cell) grid
                         newCell cell = cell { cellSuccessors = scan grid (cellDirection cell) (cellPos cell) & tail }
@@ -106,26 +122,55 @@ solveStep :: DirtyGrid -> DirtyGrid
 solveStep (dirtys, grid)
   | Set.null dirtys = (dirtys, grid)
   | otherwise = (Set.deleteMin dirtys, newGrid)
-    where actions = solveCell grid cell
-          (newDirty, newGrid) = foldl' (flip applyAction) (Set.deleteMin dirtys, grid) actions
+    where actions = solveCell2 grid cell
+          (newDirty, newGrid) = foldr applyAction (Set.deleteMin dirtys, grid) actions
           cell = Set.findMin dirtys & (\pos -> Map.lookup pos grid) & fromJust
 
+areConnected :: Grid -> Pos -> Pos -> Bool
+areConnected grid pos1 pos2
+  = (elem pos1 (cellPredecessors cell2)) && (elem pos2 (cellSuccessors cell1))
+  where cell1 = Map.lookup pos1 grid & fromJust
+        cell2 = Map.lookup pos2 grid & fromJust
+
 applyAction :: Action -> DirtyGrid -> DirtyGrid
-applyAction (Link pos1 pos2) (dirty1, grid1)
-  | not (elem pos1 (cellPredecessors cell2)) = error $ "pos2 can't link back to pos1"
-  | not (elem pos2 (cellSuccessors cell1)) = error "pos1 can't link forward to pos2"
-  | otherwise = (dirty3, grid3)
-  -- (cellSuccessors cell1) == [pos2] && (cellPredecessors cell2) == [pos1] = ([], grid) -- nothing to do -- these cells are already linked
+applyAction (Link pos1 pos2) (dirty1, grid1) = trace ("a " ++ show cell1 ++ " -> " ++ show newCell1 ++ ", " ++ show cell2 ++ " -> " ++ show newCell2) $ (dirty3, grid3)
   where cell1 = Map.lookup pos1 grid1 & fromJust
         cell2 = Map.lookup pos2 grid1 & fromJust
-        (dirty2, grid2) = if (cellSuccessors cell1) == [pos2]
-                              then (dirty1, grid1)
-                              else (Set.insert pos1 dirty1, setSuccessors [pos2] pos1 grid1)
-        (dirty3, grid3) = if (cellPredecessors cell2) == [pos1]
-                              then (dirty2, grid2)
-                              else (Set.insert pos2 dirty2, setPredecessors [pos1] pos2 grid2)
-        setSuccessors newSuccessors = Map.update (\cell -> Just $ cell { cellSuccessors = newSuccessors })
-        setPredecessors newPredecessors = Map.update (\cell -> Just $ cell { cellPredecessors = newPredecessors })
+        dirty2 = if cell1 == newCell1
+                     then dirty1
+                     else foldr Set.insert dirty1 (relatedPoses cell1)
+        dirty3 = if cell2 == newCell2
+                     then dirty2
+                     else foldr Set.insert dirty2 (relatedPoses cell2)
+        grid2 = Map.insert pos1 newCell1 grid1
+        grid3 = Map.insert pos2 newCell2 grid2
+        (newCell1, newCell2) = link (cell1, cell2)
+        relatedPoses cell = cellPos cell : cellPredecessors cell ++ cellSuccessors cell
+
+applyAction (Unlink pos1 pos2) (dirty1, grid1) = trace ("b " ++ show cell1 ++ " -> " ++ show newCell1 ++ ", " ++ show cell2 ++ " -> " ++ show newCell2) $ (dirty3, grid3)
+  where cell1 = Map.lookup pos1 grid1 & fromJust
+        cell2 = Map.lookup pos2 grid1 & fromJust
+        newCell1 = cell1 { cellSuccessors = delete pos2 (cellSuccessors cell1) }
+        newCell2 = cell2 { cellPredecessors = delete pos1 (cellPredecessors cell2) }
+        dirty2 = if cell1 == newCell1
+                     then dirty1
+                     else foldr Set.insert dirty1 (relatedPoses cell1)
+        dirty3 = if cell2 == newCell2
+                     then dirty2
+                     else foldr Set.insert dirty2 (relatedPoses cell2)
+        grid2 = Map.insert pos1 newCell1 grid1
+        grid3 = Map.insert pos2 newCell2 grid2
+        relatedPoses cell = cellPos cell : cellPredecessors cell ++ cellSuccessors cell
+
+link :: (Cell, Cell) -> (Cell, Cell)
+link (cell1, cell2) = (newCell1, newCell2)
+    where newCell1 = cell1 { cellSuccessors = [], cellConnection = Just (cellPos cell2) } & assignValue (subtract 1) (cellValue cell2)
+          newCell2 = cell2 { cellPredecessors = [] } & assignValue (+1) (cellValue cell1)
+          assignValue _ Nothing cell = cell
+          assignValue func (Just value) cell
+            | cellValue cell == (Just value) = cell
+            | cellValue cell == Nothing = cell { cellValue = Just (func value) }
+            | otherwise = error "incompatible values lol!"
 
 solveCell :: Grid -> Cell -> [Action]
 solveCell grid cell = actionsFromSoloSuccessors ++ actionsFromSuccessorValues (cellValue cell) ++ actionsFromSoloPredecessors ++ actionsFromPredecessorValues (cellValue cell)
@@ -155,9 +200,18 @@ actionsFromSuccessorValues grid cell
   ++ map (\notSuccessor -> Unlink (cellPos cell) (cellPos notSuccessor)) notSuccessors
       where successors = cellSuccessors cell & map lookup
             areCellsAscending cell1 cell2 = areValuesAscending (cellValue cell1) (cellValue cell2)
-            areValuesAscending value1 value2 = maybe2 False (\v1 v2 -> v1 + 1 == v2) (value1, value2)
+            areValuesAscending value1 value2 = maybe2 False areAscending (value1, value2)
+            areValuesAscending2 mvalue1 mvalue2 = liftA2 areAscending mvalue1 mvalue2 & (== (Just True))
             lookup pos = Map.lookup pos grid & fromJust
             (realSuccessors, notSuccessors) = successors & partition (areCellsAscending cell)
+            areAscending value1 value2 = value1 + 1 == value2
+
+areCellsAscendingInValue :: [Cell] -> Bool
+areCellsAscendingInValue [] = True
+areCellsAscendingInValue (x:[]) = True
+areCellsAscendingInValue (cell1:cell2:cells) = maybe2 False (\v1 v2 -> v1 + 1 == v2) (maybeValue1, maybeValue2)
+    where maybeValue1 = cellValue cell1
+          maybeValue2 = cellValue cell2
 
 main = pure ()
 
@@ -173,10 +227,11 @@ replace oldValue newValues (x:xs)
             where next = replace oldValue newValues xs
 
 printicate :: (Show a) => a -> String
-printicate value = show value & replace '[' "[\n" & replace ']' "]\n" & replace ',' ",\n"
+printicate value = show value & replace '[' "[\n" & replace ']' "\n]\n" & replace ',' ",\n"
 
 applyNTimes :: Int -> (a -> a) -> (a -> a)
 applyNTimes n func = foldl1' (.) (replicate n func)
 
-finalised = (sampleDirt, makeGrid sample) & applyNTimes 9 solveStep & snd & Map.toList & map snd & printicate & putStrLn
-initialised = makeGrid sample & Map.toList & map snd & printicate & putStrLn
+finalised = (sampleDirt, makeGrid sample) & applyNTimes 9 solveStep & snd & printGrid
+initialised = makeGrid sample & printGrid
+printGrid grid = Map.toList grid & map snd & printicate & putStrLn

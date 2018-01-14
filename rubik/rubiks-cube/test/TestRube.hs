@@ -5,6 +5,7 @@ import Test.QuickCheck
 import Data.Function
 import qualified Data.Map as Map
 import Data.List(sort)
+import Data.Map((!))
 
 instance Eq Rube
   where (==) (Rube nodes1) (Rube nodes2) = nodes1 == nodes2
@@ -37,8 +38,29 @@ main = hspec $ do
 
     it "should have the same set of Values after a rotation" $ do
       property $ \rube faceDirection spinDirection ->
-                    rotateFace faceDirection spinDirection rube
+                    let values (Rube nodes) = Map.toList nodes & map snd
+                    in rotateFace faceDirection spinDirection rube
                     & values
                     & sort
                     & (== sort (values rube))
-                    where values (Rube nodes) = Map.toList nodes & map snd
+
+    it "should move the Pos to the expected position after multiple rotations" $ do
+      property $ \rube ->
+          let rotatedRube = rube
+                          & rotateFace East Clockwise
+                          & rotateFace Hellbound Clockwise
+                          & rotateFace West Counterclockwise
+          in (nodes rotatedRube ! Pos (-1) (-1) (-1)) == (nodes rube ! Pos 1 1 1)
+
+    it "should never reposition the face-center values" $ do
+      property $ \rube rotations faceToCheck ->
+                        let rotatedRube = foldr (uncurry rotateFace) rube (rotations :: [(Direction, SpinDirection)])
+                        in (nodes rotatedRube ! dirToPos faceToCheck) == (nodes rube ! dirToPos faceToCheck)
+
+dirToPos :: Direction -> Pos
+dirToPos Hellbound = Pos 0 (-1) 0
+dirToPos West      = Pos (-1) 0 0
+dirToPos South     = Pos 0 0 (-1)
+dirToPos East      = Pos 1 0 0
+dirToPos North     = Pos 0 0 1
+dirToPos Skyward   = Pos 0 1 0

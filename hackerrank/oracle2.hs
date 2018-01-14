@@ -1,5 +1,6 @@
 
 import Control.Monad
+import Control.Applicative
 import qualified Data.Map as Map -- todo: replace with vector
 import Data.Map(Map(..))
 import Data.List
@@ -41,7 +42,7 @@ main = do
     let output = case winner of
                       White -> colors & findIndex (== White) & fromJust & show
                       Black -> colors & findIndex (== Black) & fromJust & show
-                      otherwise -> nextQuery numQueries
+                      otherwise -> nextQueryValues queryResults (0, 1) & \(source, target) -> show source ++ " " ++ show target
     -- putStrLn $ show colors ++ " -- " ++ show (count2 colors) -- this line is just for debugging
     putStrLn output
 
@@ -50,8 +51,38 @@ markColors numBalls queryResults
   = baseColors & spreadColorsRight queryResults -- & cancelPairs queryResults
     where baseColors = White : replicate (numBalls - 1) Idk
 
-nextQuery :: Int -> String
-nextQuery n = show n ++ " " ++ show (n + 1)
+ascendingPairs :: Ord a => [a] -> [(a, a)]
+ascendingPairs values = liftA2 (,) values values & filter (\(a, b) -> a < b)
+
+nextQueryValues :: [Color] -> [QueryResult] -> (Int, Int) -> (Int, Int)
+--nextQueryValues colors queryResults (nextSource, nextTarget) = (foldl' (advanceFrom fst) nextSource queryResults, foldl' (advanceFrom snd) nextTarget queryResults)
+nextQueryValues colors queryResults nextValues = foldl' advance nextValues queryResults
+    where advance (nextSource, nextTarget) (QueryResult source target _)
+            = (pairWithKnownQueries ++ twoIdkQueries ++ knownWithIdkQueries) & filter alreadyQueried & head & (\(source, _, target, _) -> (source, target)) -- we assume a nonzero list here due to the semantics of the problem (and if it's not nonzero then there's not much we can do)
+          pairWithKnownQueries = allPossibleQueries & filter (\(source, sourceColor, target, targetColor) -> elem (sourceColor, targetColor) [(White, Idk), (Black, Idk), (Idk, White), (Idk, Black)]) & filter (\(source, _, target, _) -> numQueriesIncluding source queryResults + numQueriesIncluding target queryResults == 1)
+          numQueriesIncluding index = filter (\(QueryResult source target _) -> source == index || target == index)
+          allPossibleQueries = ascendingPairs [0..(length colors - 1)] & map (\(source, target) -> (source, colors !! source, target, colors !! target))
+    -- suppose we know [White, White, Black, White, Idk, Idk, Idk, Idk, None, None]
+    -- also, we know that the first pair of Idk are equal
+    -- we could:
+    --  - make a query between a known color and an idk. This gives us 1 guaranteed new info
+    --  - make a query between two Idk. This gives us a 50/50 chance of 2 info
+    --  - make a query between a known color, and an Idk that is known to be equal to another Idk. This gives us 2 guaranteed new info!
+    -- suppose values are [White, White, White, White, White, White, White, White, White, White]
+    -- 1) query 1 2 -> True
+    --
+    -- rules
+    -- a) never query None, ever
+    -- b) never query 2 known values
+    -- c) never query two Idk if one of them has a query on it -- this will just make a mess and i don't think it will improve efficiency
+    -- d) if two Idk are same, then always query them against a known color
+    -- e) if two Idk are different, then never query them again (actually this can never happen because they will be Nones)
+    -- so if i do this:
+    --  - query a pair of Idk
+    --  - if they are diff, great
+    --  - if they are same, then query them against something known
+    -- using this strategy we have 50% chance of 2 info with 1 request; and 50% chance of 2 info with 2 requests
+    -- we also keep the number of known cells always odd
 
 getQueryResults :: Int -> IO [QueryResult]
 getQueryResults numQueries = replicateM numQueries getQueryResult

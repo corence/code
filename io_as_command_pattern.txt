@@ -1,0 +1,228 @@
+
+IO is like a Command Pattern. An IO object contains a sequence of input/output instructions. It also has a return-value type: when it gets executed, it will return an object of that type.
+
+"main" returns an `IO ()` -- that is, an IO with an empty tuple as the return type. Empty tuple has no value; it's really similar to `void` in C.
+
+You can therefore call any function that returns `IO ()`, such as `putStrLn`, in your `main` function without much ceremony -- `main` will be happy to return it as-is, and it'll then get executed by the runtime.
+
+```
+    main = putStrLn "Hello World"
+````
+
+But you can't just call _two_ functions in a main, because how would you combine the two return values?
+
+````
+    main =
+        (putStr "Hello")
+        (putStrLn "World") -- this isn't a real program because it's not clear what should be returned from two expressions
+````
+
+(note: I've added parentheses for clarity, so that you don't need to learn the precedence of various operators right now. They're optional.)
+
+The solution is you need to combine them yourself:
+
+````
+    main = (putStr "Hello") >> (putStrLn "World")
+````
+
+The `>>` operator creates a new IO object by:
+    - combining all of the input/output operations
+    - returning the return value of the right-hand side
+
+Here's some examples:
+
+````
+    (putStr "Hello") >> (putStrLn "World")
+````
+This creates a command object that prints `HelloWorld` and returns `()`.
+
+````
+    (putStrLn "Name please?") >> (getLine)
+````
+`getLine()` is an IO command that returns a String (that the user types in).
+So this creates a command object that prints `Name please?`, then prompts for input, then returns a `String`
+
+````
+    (getLine) >> (putStrLn "Hi!")
+````
+This creates a command object that reads a line of input from the user, then prints `Hi!` and returns `()`.
+The line of input that was read from the user is discarded, because we only get a return value from what's on the right.
+
+
+It may not look like it, but this operator is functionally really similar to `;` in C, C++, Java etc. Compare these two:
+
+```haskell
+introduce :: IO String
+introduce =
+    putStr "Name " >>
+    putStrLn "please?" >>
+    getLine
+```
+
+```java
+String introduce() {
+    System.out.print("Name ");
+    System.out.println("please?");
+    return new Scanner(System.in).readLine(); // i *think* that's right, off the top of my head
+}
+```
+
+Syntactically, the only relevant difference between these is that
+ - haskell doesn't need the final "semicolon", and
+ - the last line in Java needs an explicit `return`
+
+Still, they have a similar effect: expressions that can mutate the input/output state can be chained together to produce a single chain of input/output mutation, by use of this operator.
+
+
+Now, moving on from that operator, let's look at a more complex one: `>>=`
+
+```
+    main =
+        getLine >>=
+        putStrLn
+```
+
+What this does:
+ - read a line of input from the user
+ - print that line
+
+`>>=` is *almost* the same as `>>`, but instead of discarding the return value of the expression on the left, it passes it to the expression on the right as an argument.
+
+A breakdown:
+ - `getLine` is an `IO String` -- a command that does some input/output, and returns a String
+ - `putStrLn` is an `IO ()` -- a command that does some input/output, and returns nothing
+ - `getLine >>= putStrLn` constructs an `IO ()` -- a command that:
+ -- reads a line of input from the user, as a String (let's say the user types in `omg!`)
+ -- passes that string to the expression on the right, as an argument -- so `putStrLn` becomes `putStrLn "omg!"`
+ -- evaluates the expression on the right and returns its result -- so, it prints `omg!` and returns `()`
+
+Using these two, we can create some complex expressions:
+
+```
+    main =
+        (putStrLn "What's your name?") >>
+        (getLine >>= putStr) >>
+        (putStrLn ", hi!")
+```
+
+This prints several lines
+ - `What's your name?`
+ - (the user inputs `Stacey`)
+ - `Stacey, hi!`
+
+Again, note that all of the parentheses above are optional -- the operators are left-associative, so this will run the same way without parens.
+
+But we're still stuck using our expressions straight away. What we want is to port this Java:
+
+```java
+
+void introduce2() {
+    System.out.println("Who're you?");
+    String name = new Scanner(System.in).readLine();
+    System.out.print("Omg, ");
+    System.out.print(name);
+    System.out.println(", hi!");
+}
+```
+
+where we didn't use the input string immediately.
+
+To do that, we're going to use an extra function in Haskell:
+
+```haskell
+introduce2 :: IO ()
+introduce2 =
+    (putStrLn "Who're you?") >>
+    (getLine >>= sayHi)
+
+sayHi :: String -> IO ()
+sayHi name =
+    (putStr "Omg, ") >>
+    (putStr name) >>
+    (putStrLn ", hi!")
+```
+
+So again, we pass the results of the left expression as an argument to the right expression.
+
+This seems cumbersome at first, but it's not actually problematic because Haskell has many syntactic forms to define functions and they're all pretty lightweight.
+
+We can use `where` to define the function inside another function:
+
+```haskell
+introduce2 :: IO ()
+introduce2 =
+    (putStrLn "Who're you?") >>
+    (getLine >>= sayHi)
+    where sayHi name = 
+        (putStr "Omg, ") >>
+        (putStr name) >>
+        (putStrLn ", hi!")
+```
+
+or make it an anonymous function:
+
+```haskell
+introduce2 :: IO ()
+introduce2 =
+    (putStrLn "Who're you?") >>
+    (getLine >>= (\name -> 
+        (putStr "Omg, ") >>
+        (putStr name) >>
+        (putStrLn ", hi!")))
+```
+
+but as a seasoned Haskell programmer, you'd be more likely to use `do` notation here. It's an alternate syntax form for the anonymous function above:
+
+
+```haskell
+introduce2 :: IO ()
+introduce2 = do
+    putStrLn "Who're you?"
+    name <- getLine
+    putStr "Omg, "
+    putStr name
+    putStrLn ", hi!"
+```
+
+When Haskell compiles, it converts this to the anonymous function form, above. But note how syntactically similar this is to the Java rendition.
+
+The key difference between the Haskell versus the Java implementations is that Haskell is constructing command objects to be executed later; whereas Java will do the input/output as soon as it encounters each instruction.
+
+Contrast these:
+
+```java
+void colorCheck() {
+    System.out.println("Favourite color?");
+    String color = new Scanner(System.in).readLine();
+    if ("azure".equals(color) {
+        System.out.println("Pretty!");
+    } else {
+        System.out.println("I guess so.");
+    }
+}
+```
+
+```haskell
+colorCheck :: IO ()
+colorCheck = do
+    putStrLn "Favourite color?"
+    color <- getLine
+    if ("azure" == color)
+        then putStrLn "Pretty!"
+        else putStrLn "I guess so."
+```
+
+The above two blocks of code do the same thing.
+
+
+```haskell
+colorCheck2 :: IO ()
+colorCheck2 =
+    check (putStrLn "Pretty!") (putStrLn "I guess so.") (getLine)
+    where check :: IO () -> IO () -> IO String -> IO ()
+          check writeEnthusiastic writeUnenthused readString =
+              putStrLn "Favourite color?" >> chooseOutput writeEnthusiastic writeUnenthused readString
+          chooseOutput :: IO () -> IO () -> IO String -> IO ()
+          chooseOutput writeEnthusiastic writeUnenthused readString =
+              readString >>= (\string -> if string == "azure" then writeEnthusiastic else writeUnenthused)
+```

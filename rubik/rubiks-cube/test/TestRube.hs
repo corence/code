@@ -7,9 +7,6 @@ import qualified Data.Map as Map
 import Data.List(sort)
 import Data.Map((!))
 
-instance Eq Rube
-  where (==) (Rube nodes1) (Rube nodes2) = nodes1 == nodes2
-
 instance Arbitrary Rube
   where arbitrary = do
           values <- [0..] & take (length allRubePoses) & map Value & shuffle

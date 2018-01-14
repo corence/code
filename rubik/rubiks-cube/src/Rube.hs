@@ -15,6 +15,9 @@ data Value = Value Int deriving (Eq, Show, Ord)
 data SpinDirection = Clockwise | Counterclockwise deriving (Show, Eq)
 data Rube = Rube { nodes :: Map.Map Pos Value } -- a rubiks cube. For now, 3x3. But in future, NxN.
 
+instance Eq Rube
+  where (==) (Rube nodes1) (Rube nodes2) = nodes1 == nodes2
+
 origin = Pos 0 0 0
 
 data Direction

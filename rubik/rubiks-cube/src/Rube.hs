@@ -11,9 +11,9 @@ import Data.List(intercalate)
 (<&>) = flip (<$>)
 
 data Pos = Pos { x :: Int, y :: Int, z :: Int } deriving (Eq, Show, Ord)
-data Value = Value Int deriving (Eq, Show)
+data Value = Value Int deriving (Eq, Show, Ord)
 data SpinDirection = Clockwise | Counterclockwise deriving (Show, Eq)
-data Rube = Rube (Map.Map Pos Value) -- a rubiks cube. For now, 3x3. But in future, NxN.
+data Rube = Rube { nodes :: Map.Map Pos Value } -- a rubiks cube. For now, 3x3. But in future, NxN.
 
 origin = Pos 0 0 0
 

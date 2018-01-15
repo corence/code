@@ -1,4 +1,6 @@
 
+{-# LANGUAGE ScopedTypeVariables #-}
+
 import Rube
 import Test.Hspec
 import Test.QuickCheck
@@ -53,6 +55,11 @@ main = hspec $ do
       property $ \rube rotations faceToCheck ->
                         let rotatedRube = foldr (uncurry rotateFace) rube (rotations :: [(Direction, SpinDirection)])
                         in (nodes rotatedRube ! dirToPos faceToCheck) == (nodes rube ! dirToPos faceToCheck)
+  describe "solver" $ do
+    -- it "should solve any arbitrary rube" $ do
+      -- property $ not . null . solve 5 standardRube
+    it "should solve a lightly-permuted rube" $ do
+      property $ \(path :: Path) -> length path <= 4 ==> (not . null . solve 4 standardRube) (foldr (uncurry rotateFace) standardRube path)
 
 dirToPos :: Direction -> Pos
 dirToPos Hellbound = Pos 0 (-1) 0

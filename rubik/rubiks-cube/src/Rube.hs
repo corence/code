@@ -155,3 +155,25 @@ rows rowLength list = take rowLength list : rows rowLength (drop rowLength list)
         ]
         where showFace (startPos, horzScan, vertScan) = undefined
 -}
+
+-- iterative deepening depth first search
+-- returns all possible solutions, ordered by depth
+type Path = [(Direction, SpinDirection)]
+type PathsAtDepth = [Path]
+
+solve :: Int -> Rube -> Rube -> [Path]
+solve maxDepth goalRube startingRube
+  = iterate nextStep (map pure allFaceRotations)
+  & take maxDepth
+  & concat
+  & filter isSolution
+  where nextStep :: PathsAtDepth -> PathsAtDepth
+        nextStep paths = (:) <$> allFaceRotations <*> paths
+        isSolution path = goalRube == foldr (uncurry rotateFace) startingRube path
+
+allFaceRotations :: [(Direction, SpinDirection)]
+--allFaceRotations = rotateFace <$> allDirections <*> [Clockwise, Counterclockwise]
+allFaceRotations = (,) <$> allDirections <*> [Clockwise, Counterclockwise]
+
+allDirections :: [Direction]
+allDirections = [Skyward, North, East, South, West, Hellbound]
